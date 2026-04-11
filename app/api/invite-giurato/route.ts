@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
 export async function POST(req: NextRequest) {
   try {
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
     const { email, nome, cognome, tipo_giurato } = await req.json()
 
     if (!email || !nome || !cognome) {
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/giurato`,
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/login`,
       data: {
         ruolo: 'giurato',
         nome,
