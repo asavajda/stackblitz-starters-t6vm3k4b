@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (error) {
+      console.log('Supabase error:', error.message, error.status)
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
 
