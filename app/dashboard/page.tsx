@@ -89,6 +89,12 @@ export default function DashboardPage() {
     setAggiungendo(false)
   }
 
+  async function eliminaGiurato(id: string) {
+    if (!confirm('Sei sicuro di voler eliminare questo giurato?')) return
+    await supabase.from('profiles').delete().eq('id', id)
+    setGiurati(prev => prev.filter(g => g.id !== id))
+  }
+
   const statoBadge: Record<string, string> = {
     ricevuto: 'bg-gray-100 text-gray-600',
     in_valutazione: 'bg-blue-50 text-blue-600',
@@ -306,9 +312,17 @@ export default function DashboardPage() {
                     <p className="text-sm font-medium text-gray-800">{g.nome} {g.cognome}</p>
                     <p className="text-xs text-gray-400 mt-0.5">{g.email}</p>
                   </div>
-                  <span className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-600">
-                    {g.tipo_giurato || 'lettore'}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-600">
+                      {g.tipo_giurato || 'lettore'}
+                    </span>
+                    <button
+                      onClick={() => eliminaGiurato(g.id)}
+                      className="text-xs px-3 py-1 rounded-lg border border-red-200 text-red-500 hover:bg-red-50"
+                    >
+                      Elimina
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
