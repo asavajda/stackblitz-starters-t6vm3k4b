@@ -66,10 +66,14 @@ export default function GiuratoPage() {
         .update({ completata: true })
         .eq('id', valutazioneAperta.assegnazione_id)
 
-      const { data: tutteAssegnazioni } = await supabase
-        .from('assegnazioni')
-        .select('completata')
-        .eq('racconto_id', valutazioneAperta.racconto_id)
+     const { data: tutteAssegnazioni, error: errAssegnazioni } = await supabase
+  .from('assegnazioni')
+  .select('completata')
+  .eq('racconto_id', valutazioneAperta.racconto_id)
+
+console.log('tutteAssegnazioni:', tutteAssegnazioni)
+console.log('errAssegnazioni:', errAssegnazioni)
+console.log('tutteCompletate:', tutteAssegnazioni?.every(a => a.completata === true))
 
       const tutteCompletate =
         tutteAssegnazioni &&
