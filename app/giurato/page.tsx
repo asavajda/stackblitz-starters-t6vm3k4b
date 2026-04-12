@@ -19,6 +19,7 @@ export default function GiuratoPage() {
   const [note, setNote] = useState('')
   const [salvando, setSalvando] = useState(false)
   const [utenteId, setUtenteId] = useState<string>('')
+  const [mostraConferma, setMostraConferma] = useState(false)
 
   useEffect(() => {
     async function carica() {
@@ -44,6 +45,10 @@ export default function GiuratoPage() {
         .from('racconti-files')
         .createSignedUrl(assegnazione.file_path, 3600)
       if (data?.signedUrl) window.open(data.signedUrl, '_blank')
+    }
+
+    if (assegnazione.tipo_invio === 'testo') {
+      window.open(`/racconto/${assegnazione.racconto_id}`, '_blank')
     }
 
     if (assegnazione.completata) {
@@ -107,7 +112,6 @@ export default function GiuratoPage() {
         .eq('id', valutazioneAperta.racconto_id)
     }
 
-    // Ricarica le assegnazioni aggiornate dal database
     const { data: assegnazioniAggiornate } = await supabase
       .from('assegnazioni_giurato')
       .select('*')
@@ -134,6 +138,37 @@ export default function GiuratoPage() {
 
   if (valutazioneAperta) return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">
+
+      {/* Popup conferma */}
+      {mostraConferma && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 max-w-sm w-full shadow-lg">
+            <h3 className="text-sm font-semibold text-gray-800 mb-2">Conferma invio valutazione</h3>
+            <p className="text-sm text-gray-500 mb-6">
+              Una volta inviata, la valutazione non potrà essere modificata. Sei sicuro di voler procedere?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setMostraConferma(false)}
+                className="flex-1 border border-gray-200 text-gray-600 rounded-lg py-2 text-sm hover:bg-gray-50"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={() => {
+                  setMostraConferma(false)
+                  salvaValutazione()
+                }}
+                disabled={salvando}
+                className="flex-1 bg-gray-800 text-white rounded-lg py-2 text-sm font-medium hover:bg-gray-700 disabled:opacity-50"
+              >
+                Conferma
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white p-8 rounded-xl border border-gray-200 max-w-xl mx-auto">
         <button
           onClick={() => setValutazioneAperta(null)}
@@ -145,9 +180,7 @@ export default function GiuratoPage() {
         <p className="text-xs text-gray-400 mb-6">Fase: {valutazioneAperta.fase}</p>
 
         {valutazioneAperta.tipo_invio === 'testo' && (
-          <div className="bg-gray-50 rounded-lg p-4 mb-6 text-sm text-gray-700 leading-relaxed max-h-64 overflow-y-auto">
-            {valutazioneAperta.testo}
-          </div>
+          <p className="text-sm text-gray-500 mb-6">Il testo si è aperto in una nuova scheda.</p>
         )}
 
         {valutazioneAperta.tipo_invio === 'file' && (
@@ -196,7 +229,6 @@ export default function GiuratoPage() {
             )}
           </>
         ) : (
-          /* Modalità inserimento — non ancora valutato */
           <>
             <div className="space-y-4 mb-6">
               {criteri.map(c => (
@@ -231,14 +263,8 @@ export default function GiuratoPage() {
               />
             </div>
 
-            <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 mb-4">
-              <p className="text-xs text-gray-500">
-                ⚠️ Attenzione: una volta inviata, la valutazione non potrà essere modificata.
-              </p>
-            </div>
-
             <button
-              onClick={salvaValutazione}
+              onClick={() => setMostraConferma(true)}
               disabled={salvando}
               className="w-full bg-gray-800 text-white rounded-lg py-2 text-sm font-medium hover:bg-gray-700 disabled:opacity-50"
             >
