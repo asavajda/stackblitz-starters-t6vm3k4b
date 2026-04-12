@@ -42,23 +42,23 @@ export default function LoginPage() {
     else router.push('/invio')
   }
 
-  async function handleResetPassword() {
-    if (!resetEmail) {
-      setErrore('Inserisci la tua email per reimpostare la password')
-      return
-    }
-    setResetLoading(true)
-    setErrore('')
-    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/set-password`,
-    })
-    setResetLoading(false)
-    if (error) {
-      setErrore("Errore durante l'invio dell'email di reset")
-      return
-    }
-    setResetInviato(true)
+async function handleResetPassword() {
+  if (!resetEmail) {
+    setErrore('Inserisci la tua email per reimpostare la password')
+    return
   }
+  setResetLoading(true)
+  setErrore('')
+  const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/set-password`,
+  })
+  setResetLoading(false)
+  if (error) {
+    setErrore(`Errore: ${error.message}`)  // <-- messaggio preciso
+    return
+  }
+  setResetInviato(true)
+}
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
