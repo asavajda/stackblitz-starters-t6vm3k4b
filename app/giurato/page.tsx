@@ -94,26 +94,29 @@ export default function GiuratoPage() {
     }
 
     await supabase
-      .from('assegnazioni')
-      .update({ completata: true })
-      .eq('id', valutazioneAperta.assegnazione_id)
+  .from('assegnazioni')
+  .update({ completata: true })
+  .eq('id', valutazioneAperta.assegnazione_id)
 
-    const { data: tutteAssegnazioni } = await supabase
-      .from('assegnazioni')
-      .select('completata')
-      .eq('racconto_id', valutazioneAperta.racconto_id)
+// Aspetta che l'update sia completato prima di leggere
+const { data: tutteAssegnazioni } = await supabase
+  .from('assegnazioni')
+  .select('id, completata')
+  .eq('racconto_id', valutazioneAperta.racconto_id)
 
-    const tutteCompletate =
-      tutteAssegnazioni &&
-      tutteAssegnazioni.length >= 2 &&
-      tutteAssegnazioni.every(a => a.completata === true)
+console.log('tutteAssegnazioni dopo update:', tutteAssegnazioni)
 
-    if (tutteCompletate) {
-      await supabase
-        .from('racconti')
-        .update({ stato: 'valutato' })
-        .eq('id', valutazioneAperta.racconto_id)
-    }
+const totale = tutteAssegnazioni?.length ?? 0
+const completate = tutteAssegnazioni?.filter(a => a.completata === true).length ?? 0
+
+console.log(`completate: ${completate} / ${totale}`)
+
+if (totale >= 2 && completate === totale) {
+  await supabase
+    .from('racconti')
+    .update({ stato: 'valutato' })
+    .eq('id', valutazioneAperta.racconto_id)
+}
 
     const { data: assegnazioniAggiornate } = await supabase
       .from('assegnazioni_giurato')
