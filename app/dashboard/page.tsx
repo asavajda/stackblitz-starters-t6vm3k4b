@@ -14,6 +14,7 @@ export default function DashboardPage() {
   const [racconti, setRacconti] = useState<any[]>([])
   const [giurati, setGiurati] = useState<any[]>([])
   const [assegnazioniEsistenti, setAssegnazioniEsistenti] = useState<any[]>([])
+  const [valutazioni, setValutazioni] = useState<any[]>([])
   const [caricamento, setCaricamento] = useState(true)
   const [sezione, setSezione] = useState<'racconti' | 'assegnazioni' | 'risultati' | 'giurati'>('racconti')
   const [medie, setMedie] = useState<any[]>([])
@@ -38,17 +39,26 @@ export default function DashboardPage() {
 
     if (profilo?.ruolo !== 'admin') { router.push('/login'); return }
 
-    const [{ data: r }, { data: g }, { data: m }, { data: a }] = await Promise.all([
+    const [{ data: r }, { data: g }, { data: m }, { data: a }, { data: v }] = await Promise.all([
       supabase.from('racconti').select('*, profiles(nome, cognome)').order('inviato_il', { ascending: false }),
       supabase.from('profiles').select('*').eq('ruolo', 'giurato'),
       supabase.from('medie_racconti').select('*').order('media_complessiva', { ascending: false }),
       supabase.from('assegnazioni').select('*'),
+      supabase.from('valutazioni').select(`
+        *,
+        assegnazioni(
+          racconto_id,
+          giurato_id,
+          profiles(nome, cognome)
+        )
+      `),
     ])
 
     setRacconti(r || [])
     setGiurati(g || [])
     setMedie(m || [])
     setAssegnazioniEsistenti(a || [])
+    setValutazioni(v || [])
     setCaricamento(false)
   }
 
@@ -61,46 +71,42 @@ export default function DashboardPage() {
   }
 
   async function assegna(racconto_id: string, giurato_id: string, fase: string) {
-  const esiste = assegnazioniEsistenti.some(
-    a => a.racconto_id === racconto_id && a.giurato_id === giurato_id
-  )
-  if (esiste) {
-    const { error } = await supabase
-      .from('assegnazioni')
-      .delete()
-      .eq('racconto_id', racconto_id)
-      .eq('giurato_id', giurato_id)
-    if (!error) {
-      const nuoveAssegnazioni = assegnazioniEsistenti.filter(
-        a => !(a.racconto_id === racconto_id && a.giurato_id === giurato_id)
-      )
-      setAssegnazioniEsistenti(nuoveAssegnazioni)
-
-      // Se non ci sono più giurati assegnati, torna a 'ricevuto'
-      const rimaste = nuoveAssegnazioni.filter(a => a.racconto_id === racconto_id)
-      if (rimaste.length === 0) {
-        await supabase.from('racconti').update({ stato: 'ricevuto' }).eq('id', racconto_id)
-        setRacconti(prev => prev.map(r => r.id === racconto_id ? { ...r, stato: 'ricevuto' } : r))
+    const esiste = assegnazioniEsistenti.some(
+      a => a.racconto_id === racconto_id && a.giurato_id === giurato_id
+    )
+    if (esiste) {
+      const { error } = await supabase
+        .from('assegnazioni')
+        .delete()
+        .eq('racconto_id', racconto_id)
+        .eq('giurato_id', giurato_id)
+      if (!error) {
+        const nuoveAssegnazioni = assegnazioniEsistenti.filter(
+          a => !(a.racconto_id === racconto_id && a.giurato_id === giurato_id)
+        )
+        setAssegnazioniEsistenti(nuoveAssegnazioni)
+        const rimaste = nuoveAssegnazioni.filter(a => a.racconto_id === racconto_id)
+        if (rimaste.length === 0) {
+          await supabase.from('racconti').update({ stato: 'ricevuto' }).eq('id', racconto_id)
+          setRacconti(prev => prev.map(r => r.id === racconto_id ? { ...r, stato: 'ricevuto' } : r))
+        }
       }
-    }
-  } else {
-    const { data, error } = await supabase
-      .from('assegnazioni')
-      .insert({ racconto_id, giurato_id, fase })
-      .select()
-      .single()
-    if (!error && data) {
-      setAssegnazioniEsistenti(prev => [...prev, data])
-
-      // Se è il primo giurato assegnato, passa a 'in_valutazione'
-      const racconto = racconti.find(r => r.id === racconto_id)
-      if (racconto?.stato === 'ricevuto') {
-        await supabase.from('racconti').update({ stato: 'in_valutazione' }).eq('id', racconto_id)
-        setRacconti(prev => prev.map(r => r.id === racconto_id ? { ...r, stato: 'in_valutazione' } : r))
+    } else {
+      const { data, error } = await supabase
+        .from('assegnazioni')
+        .insert({ racconto_id, giurato_id, fase })
+        .select()
+        .single()
+      if (!error && data) {
+        setAssegnazioniEsistenti(prev => [...prev, data])
+        const racconto = racconti.find(r => r.id === racconto_id)
+        if (racconto?.stato === 'ricevuto') {
+          await supabase.from('racconti').update({ stato: 'in_valutazione' }).eq('id', racconto_id)
+          setRacconti(prev => prev.map(r => r.id === racconto_id ? { ...r, stato: 'in_valutazione' } : r))
+        }
       }
     }
   }
-}
 
   async function aggiungiGiurato() {
     setAggiungendo(true)
@@ -120,10 +126,7 @@ export default function DashboardPage() {
       return
     }
 
-    setGiurati(prev => [...prev, {
-      id: data.user.id,
-      ...nuovoGiurato,
-    }])
+    setGiurati(prev => [...prev, { id: data.user.id, ...nuovoGiurato }])
     setNuovoGiurato({ nome: '', cognome: '', email: '', tipo_giurato: 'lettore' })
     setMessaggioGiurato('✓ Invito inviato via email al giurato.')
     setAggiungendo(false)
@@ -162,6 +165,14 @@ export default function DashboardPage() {
     },
   }
 
+  const criteri = [
+    { key: 'a', label: 'Incipit' },
+    { key: 'b', label: 'Svolta narrativa' },
+    { key: 'c', label: 'Climax' },
+    { key: 'd', label: 'Scioglimento' },
+    { key: 'e', label: 'Giudizio complessivo' },
+  ]
+
   if (caricamento) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <p className="text-gray-400 text-sm">Caricamento...</p>
@@ -178,9 +189,7 @@ export default function DashboardPage() {
               key={s}
               onClick={() => setSezione(s)}
               className={`px-4 py-1.5 rounded-lg text-sm capitalize transition-colors ${
-                sezione === s
-                  ? 'bg-gray-800 text-white'
-                  : 'text-gray-500 hover:bg-gray-100'
+                sezione === s ? 'bg-gray-800 text-white' : 'text-gray-500 hover:bg-gray-100'
               }`}
             >
               {s}
@@ -281,37 +290,74 @@ export default function DashboardPage() {
         {sezione === 'risultati' && (
           <div className="space-y-3">
             <p className="text-sm text-gray-400 mb-4">Medie per racconto (ordinate per punteggio)</p>
-            {medie.map((m, i) => (
-              <div key={m.racconto_id} className="bg-white rounded-xl border border-gray-200 p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-gray-300 font-medium w-5">{i + 1}</span>
-                    <p className="text-sm font-medium text-gray-800">{m.titolo}</p>
+            {medie.map((m, i) => {
+              const valRacconto = valutazioni.filter(
+                v => v.assegnazioni?.racconto_id === m.racconto_id
+              )
+              return (
+                <div key={m.racconto_id} className="bg-white rounded-xl border border-gray-200 p-5">
+                  {/* Intestazione */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-gray-300 font-medium w-5">{i + 1}</span>
+                      <p className="text-sm font-medium text-gray-800">{m.titolo}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-xs px-3 py-1 rounded-full ${statoBadge[m.stato]}`}>{m.stato}</span>
+                      {m.media_complessiva && (
+                        <span className="text-lg font-semibold text-gray-800">{m.media_complessiva}</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`text-xs px-3 py-1 rounded-full ${statoBadge[m.stato]}`}>{m.stato}</span>
-                    {m.media_complessiva && (
-                      <span className="text-lg font-semibold text-gray-800">
-                        {m.media_complessiva}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                {m.media_complessiva && (
-                  <div className="grid grid-cols-5 gap-2 mt-2">
-                    {['a', 'b', 'c', 'd', 'e'].map(k => (
-                      <div key={k} className="text-center">
-                        <p className="text-xs text-gray-400 uppercase">{k}</p>
-                        <p className="text-sm font-medium text-gray-700">{m[`media_${k}`]}</p>
+
+                  {/* Valutazioni per giurato */}
+                  {valRacconto.length > 0 && (
+                    <div className="mb-4">
+                      <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Valutazioni giurati</p>
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-7 gap-2 text-[10px] text-gray-400 uppercase px-2">
+                          <span className="col-span-2">Giurato</span>
+                          {criteri.map(c => (
+                            <span key={c.key} className="text-center">{c.label}</span>
+                          ))}
+                        </div>
+                        {valRacconto.map(v => (
+                          <div key={v.id} className="grid grid-cols-7 gap-2 bg-gray-50 rounded-lg px-2 py-1.5 text-xs">
+                            <span className="col-span-2 text-gray-600 truncate">
+                              {v.assegnazioni?.profiles?.nome} {v.assegnazioni?.profiles?.cognome}
+                            </span>
+                            {criteri.map(c => (
+                              <span key={c.key} className="text-center text-gray-700 font-medium">
+                                {v[`criterio_${c.key}`]}
+                              </span>
+                            ))}
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                )}
-                {!m.media_complessiva && (
-                  <p className="text-xs text-gray-300">Nessuna valutazione ancora</p>
-                )}
-              </div>
-            ))}
+                    </div>
+                  )}
+
+                  {/* Medie per criterio */}
+                  {m.media_complessiva && (
+                    <div>
+                      <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Medie</p>
+                      <div className="grid grid-cols-5 gap-2">
+                        {criteri.map(c => (
+                          <div key={c.key} className="text-center bg-gray-50 rounded-lg py-2">
+                            <p className="text-[10px] text-gray-400 mb-1">{c.label}</p>
+                            <p className="text-sm font-semibold text-gray-700">{m[`media_${c.key}`]}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {!m.media_complessiva && (
+                    <p className="text-xs text-gray-300">Nessuna valutazione ancora</p>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
 
