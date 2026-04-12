@@ -263,6 +263,12 @@ export default function GiuratoPage() {
               />
             </div>
 
+            <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 mb-4">
+  <p className="text-xs text-gray-500">
+    ⚠️ Attenzione: una volta inviata, la valutazione non potrà essere modificata.
+  </p>
+</div>
+
             <button
               onClick={() => setMostraConferma(true)}
               disabled={salvando}
