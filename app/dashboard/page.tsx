@@ -230,7 +230,7 @@ export default function DashboardPage() {
                   </span>
                 </div>
                 <div className="flex gap-2 mt-4 flex-wrap">
-                  {['ricevuto', 'in_valutazione', 'promosso', 'finalista', 'eliminato', 'vincitore'].map(s => (
+                  {['ricevuto', 'in_valutazione', 'valutato', 'promosso', 'finalista', 'eliminato', 'vincitore'].map(s => (
                     <button
                       key={s}
                       onClick={() => aggiornaStato(r.id, s)}
@@ -297,7 +297,6 @@ export default function DashboardPage() {
               )
               return (
                 <div key={m.racconto_id} className="bg-white rounded-xl border border-gray-200 p-5">
-                  {/* Intestazione */}
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-gray-300 font-medium w-5">{i + 1}</span>
@@ -311,7 +310,6 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* Valutazioni per giurato */}
                   {valRacconto.length > 0 && (
                     <div className="mb-4">
                       <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Valutazioni giurati</p>
@@ -338,7 +336,6 @@ export default function DashboardPage() {
                     </div>
                   )}
 
-                  {/* Medie per criterio */}
                   {m.media_complessiva && (
                     <div>
                       <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Medie</p>
