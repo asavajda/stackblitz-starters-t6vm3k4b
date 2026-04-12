@@ -47,16 +47,50 @@ export default function GiuratoPage() {
   }
 
   async function salvaValutazione() {
-    setSalvando(true)
-    const { error } = await supabase.from('valutazioni').insert({
-      assegnazione_id: valutazioneAperta.assegnazione_id,
-      criterio_a: voti.a,
-      criterio_b: voti.b,
-      criterio_c: voti.c,
-      criterio_d: voti.d,
-      criterio_e: voti.e,
-      note,
-    })
+  setSalvando(true)
+  const { error } = await supabase.from('valutazioni').insert({
+    assegnazione_id: valutazioneAperta.assegnazione_id,
+    criterio_a: voti.a,
+    criterio_b: voti.b,
+    criterio_c: voti.c,
+    criterio_d: voti.d,
+    criterio_e: voti.e,
+    note,
+  })
+
+  if (!error) {
+    await supabase
+      .from('assegnazioni')
+      .update({ completata: true })
+      .eq('id', valutazioneAperta.assegnazione_id)
+
+    // Controlla se tutte le assegnazioni del racconto sono completate
+    const { data: tutteAssegnazioni } = await supabase
+      .from('assegnazioni')
+      .select('completata')
+      .eq('racconto_id', valutazioneAperta.racconto_id)
+
+    const tutteCompletate =
+      tutteAssegnazioni &&
+      tutteAssegnazioni.length >= 2 &&
+      tutteAssegnazioni.every(a => a.completata === true)
+
+    if (tutteCompletate) {
+      await supabase
+        .from('racconti')
+        .update({ stato: 'valutato' })
+        .eq('id', valutazioneAperta.racconto_id)
+    }
+
+    setAssegnazioni(prev => prev.map(a =>
+      a.assegnazione_id === valutazioneAperta.assegnazione_id
+        ? { ...a, completata: true }
+        : a
+    ))
+    setValutazioneAperta(null)
+  }
+  setSalvando(false)
+}
 
     if (!error) {
       await supabase
