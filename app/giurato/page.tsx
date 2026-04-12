@@ -48,6 +48,8 @@ export default function GiuratoPage() {
 
   async function salvaValutazione() {
     setSalvando(true)
+    console.log('valutazioneAperta:', valutazioneAperta)
+  console.log('racconto_id:', valutazioneAperta.racconto_id)
     const { error } = await supabase.from('valutazioni').insert({
       assegnazione_id: valutazioneAperta.assegnazione_id,
       criterio_a: voti.a,
