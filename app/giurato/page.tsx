@@ -36,6 +36,8 @@ export default function GiuratoPage() {
   }, [])
 
   async function apriRacconto(assegnazione: any) {
+  console.log('assegnazione.completata:', assegnazione.completata)
+  console.log('tipo:', typeof assegnazione.completata)
     if (assegnazione.tipo_invio === 'file') {
       const { data } = await supabase.storage
         .from('racconti-files')
