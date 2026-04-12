@@ -61,31 +61,46 @@ export default function DashboardPage() {
   }
 
   async function assegna(racconto_id: string, giurato_id: string, fase: string) {
-    const esiste = assegnazioniEsistenti.some(
-      a => a.racconto_id === racconto_id && a.giurato_id === giurato_id
-    )
-    if (esiste) {
-      const { error } = await supabase
-        .from('assegnazioni')
-        .delete()
-        .eq('racconto_id', racconto_id)
-        .eq('giurato_id', giurato_id)
-      if (!error) {
-        setAssegnazioniEsistenti(prev =>
-          prev.filter(a => !(a.racconto_id === racconto_id && a.giurato_id === giurato_id))
-        )
+  const esiste = assegnazioniEsistenti.some(
+    a => a.racconto_id === racconto_id && a.giurato_id === giurato_id
+  )
+  if (esiste) {
+    const { error } = await supabase
+      .from('assegnazioni')
+      .delete()
+      .eq('racconto_id', racconto_id)
+      .eq('giurato_id', giurato_id)
+    if (!error) {
+      const nuoveAssegnazioni = assegnazioniEsistenti.filter(
+        a => !(a.racconto_id === racconto_id && a.giurato_id === giurato_id)
+      )
+      setAssegnazioniEsistenti(nuoveAssegnazioni)
+
+      // Se non ci sono più giurati assegnati, torna a 'ricevuto'
+      const rimaste = nuoveAssegnazioni.filter(a => a.racconto_id === racconto_id)
+      if (rimaste.length === 0) {
+        await supabase.from('racconti').update({ stato: 'ricevuto' }).eq('id', racconto_id)
+        setRacconti(prev => prev.map(r => r.id === racconto_id ? { ...r, stato: 'ricevuto' } : r))
       }
-    } else {
-      const { data, error } = await supabase
-        .from('assegnazioni')
-        .insert({ racconto_id, giurato_id, fase })
-        .select()
-        .single()
-      if (!error && data) {
-        setAssegnazioniEsistenti(prev => [...prev, data])
+    }
+  } else {
+    const { data, error } = await supabase
+      .from('assegnazioni')
+      .insert({ racconto_id, giurato_id, fase })
+      .select()
+      .single()
+    if (!error && data) {
+      setAssegnazioniEsistenti(prev => [...prev, data])
+
+      // Se è il primo giurato assegnato, passa a 'in_valutazione'
+      const racconto = racconti.find(r => r.id === racconto_id)
+      if (racconto?.stato === 'ricevuto') {
+        await supabase.from('racconti').update({ stato: 'in_valutazione' }).eq('id', racconto_id)
+        setRacconti(prev => prev.map(r => r.id === racconto_id ? { ...r, stato: 'in_valutazione' } : r))
       }
     }
   }
+}
 
   async function aggiungiGiurato() {
     setAggiungendo(true)
