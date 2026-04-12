@@ -48,8 +48,7 @@ export default function GiuratoPage() {
 
   async function salvaValutazione() {
     setSalvando(true)
-    console.log('valutazioneAperta:', valutazioneAperta)
-  console.log('racconto_id:', valutazioneAperta.racconto_id)
+
     const { error } = await supabase.from('valutazioni').insert({
       assegnazione_id: valutazioneAperta.assegnazione_id,
       criterio_a: voti.a,
@@ -60,40 +59,44 @@ export default function GiuratoPage() {
       note,
     })
 
-    if (!error) {
-      await supabase
-        .from('assegnazioni')
-        .update({ completata: true })
-        .eq('id', valutazioneAperta.assegnazione_id)
-
-     const { data: tutteAssegnazioni, error: errAssegnazioni } = await supabase
-  .from('assegnazioni')
-  .select('completata')
-  .eq('racconto_id', valutazioneAperta.racconto_id)
-
-console.log('tutteAssegnazioni:', tutteAssegnazioni)
-console.log('errAssegnazioni:', errAssegnazioni)
-console.log('tutteCompletate:', tutteAssegnazioni?.every(a => a.completata === true))
-
-      const tutteCompletate =
-        tutteAssegnazioni &&
-        tutteAssegnazioni.length >= 2 &&
-        tutteAssegnazioni.every(a => a.completata === true)
-
-      if (tutteCompletate) {
-        await supabase
-          .from('racconti')
-          .update({ stato: 'valutato' })
-          .eq('id', valutazioneAperta.racconto_id)
+    if (error) {
+      if (error.code === '23505') {
+        alert('Hai già valutato questo racconto. La valutazione non è modificabile.')
+      } else {
+        alert(`Errore durante il salvataggio: ${error.message}`)
       }
-
-      setAssegnazioni(prev => prev.map(a =>
-        a.assegnazione_id === valutazioneAperta.assegnazione_id
-          ? { ...a, completata: true }
-          : a
-      ))
-      setValutazioneAperta(null)
+      setSalvando(false)
+      return
     }
+
+    await supabase
+      .from('assegnazioni')
+      .update({ completata: true })
+      .eq('id', valutazioneAperta.assegnazione_id)
+
+    const { data: tutteAssegnazioni } = await supabase
+      .from('assegnazioni')
+      .select('completata')
+      .eq('racconto_id', valutazioneAperta.racconto_id)
+
+    const tutteCompletate =
+      tutteAssegnazioni &&
+      tutteAssegnazioni.length >= 2 &&
+      tutteAssegnazioni.every(a => a.completata === true)
+
+    if (tutteCompletate) {
+      await supabase
+        .from('racconti')
+        .update({ stato: 'valutato' })
+        .eq('id', valutazioneAperta.racconto_id)
+    }
+
+    setAssegnazioni(prev => prev.map(a =>
+      a.assegnazione_id === valutazioneAperta.assegnazione_id
+        ? { ...a, completata: true }
+        : a
+    ))
+    setValutazioneAperta(null)
     setSalvando(false)
   }
 
@@ -133,46 +136,64 @@ console.log('tutteCompletate:', tutteAssegnazioni?.every(a => a.completata === t
           <p className="text-sm text-gray-500 mb-6">Il file si è aperto in una nuova scheda.</p>
         )}
 
-        <div className="space-y-4 mb-6">
-          {criteri.map(c => (
-            <div key={c.key} className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 w-40">{c.label}</span>
-              <div className="flex gap-2">
-                {[1, 2, 3, 4, 5].map(n => (
-                  <button
-                    key={n}
-                    onClick={() => setVoti(prev => ({ ...prev, [c.key]: n }))}
-                    className={`w-8 h-8 rounded-full text-sm font-medium transition-colors ${
-                      voti[c.key as keyof typeof voti] === n
-                        ? 'bg-gray-800 text-white'
-                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                    }`}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
+        {/* Già valutato */}
+        {valutazioneAperta.completata ? (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+            <p className="text-sm text-amber-700 font-medium">Valutazione già inviata</p>
+            <p className="text-xs text-amber-600 mt-0.5">
+              Hai già valutato questo racconto. Le valutazioni non sono modificabili dopo l'invio.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="space-y-4 mb-6">
+              {criteri.map(c => (
+                <div key={c.key} className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600 w-40">{c.label}</span>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map(n => (
+                      <button
+                        key={n}
+                        onClick={() => setVoti(prev => ({ ...prev, [c.key]: n }))}
+                        className={`w-8 h-8 rounded-full text-sm font-medium transition-colors ${
+                          voti[c.key as keyof typeof voti] === n
+                            ? 'bg-gray-800 text-white'
+                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        }`}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        <div className="mb-6">
-          <label className="block text-sm text-gray-600 mb-1">Note (opzionale)</label>
-          <textarea
-            value={note}
-            onChange={e => setNote(e.target.value)}
-            rows={3}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 resize-none"
-          />
-        </div>
+            <div className="mb-6">
+              <label className="block text-sm text-gray-600 mb-1">Note (opzionale)</label>
+              <textarea
+                value={note}
+                onChange={e => setNote(e.target.value)}
+                rows={3}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 resize-none"
+              />
+            </div>
 
-        <button
-          onClick={salvaValutazione}
-          disabled={salvando}
-          className="w-full bg-gray-800 text-white rounded-lg py-2 text-sm font-medium hover:bg-gray-700 disabled:opacity-50"
-        >
-          {salvando ? 'Salvataggio...' : 'Salva valutazione'}
-        </button>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 mb-4">
+              <p className="text-xs text-gray-500">
+                ⚠️ Attenzione: una volta inviata, la valutazione non potrà essere modificata.
+              </p>
+            </div>
+
+            <button
+              onClick={salvaValutazione}
+              disabled={salvando}
+              className="w-full bg-gray-800 text-white rounded-lg py-2 text-sm font-medium hover:bg-gray-700 disabled:opacity-50"
+            >
+              {salvando ? 'Salvataggio...' : 'Salva valutazione'}
+            </button>
+          </>
+        )}
       </div>
     </div>
   )
