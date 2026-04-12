@@ -74,13 +74,13 @@ export default function GiuratoPage() {
     setSalvando(false)
   }
 
-  const criteri = [
-    { key: 'a', label: 'Originalità' },
-    { key: 'b', label: 'Stile' },
-    { key: 'c', label: 'Struttura narrativa' },
-    { key: 'd', label: 'Coerenza' },
-    { key: 'e', label: 'Impatto emotivo' },
-  ]
+const criteri = [
+  { key: 'a', label: 'Incipit' },
+  { key: 'b', label: 'Svolta narrativa' },
+  { key: 'c', label: 'Climax' },
+  { key: 'd', label: 'Scioglimento' },
+  { key: 'e', label: 'Giudizio complessivo' },
+]
 
   if (caricamento) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
