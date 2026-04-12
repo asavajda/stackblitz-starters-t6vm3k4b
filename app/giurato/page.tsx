@@ -41,12 +41,15 @@ export default function GiuratoPage() {
 
   async function apriRacconto(assegnazione: any) {
     if (assegnazione.tipo_invio === 'file') {
-      const { data } = await supabase.storage
-        .from('racconti-files')
-        .createSignedUrl(assegnazione.file_path, 3600)
-      if (data?.signedUrl) window.open(data.signedUrl, '_blank')
-    }
-
+  const { data } = await supabase.storage
+    .from('racconti-files')
+    .createSignedUrl(assegnazione.file_path, 3600)
+  if (data?.signedUrl) {
+    // Usa Google Docs viewer per aprire il file nel browser
+    const googleDocsUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(data.signedUrl)}`
+    window.open(googleDocsUrl, '_blank')
+  }
+}
     if (assegnazione.tipo_invio === 'testo') {
       window.open(`/racconto/${assegnazione.racconto_id}`, '_blank')
     }
