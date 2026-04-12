@@ -41,15 +41,15 @@ export default function GiuratoPage() {
 
   async function apriRacconto(assegnazione: any) {
     if (assegnazione.tipo_invio === 'file') {
-  const { data } = await supabase.storage
-    .from('racconti-files')
-    .createSignedUrl(assegnazione.file_path, 3600)
-  if (data?.signedUrl) {
-    // Usa Google Docs viewer per aprire il file nel browser
-    const googleDocsUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(data.signedUrl)}`
-    window.open(googleDocsUrl, '_blank')
-  }
-}
+      const { data } = await supabase.storage
+        .from('racconti-files')
+        .createSignedUrl(assegnazione.file_path, 3600)
+      if (data?.signedUrl) {
+        const googleDocsUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(data.signedUrl)}`
+        window.open(googleDocsUrl, '_blank')
+      }
+    }
+
     if (assegnazione.tipo_invio === 'testo') {
       window.open(`/racconto/${assegnazione.racconto_id}`, '_blank')
     }
@@ -93,30 +93,14 @@ export default function GiuratoPage() {
       return
     }
 
-    await supabase
-  .from('assegnazioni')
-  .update({ completata: true })
-  .eq('id', valutazioneAperta.assegnazione_id)
-
-// Aspetta che l'update sia completato prima di leggere
-const { data: tutteAssegnazioni } = await supabase
-  .from('assegnazioni')
-  .select('id, completata')
-  .eq('racconto_id', valutazioneAperta.racconto_id)
-
-console.log('tutteAssegnazioni dopo update:', tutteAssegnazioni)
-
-const totale = tutteAssegnazioni?.length ?? 0
-const completate = tutteAssegnazioni?.filter(a => a.completata === true).length ?? 0
-
-console.log(`completate: ${completate} / ${totale}`)
-
-if (totale >= 2 && completate === totale) {
-  await supabase
-    .from('racconti')
-    .update({ stato: 'valutato' })
-    .eq('id', valutazioneAperta.racconto_id)
-}
+    await fetch('/api/completa-valutazione', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        assegnazione_id: valutazioneAperta.assegnazione_id,
+        racconto_id: valutazioneAperta.racconto_id,
+      }),
+    })
 
     const { data: assegnazioniAggiornate } = await supabase
       .from('assegnazioni_giurato')
@@ -270,10 +254,10 @@ if (totale >= 2 && completate === totale) {
             </div>
 
             <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 mb-4">
-  <p className="text-xs text-gray-500">
-    ⚠️ Attenzione: una volta inviata, la valutazione non potrà essere modificata.
-  </p>
-</div>
+              <p className="text-xs text-gray-500">
+                ⚠️ Attenzione: una volta inviata, la valutazione non potrà essere modificata.
+              </p>
+            </div>
 
             <button
               onClick={() => setMostraConferma(true)}
