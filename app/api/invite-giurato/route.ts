@@ -26,10 +26,26 @@ const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, 
   },
 })
 
-    if (error) {
-      console.log('Supabase error:', error.message, error.status)
-      return NextResponse.json({ error: error.message }, { status: 400 })
-    }
+  if (error) {
+  console.log('Supabase error:', error.message, error.status)
+
+  const errorMessages: Record<string, string> = {
+    'A user with this email address has already been registered':
+      'Un utente con questa email è già registrato',
+    'Unable to validate email address: invalid format':
+      'Formato email non valido',
+    'Email rate limit exceeded':
+      'Troppe richieste, riprova tra qualche minuto',
+    'User not allowed':
+      'Operazione non consentita',
+  }
+
+  const messaggioItaliano =
+    errorMessages[error.message] ??
+    `Errore durante l'invio dell'invito: ${error.message}`
+
+  return NextResponse.json({ error: messaggioItaliano }, { status: 400 })
+}
 
     await supabaseAdmin.from('profiles').upsert({
       id: data.user.id,
