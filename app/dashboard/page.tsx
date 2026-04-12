@@ -129,6 +129,24 @@ export default function DashboardPage() {
     vincitore: 'bg-green-50 text-green-600',
   }
 
+  const tipoConfig: Record<string, { badge: string, attivo: string, label: string }> = {
+    interno: {
+      badge:  'bg-purple-100 text-purple-700',
+      attivo: 'bg-purple-50 border-purple-400 text-purple-800',
+      label:  'INT',
+    },
+    lettore: {
+      badge:  'bg-blue-100 text-blue-700',
+      attivo: 'bg-blue-50 border-blue-400 text-blue-800',
+      label:  'LET',
+    },
+    qualita: {
+      badge:  'bg-amber-100 text-amber-700',
+      attivo: 'bg-amber-50 border-amber-400 text-amber-800',
+      label:  'QUA',
+    },
+  }
+
   if (caricamento) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <p className="text-gray-400 text-sm">Caricamento...</p>
@@ -208,10 +226,7 @@ export default function DashboardPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between mb-4">
               <p className="text-sm text-gray-400">Assegna racconti ai giurati</p>
-              <button
-                onClick={carica}
-                className="text-xs text-gray-400 hover:text-gray-600"
-              >
+              <button onClick={carica} className="text-xs text-gray-400 hover:text-gray-600">
                 ↻ Aggiorna
               </button>
             </div>
@@ -225,16 +240,18 @@ export default function DashboardPage() {
                       const assegnato = assegnazioniEsistenti.some(
                         a => a.racconto_id === r.id && a.giurato_id === g.id
                       )
+                      const cfg = tipoConfig[g.tipo_giurato] || tipoConfig['lettore']
                       return (
                         <button
                           key={g.id}
                           onClick={() => assegna(r.id, g.id, r.stato === 'finalista' ? 'finale' : 'preliminare')}
-                          className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
-                            assegnato
-                              ? 'bg-gray-800 text-white border-gray-800'
-                              : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                          className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                            assegnato ? cfg.attivo : 'border-gray-200 text-gray-600 hover:bg-gray-50'
                           }`}
                         >
+                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cfg.badge}`}>
+                            {cfg.label}
+                          </span>
                           {assegnato ? '✓ ' : ''}{g.nome} {g.cognome}
                         </button>
                       )
@@ -349,23 +366,23 @@ export default function DashboardPage() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-400">{giurati.length} giurati</p>
-                <button
-                  onClick={carica}
-                  className="text-xs text-gray-400 hover:text-gray-600"
-                >
+                <button onClick={carica} className="text-xs text-gray-400 hover:text-gray-600">
                   ↻ Aggiorna lista
                 </button>
               </div>
-              {giurati.map(g => (
-                <div key={g.id} className="bg-white rounded-xl border border-gray-200 p-5 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">{g.nome} {g.cognome}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{g.email}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-600">
-                      {g.tipo_giurato || 'lettore'}
-                    </span>
+              {giurati.map(g => {
+                const cfg = tipoConfig[g.tipo_giurato] || tipoConfig['lettore']
+                return (
+                  <div key={g.id} className="bg-white rounded-xl border border-gray-200 p-5 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cfg.badge}`}>
+                        {cfg.label}
+                      </span>
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">{g.nome} {g.cognome}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{g.email}</p>
+                      </div>
+                    </div>
                     <button
                       onClick={() => eliminaGiurato(g.id)}
                       className="text-xs px-3 py-1 rounded-lg border border-red-200 text-red-500 hover:bg-red-50"
@@ -373,8 +390,8 @@ export default function DashboardPage() {
                       Elimina
                     </button>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}
