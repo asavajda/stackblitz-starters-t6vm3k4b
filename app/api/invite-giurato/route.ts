@@ -17,14 +17,14 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/login`,
-      data: {
-        ruolo: 'giurato',
-        nome,
-        cognome,
-      },
-    })
+const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+  redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/set-password`,
+  data: {
+    ruolo: 'giurato',
+    nome,
+    cognome,
+  },
+})
 
     if (error) {
       console.log('Supabase error:', error.message, error.status)
