@@ -18,11 +18,14 @@ export default function GiuratoPage() {
   const [voti, setVoti] = useState({ a: 3, b: 3, c: 3, d: 3, e: 3 })
   const [note, setNote] = useState('')
   const [salvando, setSalvando] = useState(false)
+  const [utenteId, setUtenteId] = useState<string>('')
 
   useEffect(() => {
     async function carica() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
+
+      setUtenteId(user.id)
 
       const { data } = await supabase
         .from('assegnazioni_giurato')
@@ -36,8 +39,6 @@ export default function GiuratoPage() {
   }, [])
 
   async function apriRacconto(assegnazione: any) {
-  console.log('assegnazione.completata:', assegnazione.completata)
-  console.log('tipo:', typeof assegnazione.completata)
     if (assegnazione.tipo_invio === 'file') {
       const { data } = await supabase.storage
         .from('racconti-files')
@@ -45,7 +46,6 @@ export default function GiuratoPage() {
       if (data?.signedUrl) window.open(data.signedUrl, '_blank')
     }
 
-    // Se già valutato, carica i voti esistenti
     if (assegnazione.completata) {
       const { data: valEsistente } = await supabase
         .from('valutazioni')
@@ -107,11 +107,13 @@ export default function GiuratoPage() {
         .eq('id', valutazioneAperta.racconto_id)
     }
 
-    setAssegnazioni(prev => prev.map(a =>
-      a.assegnazione_id === valutazioneAperta.assegnazione_id
-        ? { ...a, completata: true }
-        : a
-    ))
+    // Ricarica le assegnazioni aggiornate dal database
+    const { data: assegnazioniAggiornate } = await supabase
+      .from('assegnazioni_giurato')
+      .select('*')
+      .eq('giurato_id', utenteId)
+
+    setAssegnazioni(assegnazioniAggiornate || [])
     setValutazioneAperta(null)
     setSalvando(false)
   }
