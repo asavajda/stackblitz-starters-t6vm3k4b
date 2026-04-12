@@ -5,14 +5,15 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
-  'https://kgxhjcdssbdgolanidzh.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtneGhqY2Rzc2JkZ29sYW5pZHpoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5MjYxMDIsImV4cCI6MjA5MTUwMjEwMn0.oYce_FKMUq4aP3IzIP5Nz4Lquuv2Me5JPOuGrAZKjTU'
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
 export default function DashboardPage() {
   const router = useRouter()
   const [racconti, setRacconti] = useState<any[]>([])
   const [giurati, setGiurati] = useState<any[]>([])
+  const [assegnazioniEsistenti, setAssegnazioniEsistenti] = useState<any[]>([])
   const [caricamento, setCaricamento] = useState(true)
   const [sezione, setSezione] = useState<'racconti' | 'assegnazioni' | 'risultati' | 'giurati'>('racconti')
   const [medie, setMedie] = useState<any[]>([])
@@ -25,32 +26,33 @@ export default function DashboardPage() {
   const [aggiungendo, setAggiungendo] = useState(false)
   const [messaggioGiurato, setMessaggioGiurato] = useState('')
 
-  useEffect(() => {
-    async function carica() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
+  async function carica() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { router.push('/login'); return }
 
-      const { data: profilo } = await supabase
-        .from('profiles')
-        .select('ruolo')
-        .eq('id', user.id)
-        .single()
+    const { data: profilo } = await supabase
+      .from('profiles')
+      .select('ruolo')
+      .eq('id', user.id)
+      .single()
 
-      if (profilo?.ruolo !== 'admin') { router.push('/login'); return }
+    if (profilo?.ruolo !== 'admin') { router.push('/login'); return }
 
-      const [{ data: r }, { data: g }, { data: m }] = await Promise.all([
-        supabase.from('racconti').select('*, profiles(nome, cognome)').order('inviato_il', { ascending: false }),
-        supabase.from('profiles').select('*').eq('ruolo', 'giurato'),
-        supabase.from('medie_racconti').select('*').order('media_complessiva', { ascending: false }),
-      ])
+    const [{ data: r }, { data: g }, { data: m }, { data: a }] = await Promise.all([
+      supabase.from('racconti').select('*, profiles(nome, cognome)').order('inviato_il', { ascending: false }),
+      supabase.from('profiles').select('*').eq('ruolo', 'giurato'),
+      supabase.from('medie_racconti').select('*').order('media_complessiva', { ascending: false }),
+      supabase.from('assegnazioni').select('*'),
+    ])
 
-      setRacconti(r || [])
-      setGiurati(g || [])
-      setMedie(m || [])
-      setCaricamento(false)
-    }
-    carica()
-  }, [])
+    setRacconti(r || [])
+    setGiurati(g || [])
+    setMedie(m || [])
+    setAssegnazioniEsistenti(a || [])
+    setCaricamento(false)
+  }
+
+  useEffect(() => { carica() }, [])
 
   async function aggiornaStato(racconto_id: string, stato: string) {
     await supabase.from('racconti').update({ stato }).eq('id', racconto_id)
@@ -59,7 +61,30 @@ export default function DashboardPage() {
   }
 
   async function assegna(racconto_id: string, giurato_id: string, fase: string) {
-    await supabase.from('assegnazioni').insert({ racconto_id, giurato_id, fase })
+    const esiste = assegnazioniEsistenti.some(
+      a => a.racconto_id === racconto_id && a.giurato_id === giurato_id
+    )
+    if (esiste) {
+      const { error } = await supabase
+        .from('assegnazioni')
+        .delete()
+        .eq('racconto_id', racconto_id)
+        .eq('giurato_id', giurato_id)
+      if (!error) {
+        setAssegnazioniEsistenti(prev =>
+          prev.filter(a => !(a.racconto_id === racconto_id && a.giurato_id === giurato_id))
+        )
+      }
+    } else {
+      const { data, error } = await supabase
+        .from('assegnazioni')
+        .insert({ racconto_id, giurato_id, fase })
+        .select()
+        .single()
+      if (!error && data) {
+        setAssegnazioniEsistenti(prev => [...prev, data])
+      }
+    }
   }
 
   async function aggiungiGiurato() {
@@ -181,22 +206,39 @@ export default function DashboardPage() {
         {/* SEZIONE ASSEGNAZIONI */}
         {sezione === 'assegnazioni' && (
           <div className="space-y-4">
-            <p className="text-sm text-gray-400 mb-4">Assegna racconti ai giurati</p>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm text-gray-400">Assegna racconti ai giurati</p>
+              <button
+                onClick={carica}
+                className="text-xs text-gray-400 hover:text-gray-600"
+              >
+                ↻ Aggiorna
+              </button>
+            </div>
             {racconti
               .filter(r => ['ricevuto', 'in_valutazione', 'promosso', 'finalista'].includes(r.stato))
               .map(r => (
                 <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-5">
                   <p className="text-sm font-medium text-gray-800 mb-3">{r.titolo}</p>
                   <div className="flex flex-wrap gap-2">
-                    {giurati.map(g => (
-                      <button
-                        key={g.id}
-                        onClick={() => assegna(r.id, g.id, r.stato === 'finalista' ? 'finale' : 'preliminare')}
-                        className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
-                      >
-                        {g.nome} {g.cognome}
-                      </button>
-                    ))}
+                    {giurati.map(g => {
+                      const assegnato = assegnazioniEsistenti.some(
+                        a => a.racconto_id === r.id && a.giurato_id === g.id
+                      )
+                      return (
+                        <button
+                          key={g.id}
+                          onClick={() => assegna(r.id, g.id, r.stato === 'finalista' ? 'finale' : 'preliminare')}
+                          className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                            assegnato
+                              ? 'bg-gray-800 text-white border-gray-800'
+                              : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          {assegnato ? '✓ ' : ''}{g.nome} {g.cognome}
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
               ))}
@@ -247,7 +289,7 @@ export default function DashboardPage() {
             <div className="bg-white rounded-xl border border-gray-200 p-5">
               <p className="text-sm font-medium text-gray-800 mb-1">Aggiungi giurato</p>
               <p className="text-xs text-gray-400 mb-4">
-                Il giurato riceverà un magic link via email per accedere senza bisogno di password.
+                Il giurato riceverà un link via email per impostare la password e accedere.
               </p>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
@@ -300,12 +342,20 @@ export default function DashboardPage() {
                 disabled={aggiungendo || !nuovoGiurato.email || !nuovoGiurato.nome || !nuovoGiurato.cognome}
                 className="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-700 disabled:opacity-50"
               >
-                {aggiungendo ? 'Invio in corso...' : 'Invia magic link'}
+                {aggiungendo ? 'Invio in corso...' : 'Invia invito'}
               </button>
             </div>
 
             <div className="space-y-3">
-              <p className="text-sm text-gray-400">{giurati.length} giurati</p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-400">{giurati.length} giurati</p>
+                <button
+                  onClick={carica}
+                  className="text-xs text-gray-400 hover:text-gray-600"
+                >
+                  ↻ Aggiorna lista
+                </button>
+              </div>
               {giurati.map(g => (
                 <div key={g.id} className="bg-white rounded-xl border border-gray-200 p-5 flex items-center justify-between">
                   <div>
