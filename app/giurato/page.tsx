@@ -14,6 +14,7 @@ export default function GiuratoPage() {
   const [assegnazioni, setAssegnazioni] = useState<any[]>([])
   const [caricamento, setCaricamento] = useState(true)
   const [valutazioneAperta, setValutazioneAperta] = useState<any>(null)
+  const [votiEsistenti, setVotiEsistenti] = useState<any>(null)
   const [voti, setVoti] = useState({ a: 3, b: 3, c: 3, d: 3, e: 3 })
   const [note, setNote] = useState('')
   const [salvando, setSalvando] = useState(false)
@@ -41,9 +42,22 @@ export default function GiuratoPage() {
         .createSignedUrl(assegnazione.file_path, 3600)
       if (data?.signedUrl) window.open(data.signedUrl, '_blank')
     }
+
+    // Se già valutato, carica i voti esistenti
+    if (assegnazione.completata) {
+      const { data: valEsistente } = await supabase
+        .from('valutazioni')
+        .select('*')
+        .eq('assegnazione_id', assegnazione.assegnazione_id)
+        .single()
+      setVotiEsistenti(valEsistente)
+    } else {
+      setVotiEsistenti(null)
+      setVoti({ a: 3, b: 3, c: 3, d: 3, e: 3 })
+      setNote('')
+    }
+
     setValutazioneAperta(assegnazione)
-    setVoti({ a: 3, b: 3, c: 3, d: 3, e: 3 })
-    setNote('')
   }
 
   async function salvaValutazione() {
@@ -136,15 +150,49 @@ export default function GiuratoPage() {
           <p className="text-sm text-gray-500 mb-6">Il file si è aperto in una nuova scheda.</p>
         )}
 
-        {/* Già valutato */}
+        {/* Modalità visualizzazione — già valutato */}
         {valutazioneAperta.completata ? (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
-            <p className="text-sm text-amber-700 font-medium">Valutazione già inviata</p>
-            <p className="text-xs text-amber-600 mt-0.5">
-              Hai già valutato questo racconto. Le valutazioni non sono modificabili dopo l'invio.
-            </p>
-          </div>
+          <>
+            <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-6">
+              <p className="text-sm text-amber-700 font-medium">Valutazione già inviata</p>
+              <p className="text-xs text-amber-600 mt-0.5">
+                Le valutazioni non sono modificabili dopo l'invio.
+              </p>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              {criteri.map(c => (
+                <div key={c.key} className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600 w-40">{c.label}</span>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map(n => (
+                      <div
+                        key={n}
+                        className={`w-8 h-8 rounded-full text-sm font-medium flex items-center justify-center ${
+                          votiEsistenti?.[`criterio_${c.key}`] === n
+                            ? 'bg-gray-800 text-white'
+                            : 'bg-gray-100 text-gray-300'
+                        }`}
+                      >
+                        {n}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {votiEsistenti?.note && (
+              <div className="mb-6">
+                <p className="block text-sm text-gray-600 mb-1">Note</p>
+                <div className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-600 bg-gray-50">
+                  {votiEsistenti.note}
+                </div>
+              </div>
+            )}
+          </>
         ) : (
+          /* Modalità inserimento — non ancora valutato */
           <>
             <div className="space-y-4 mb-6">
               {criteri.map(c => (
@@ -215,18 +263,16 @@ export default function GiuratoPage() {
                   <p className="text-sm font-medium text-gray-800">{a.titolo}</p>
                   <p className="text-xs text-gray-400 mt-0.5">Fase: {a.fase}</p>
                 </div>
-                {a.completata ? (
-                  <span className="text-xs text-green-600 bg-green-50 px-3 py-1 rounded-full">
-                    Valutato
-                  </span>
-                ) : (
-                  <button
-                    onClick={() => apriRacconto(a)}
-                    className="text-sm bg-gray-800 text-white px-4 py-1.5 rounded-lg hover:bg-gray-700"
-                  >
-                    Valuta
-                  </button>
-                )}
+                <button
+                  onClick={() => apriRacconto(a)}
+                  className={`text-sm px-4 py-1.5 rounded-lg ${
+                    a.completata
+                      ? 'border border-gray-200 text-gray-600 hover:bg-gray-50'
+                      : 'bg-gray-800 text-white hover:bg-gray-700'
+                  }`}
+                >
+                  {a.completata ? 'Vedi valutazione' : 'Valuta'}
+                </button>
               </div>
             ))}
           </div>
