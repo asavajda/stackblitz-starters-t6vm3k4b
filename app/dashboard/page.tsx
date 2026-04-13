@@ -241,16 +241,26 @@ export default function DashboardPage() {
                   </span>
                 </div>
                 <div className="flex gap-2 mt-4 flex-wrap">
-                  {['ricevuto', 'in_valutazione', 'valutato', 'finalista', 'eliminato', 'vincitore'].map(s => (
-                    <button
-                      key={s}
-                      onClick={() => aggiornaStato(r.id, s)}
-                      disabled={r.stato === s}
-                      className="text-xs px-3 py-1 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30"
-                    >
-                      {formattaStato(s)}
-                    </button>
-                  ))}
+                  {['ricevuto', 'in_valutazione', 'valutato', 'finalista', 'eliminato', 'vincitore'].map(s => {
+                    const automatico = ['ricevuto', 'in_valutazione', 'valutato'].includes(s)
+                    return (
+                      <button
+                        key={s}
+                        onClick={() => !automatico && aggiornaStato(r.id, s)}
+                        disabled={r.stato === s || automatico}
+                        title={automatico ? 'Stato gestito automaticamente dal sistema' : ''}
+                        className={`text-xs px-3 py-1 rounded-lg border transition-colors ${
+                          r.stato === s
+                            ? 'border-gray-300 text-gray-400 opacity-30 cursor-not-allowed'
+                            : automatico
+                            ? 'border-gray-100 text-gray-300 cursor-not-allowed'
+                            : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                        }`}
+                      >
+                        {formattaStato(s)}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             ))}
