@@ -96,6 +96,9 @@ export default function DashboardPage() {
   }
 
   async function assegna(racconto_id: string, giurato_id: string, fase: string) {
+    const racconto = racconti.find(r => r.id === racconto_id)
+    if (['valutato', 'finalista', 'eliminato', 'vincitore'].includes(racconto?.stato)) return
+
     const esiste = assegnazioniEsistenti.some(
       a => a.racconto_id === racconto_id && a.giurato_id === giurato_id
     )
@@ -204,11 +207,8 @@ export default function DashboardPage() {
     { key: 'e', label: 'Giudizio complessivo' },
   ]
 
-  // Componente card racconto per la sezione assegnazioni
   function CardAssegnazione({ r }: { r: any }) {
-    const assegnati = giurati.filter(g =>
-      assegnazioniEsistenti.some(a => a.racconto_id === r.id && a.giurato_id === g.id)
-    )
+    const bloccato = ['valutato', 'finalista', 'eliminato', 'vincitore'].includes(r.stato)
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-5">
         <div className="flex items-center justify-between mb-3">
@@ -234,9 +234,12 @@ export default function DashboardPage() {
             return (
               <button
                 key={g.id}
-                onClick={() => assegna(r.id, g.id, r.stato === 'finalista' ? 'finale' : 'preliminare')}
+                onClick={() => !bloccato && assegna(r.id, g.id, r.stato === 'finalista' ? 'finale' : 'preliminare')}
+                disabled={bloccato}
                 className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border transition-colors ${
-                  assegnato ? cfg.attivo : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                  assegnato
+                    ? bloccato ? `${cfg.attivo} opacity-50 cursor-not-allowed` : cfg.attivo
+                    : bloccato ? 'border-gray-100 text-gray-300 cursor-not-allowed' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
                 }`}
               >
                 <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cfg.badge}`}>
