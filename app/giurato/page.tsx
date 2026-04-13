@@ -93,14 +93,16 @@ export default function GiuratoPage() {
       return
     }
 
-    await fetch('/api/completa-valutazione', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        assegnazione_id: valutazioneAperta.assegnazione_id,
-        racconto_id: valutazioneAperta.racconto_id,
-      }),
-    })
+    const res = await fetch('/api/completa-valutazione', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    assegnazione_id: valutazioneAperta.assegnazione_id,
+    racconto_id: valutazioneAperta.racconto_id,
+  }),
+})
+const resData = await res.json()
+console.log('risposta completa-valutazione:', resData)
 
     const { data: assegnazioniAggiornate } = await supabase
       .from('assegnazioni_giurato')
