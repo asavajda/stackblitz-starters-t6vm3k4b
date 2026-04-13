@@ -152,14 +152,14 @@ export default function DashboardPage() {
   }
 
   const statoBadge: Record<string, string> = {
-    ricevuto: 'bg-gray-100 text-gray-600',
-    in_valutazione: 'bg-blue-50 text-blue-600',
-    valutato: 'bg-teal-50 text-teal-600',
-    promosso: 'bg-yellow-50 text-yellow-600',
-    finalista: 'bg-purple-50 text-purple-600',
-    eliminato: 'bg-red-50 text-red-500',
-    vincitore: 'bg-green-50 text-green-600',
-  }
+  ricevuto: 'bg-gray-100 text-gray-600',
+  in_valutazione: 'bg-blue-50 text-blue-600',
+  valutato: 'bg-teal-50 text-teal-600',
+  promosso: 'bg-green-50 text-green-600',
+  finalista: 'bg-purple-50 text-purple-600',
+  eliminato: 'bg-red-50 text-red-500',
+  vincitore: 'bg-amber-100 text-amber-600',
+}
 
   const tipoConfig: Record<string, { badge: string, attivo: string, label: string }> = {
     interno: {
