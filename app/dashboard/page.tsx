@@ -194,7 +194,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
-        <img src="/logo_tohorror_dark.png" alt="TOHorror" className="h-8" />
+        <img src="/logo_tohorror_dark.png" alt="TOHorror" className="h-16" />
         <div className="flex gap-2">
           {(['racconti', 'assegnazioni', 'risultati', 'giurati'] as const).map(s => (
             <button
