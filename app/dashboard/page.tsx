@@ -185,6 +185,12 @@ export default function DashboardPage() {
     { key: 'e', label: 'Giudizio complessivo' },
   ]
 
+  const azioniManuali = [
+    { key: 'finalista', active: 'bg-purple-50 border-purple-300 text-purple-700' },
+    { key: 'eliminato', active: 'bg-red-50 border-red-300 text-red-600' },
+    { key: 'vincitore', active: 'bg-amber-50 border-amber-300 text-amber-700' },
+  ]
+
   if (caricamento) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <p className="text-gray-400 text-sm">Caricamento...</p>
@@ -236,31 +242,67 @@ export default function DashboardPage() {
                       Caricato il: {new Date(r.inviato_il).toLocaleDateString('it-IT')}
                     </p>
                   </div>
-                  <span className={`text-xs px-3 py-1 rounded-full shrink-0 ${statoBadge[r.stato]}`}>
-                    {formattaStato(r.stato)}
-                  </span>
                 </div>
-                <div className="flex gap-2 mt-4 flex-wrap">
-                  {['ricevuto', 'in_valutazione', 'valutato', 'finalista', 'eliminato', 'vincitore'].map(s => {
-                    const automatico = ['ricevuto', 'in_valutazione', 'valutato'].includes(s)
-                    return (
-                      <button
-                        key={s}
-                        onClick={() => !automatico && aggiornaStato(r.id, s)}
-                        disabled={r.stato === s || automatico}
-                        title={automatico ? 'Stato gestito automaticamente dal sistema' : ''}
-                        className={`text-xs px-3 py-1 rounded-lg border transition-colors ${
-                          r.stato === s
-                            ? 'border-gray-300 text-gray-400 opacity-30 cursor-not-allowed'
-                            : automatico
-                            ? 'border-gray-100 text-gray-300 cursor-not-allowed'
-                            : 'border-gray-200 text-gray-500 hover:bg-gray-50'
-                        }`}
-                      >
-                        {formattaStato(s)}
-                      </button>
-                    )
-                  })}
+
+                <div className="flex items-center justify-between mt-4 flex-wrap gap-3">
+                  {/* Step automatici */}
+                  <div className="flex items-center gap-2">
+                    {['ricevuto', 'in_valutazione', 'valutato'].map((s, i) => {
+                      const stati = ['ricevuto', 'in_valutazione', 'valutato']
+                      const indiceAttuale = stati.indexOf(r.stato) !== -1
+                        ? stati.indexOf(r.stato)
+                        : ['finalista', 'eliminato', 'vincitore'].includes(r.stato) ? 3 : 0
+                      const completato = i <= indiceAttuale - (stati.includes(r.stato) ? 0 : 0)
+
+                      const statiCompletati = ['ricevuto', 'in_valutazione', 'valutato', 'finalista', 'eliminato', 'vincitore']
+                      const indiceStatoAttuale = statiCompletati.indexOf(r.stato)
+                      const indiceStep = stati.indexOf(s)
+                      const stepCompletato = indiceStatoAttuale >= indiceStep
+
+                      return (
+                        <div key={s} className="flex items-center gap-2">
+                          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
+                            stepCompletato ? 'bg-teal-500 text-white' : 'bg-gray-100 text-gray-400'
+                          }`}>
+                            {stepCompletato && (
+                              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            )}
+                            {formattaStato(s)}
+                          </div>
+                          {i < 2 && <span className="text-gray-300 text-xs">›</span>}
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Divisore */}
+                  <div className="w-px h-6 bg-gray-200" />
+
+                  {/* Azioni manuali */}
+                  <div className="flex items-center gap-2">
+                    {azioniManuali.map(({ key, active }) => {
+                      const isSelected = r.stato === key
+                      const isEnabled = ['valutato', 'finalista', 'eliminato', 'vincitore'].includes(r.stato)
+                      return (
+                        <button
+                          key={key}
+                          onClick={() => isEnabled && aggiornaStato(r.id, key)}
+                          disabled={!isEnabled}
+                          className={`px-3 py-1 rounded-full text-xs border transition-colors ${
+                            isSelected
+                              ? active
+                              : isEnabled
+                              ? 'border-gray-200 text-gray-400 hover:bg-gray-50 cursor-pointer'
+                              : 'border-gray-100 text-gray-300 cursor-not-allowed'
+                          }`}
+                        >
+                          {formattaStato(key)}
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
               </div>
             ))}
