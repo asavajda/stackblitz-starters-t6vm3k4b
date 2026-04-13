@@ -10,11 +10,16 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const { assegnazione_id, racconto_id } = body
 
+  // Aggiorna assegnazione corrente
   const { error: errUpdate } = await supabaseAdmin
     .from('assegnazioni')
     .update({ completata: true })
     .eq('id', assegnazione_id)
 
+  // Piccolo ritardo per assicurarsi che l'update sia propagato
+  await new Promise(resolve => setTimeout(resolve, 500))
+
+  // Legge tutte le assegnazioni del racconto
   const { data: tutteAssegnazioni, error: errSelect } = await supabaseAdmin
     .from('assegnazioni')
     .select('id, completata')
