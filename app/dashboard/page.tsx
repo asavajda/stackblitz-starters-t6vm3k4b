@@ -28,7 +28,15 @@ export default function DashboardPage() {
   const [assegnazioniEsistenti, setAssegnazioniEsistenti] = useState<any[]>([])
   const [valutazioni, setValutazioni] = useState<any[]>([])
   const [caricamento, setCaricamento] = useState(true)
-  const [sezione, setSezione] = useState<'racconti' | 'assegnazioni' | 'risultati' | 'giurati'>('racconti')
+  const [sezione, setSezione] = useState<'racconti' | 'assegnazioni' | 'risultati' | 'giurati'>(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash.replace('#', '')
+      if (['racconti', 'assegnazioni', 'risultati', 'giurati'].includes(hash)) {
+        return hash as 'racconti' | 'assegnazioni' | 'risultati' | 'giurati'
+      }
+    }
+    return 'racconti'
+  })
   const [medie, setMedie] = useState<any[]>([])
   const [nuovoGiurato, setNuovoGiurato] = useState({
     nome: '',
@@ -38,6 +46,11 @@ export default function DashboardPage() {
   })
   const [aggiungendo, setAggiungendo] = useState(false)
   const [messaggioGiurato, setMessaggioGiurato] = useState('')
+
+  function cambiaSezione(s: 'racconti' | 'assegnazioni' | 'risultati' | 'giurati') {
+    setSezione(s)
+    window.location.hash = s
+  }
 
   async function carica() {
     const { data: { user } } = await supabase.auth.getUser()
@@ -159,6 +172,12 @@ export default function DashboardPage() {
     vincitore: 'bg-amber-100 text-amber-600',
   }
 
+  const coloriStepAuto: Record<string, string> = {
+    ricevuto: 'bg-gray-400 text-white',
+    in_valutazione: 'bg-blue-400 text-white',
+    valutato: 'bg-teal-500 text-white',
+  }
+
   const tipoConfig: Record<string, { badge: string, attivo: string, label: string }> = {
     interno: {
       badge: 'bg-purple-100 text-purple-700',
@@ -193,13 +212,35 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <style>{`
+        .pill-auto {
+          cursor: not-allowed;
+          position: relative;
+        }
+        .pill-auto:hover::after {
+          content: 'Gestito automaticamente dal sistema';
+          position: absolute;
+          bottom: calc(100% + 6px);
+          left: 50%;
+          transform: translateX(-50%);
+          background: #1f2937;
+          color: white;
+          font-size: 11px;
+          padding: 4px 8px;
+          border-radius: 6px;
+          white-space: nowrap;
+          pointer-events: none;
+          z-index: 10;
+        }
+      `}</style>
+
       <div className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
         <img src="/logo_tohorror_dark.png" alt="TOHorror" className="h-16" />
         <div className="flex gap-2">
           {(['racconti', 'assegnazioni', 'risultati', 'giurati'] as const).map(s => (
             <button
               key={s}
-              onClick={() => setSezione(s)}
+              onClick={() => cambiaSezione(s)}
               className={`px-4 py-1.5 rounded-lg text-sm capitalize transition-colors ${
                 sezione === s ? 'bg-gray-800 text-white' : 'text-gray-500 hover:bg-gray-100'
               }`}
@@ -243,13 +284,14 @@ export default function DashboardPage() {
                   {['ricevuto', 'in_valutazione', 'valutato'].map((s, i) => {
                     const statiOrdinati = ['ricevuto', 'in_valutazione', 'valutato', 'finalista', 'eliminato', 'vincitore']
                     const indiceStatoAttuale = statiOrdinati.indexOf(r.stato)
-                    const indiceStep = i
-                    const stepCompletato = indiceStatoAttuale >= indiceStep
+                    const stepCompletato = indiceStatoAttuale >= i
                     return (
                       <div key={s} className="flex items-center gap-2">
-                        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
-                          stepCompletato ? 'bg-teal-500 text-white' : 'bg-gray-100 text-gray-400'
-                        }`}>
+                        <div
+                          className={`pill-auto flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
+                            stepCompletato ? coloriStepAuto[s] : 'bg-gray-100 text-gray-400'
+                          }`}
+                        >
                           {stepCompletato && (
                             <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                               <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -262,7 +304,6 @@ export default function DashboardPage() {
                     )
                   })}
 
-                  {/* Freccia dopo valutato */}
                   <span className="text-gray-300 text-xs">›</span>
 
                   {/* Finalista ed Eliminato */}
@@ -291,7 +332,6 @@ export default function DashboardPage() {
                     )
                   })}
 
-                  {/* Freccia prima di vincitore */}
                   <span className="text-gray-300 text-xs">›</span>
 
                   {/* Vincitore */}
