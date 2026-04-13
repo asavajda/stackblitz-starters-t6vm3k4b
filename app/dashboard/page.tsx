@@ -204,11 +204,62 @@ export default function DashboardPage() {
     { key: 'e', label: 'Giudizio complessivo' },
   ]
 
+  // Componente card racconto per la sezione assegnazioni
+  function CardAssegnazione({ r }: { r: any }) {
+    const assegnati = giurati.filter(g =>
+      assegnazioniEsistenti.some(a => a.racconto_id === r.id && a.giurato_id === g.id)
+    )
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <p className="text-sm font-medium text-gray-800">{r.titolo}</p>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Autore: {r.autore_nome ? `${r.autore_nome} ${r.autore_cognome}` : `${r.profiles?.nome} ${r.profiles?.cognome}`}
+            </p>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Caricato il: {new Date(r.inviato_il).toLocaleDateString('it-IT')}
+            </p>
+          </div>
+          <span className={`text-xs px-3 py-1 rounded-full shrink-0 ${statoBadge[r.stato]}`}>
+            {formattaStato(r.stato)}
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {giurati.map(g => {
+            const assegnato = assegnazioniEsistenti.some(
+              a => a.racconto_id === r.id && a.giurato_id === g.id
+            )
+            const cfg = tipoConfig[g.tipo_giurato] || tipoConfig['lettore']
+            return (
+              <button
+                key={g.id}
+                onClick={() => assegna(r.id, g.id, r.stato === 'finalista' ? 'finale' : 'preliminare')}
+                className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                  assegnato ? cfg.attivo : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cfg.badge}`}>
+                  {cfg.label}
+                </span>
+                {assegnato ? '✓ ' : ''}{g.nome} {g.cognome}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
   if (caricamento) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <p className="text-gray-400 text-sm">Caricamento...</p>
     </div>
   )
+
+  const raccontinDaAssegnare = racconti.filter(r => r.stato === 'ricevuto')
+  const raccontiInValutazione = racconti.filter(r => r.stato === 'in_valutazione')
+  const raccontiChiusi = racconti.filter(r => ['valutato', 'finalista', 'eliminato', 'vincitore'].includes(r.stato))
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -280,18 +331,15 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="flex items-center mt-4 gap-2 flex-wrap">
-                  {/* Step automatici */}
                   {['ricevuto', 'in_valutazione', 'valutato'].map((s, i) => {
                     const statiOrdinati = ['ricevuto', 'in_valutazione', 'valutato', 'finalista', 'eliminato', 'vincitore']
                     const indiceStatoAttuale = statiOrdinati.indexOf(r.stato)
                     const stepCompletato = indiceStatoAttuale >= i
                     return (
                       <div key={s} className="flex items-center gap-2">
-                        <div
-                          className={`pill-auto flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
-                            stepCompletato ? coloriStepAuto[s] : 'bg-gray-100 text-gray-400'
-                          }`}
-                        >
+                        <div className={`pill-auto flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
+                          stepCompletato ? coloriStepAuto[s] : 'bg-gray-100 text-gray-400'
+                        }`}>
                           {stepCompletato && (
                             <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                               <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -306,7 +354,6 @@ export default function DashboardPage() {
 
                   <span className="text-gray-300 text-xs">›</span>
 
-                  {/* Finalista ed Eliminato */}
                   {['finalista', 'eliminato'].map(key => {
                     const isSelected = r.stato === key
                     const isEnabled = ['valutato', 'finalista', 'eliminato', 'vincitore'].includes(r.stato)
@@ -334,7 +381,6 @@ export default function DashboardPage() {
 
                   <span className="text-gray-300 text-xs">›</span>
 
-                  {/* Vincitore */}
                   {(() => {
                     const isSelected = r.stato === 'vincitore'
                     const isEnabled = ['valutato', 'finalista', 'eliminato', 'vincitore'].includes(r.stato)
@@ -362,47 +408,59 @@ export default function DashboardPage() {
 
         {/* SEZIONE ASSEGNAZIONI */}
         {sezione === 'assegnazioni' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between mb-4">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
               <p className="text-sm text-gray-400">Assegna racconti ai giurati</p>
               <button onClick={carica} className="text-xs text-gray-400 hover:text-gray-600">
                 ↻ Aggiorna
               </button>
             </div>
-            {racconti
-              .filter(r => ['ricevuto', 'in_valutazione', 'valutato', 'finalista'].includes(r.stato))
-              .map(r => (
-                <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-sm font-medium text-gray-800">{r.titolo}</p>
-                    <span className={`text-xs px-3 py-1 rounded-full shrink-0 ${statoBadge[r.stato]}`}>
-                      {formattaStato(r.stato)}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {giurati.map(g => {
-                      const assegnato = assegnazioniEsistenti.some(
-                        a => a.racconto_id === r.id && a.giurato_id === g.id
-                      )
-                      const cfg = tipoConfig[g.tipo_giurato] || tipoConfig['lettore']
-                      return (
-                        <button
-                          key={g.id}
-                          onClick={() => assegna(r.id, g.id, r.stato === 'finalista' ? 'finale' : 'preliminare')}
-                          className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border transition-colors ${
-                            assegnato ? cfg.attivo : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                          }`}
-                        >
-                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cfg.badge}`}>
-                            {cfg.label}
-                          </span>
-                          {assegnato ? '✓ ' : ''}{g.nome} {g.cognome}
-                        </button>
-                      )
-                    })}
-                  </div>
+
+            {/* Da assegnare */}
+            <div>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
+                Da assegnare ({raccontinDaAssegnare.length})
+              </p>
+              {raccontinDaAssegnare.length === 0 ? (
+                <p className="text-xs text-gray-300">Nessun racconto da assegnare</p>
+              ) : (
+                <div className="space-y-3">
+                  {raccontinDaAssegnare.map(r => <CardAssegnazione key={r.id} r={r} />)}
                 </div>
-              ))}
+              )}
+            </div>
+
+            <div className="border-t border-gray-100" />
+
+            {/* In valutazione */}
+            <div>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
+                In valutazione ({raccontiInValutazione.length})
+              </p>
+              {raccontiInValutazione.length === 0 ? (
+                <p className="text-xs text-gray-300">Nessun racconto in valutazione</p>
+              ) : (
+                <div className="space-y-3">
+                  {raccontiInValutazione.map(r => <CardAssegnazione key={r.id} r={r} />)}
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-gray-100" />
+
+            {/* Chiusi */}
+            <div>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
+                Valutati / Finalisti / Eliminati ({raccontiChiusi.length})
+              </p>
+              {raccontiChiusi.length === 0 ? (
+                <p className="text-xs text-gray-300">Nessun racconto in questa fase</p>
+              ) : (
+                <div className="space-y-3">
+                  {raccontiChiusi.map(r => <CardAssegnazione key={r.id} r={r} />)}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
