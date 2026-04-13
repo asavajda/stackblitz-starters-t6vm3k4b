@@ -14,7 +14,6 @@ function formattaStato(stato: string) {
     ricevuto: 'Ricevuto',
     in_valutazione: 'In valutazione',
     valutato: 'Valutato',
-    promosso: 'Promosso',
     finalista: 'Finalista',
     eliminato: 'Eliminato',
     vincitore: 'Vincitore',
@@ -152,14 +151,13 @@ export default function DashboardPage() {
   }
 
   const statoBadge: Record<string, string> = {
-  ricevuto: 'bg-gray-100 text-gray-600',
-  in_valutazione: 'bg-blue-50 text-blue-600',
-  valutato: 'bg-teal-50 text-teal-600',
-  promosso: 'bg-green-50 text-green-600',
-  finalista: 'bg-purple-50 text-purple-600',
-  eliminato: 'bg-red-50 text-red-500',
-  vincitore: 'bg-amber-100 text-amber-600',
-}
+    ricevuto: 'bg-gray-100 text-gray-600',
+    in_valutazione: 'bg-blue-50 text-blue-600',
+    valutato: 'bg-teal-50 text-teal-600',
+    finalista: 'bg-purple-50 text-purple-600',
+    eliminato: 'bg-red-50 text-red-500',
+    vincitore: 'bg-amber-100 text-amber-600',
+  }
 
   const tipoConfig: Record<string, { badge: string, attivo: string, label: string }> = {
     interno: {
@@ -243,7 +241,7 @@ export default function DashboardPage() {
                   </span>
                 </div>
                 <div className="flex gap-2 mt-4 flex-wrap">
-                  {['ricevuto', 'in_valutazione', 'valutato', 'promosso', 'finalista', 'eliminato', 'vincitore'].map(s => (
+                  {['ricevuto', 'in_valutazione', 'valutato', 'finalista', 'eliminato', 'vincitore'].map(s => (
                     <button
                       key={s}
                       onClick={() => aggiornaStato(r.id, s)}
@@ -269,7 +267,7 @@ export default function DashboardPage() {
               </button>
             </div>
             {racconti
-              .filter(r => ['ricevuto', 'in_valutazione', 'valutato', 'promosso', 'finalista'].includes(r.stato))
+              .filter(r => ['ricevuto', 'in_valutazione', 'valutato', 'finalista'].includes(r.stato))
               .map(r => (
                 <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-5">
                   <div className="flex items-center justify-between mb-3">
