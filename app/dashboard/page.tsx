@@ -278,7 +278,7 @@ export default function DashboardPage() {
                   </div>
 
                   {/* Divisore */}
-                  <div className="w-px h-6 bg-gray-200" />
+                  <div className="w-px h-6 bg-gray-200 mx-1"/>
 
                   {/* Azioni manuali */}
                   <div className="flex items-center gap-2">
