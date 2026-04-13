@@ -185,12 +185,6 @@ export default function DashboardPage() {
     { key: 'e', label: 'Giudizio complessivo' },
   ]
 
-  const azioniManuali = [
-    { key: 'finalista', active: 'bg-purple-50 border-purple-300 text-purple-700' },
-    { key: 'eliminato', active: 'bg-red-50 border-red-300 text-red-600' },
-    { key: 'vincitore', active: 'bg-amber-50 border-amber-300 text-amber-700' },
-  ]
-
   if (caricamento) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <p className="text-gray-400 text-sm">Caricamento...</p>
@@ -244,65 +238,82 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between mt-4 flex-wrap gap-3">
+                <div className="flex items-center mt-4 gap-2 flex-wrap">
                   {/* Step automatici */}
-                  <div className="flex items-center gap-2">
-                    {['ricevuto', 'in_valutazione', 'valutato'].map((s, i) => {
-                      const stati = ['ricevuto', 'in_valutazione', 'valutato']
-                      const indiceAttuale = stati.indexOf(r.stato) !== -1
-                        ? stati.indexOf(r.stato)
-                        : ['finalista', 'eliminato', 'vincitore'].includes(r.stato) ? 3 : 0
-                      const completato = i <= indiceAttuale - (stati.includes(r.stato) ? 0 : 0)
-
-                      const statiCompletati = ['ricevuto', 'in_valutazione', 'valutato', 'finalista', 'eliminato', 'vincitore']
-                      const indiceStatoAttuale = statiCompletati.indexOf(r.stato)
-                      const indiceStep = stati.indexOf(s)
-                      const stepCompletato = indiceStatoAttuale >= indiceStep
-
-                      return (
-                        <div key={s} className="flex items-center gap-2">
-                          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
-                            stepCompletato ? 'bg-teal-500 text-white' : 'bg-gray-100 text-gray-400'
-                          }`}>
-                            {stepCompletato && (
-                              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                                <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                            )}
-                            {formattaStato(s)}
-                          </div>
-                          {i < 2 && <span className="text-gray-300 text-xs">›</span>}
+                  {['ricevuto', 'in_valutazione', 'valutato'].map((s, i) => {
+                    const statiOrdinati = ['ricevuto', 'in_valutazione', 'valutato', 'finalista', 'eliminato', 'vincitore']
+                    const indiceStatoAttuale = statiOrdinati.indexOf(r.stato)
+                    const indiceStep = i
+                    const stepCompletato = indiceStatoAttuale >= indiceStep
+                    return (
+                      <div key={s} className="flex items-center gap-2">
+                        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
+                          stepCompletato ? 'bg-teal-500 text-white' : 'bg-gray-100 text-gray-400'
+                        }`}>
+                          {stepCompletato && (
+                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                              <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          )}
+                          {formattaStato(s)}
                         </div>
-                      )
-                    })}
-                  </div>
+                        {i < 2 && <span className="text-gray-300 text-xs">›</span>}
+                      </div>
+                    )
+                  })}
 
-                  {/* Divisore */}
-                  <div className="w-px h-6 bg-gray-200 mx-1"/>
+                  {/* Freccia dopo valutato */}
+                  <span className="text-gray-300 text-xs">›</span>
 
-                  {/* Azioni manuali */}
-                  <div className="flex items-center gap-2">
-                    {azioniManuali.map(({ key, active }) => {
-                      const isSelected = r.stato === key
-                      const isEnabled = ['valutato', 'finalista', 'eliminato', 'vincitore'].includes(r.stato)
-                      return (
-                        <button
-                          key={key}
-                          onClick={() => isEnabled && aggiornaStato(r.id, key)}
-                          disabled={!isEnabled}
-                          className={`px-3 py-1 rounded-full text-xs border transition-colors ${
-                            isSelected
-                              ? active
-                              : isEnabled
-                              ? 'border-gray-200 text-gray-400 hover:bg-gray-50 cursor-pointer'
-                              : 'border-gray-100 text-gray-300 cursor-not-allowed'
-                          }`}
-                        >
-                          {formattaStato(key)}
-                        </button>
-                      )
-                    })}
-                  </div>
+                  {/* Finalista ed Eliminato */}
+                  {['finalista', 'eliminato'].map(key => {
+                    const isSelected = r.stato === key
+                    const isEnabled = ['valutato', 'finalista', 'eliminato', 'vincitore'].includes(r.stato)
+                    const activeClass: Record<string, string> = {
+                      finalista: 'bg-purple-50 border-purple-300 text-purple-700',
+                      eliminato: 'bg-red-50 border-red-300 text-red-600',
+                    }
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => isEnabled && aggiornaStato(r.id, key)}
+                        disabled={!isEnabled}
+                        className={`px-3 py-1 rounded-full text-xs border transition-colors ${
+                          isSelected
+                            ? activeClass[key]
+                            : isEnabled
+                            ? 'border-gray-200 text-gray-400 hover:bg-gray-50 cursor-pointer'
+                            : 'border-gray-100 text-gray-300 cursor-not-allowed'
+                        }`}
+                      >
+                        {formattaStato(key)}
+                      </button>
+                    )
+                  })}
+
+                  {/* Freccia prima di vincitore */}
+                  <span className="text-gray-300 text-xs">›</span>
+
+                  {/* Vincitore */}
+                  {(() => {
+                    const isSelected = r.stato === 'vincitore'
+                    const isEnabled = ['valutato', 'finalista', 'eliminato', 'vincitore'].includes(r.stato)
+                    return (
+                      <button
+                        onClick={() => isEnabled && aggiornaStato(r.id, 'vincitore')}
+                        disabled={!isEnabled}
+                        className={`px-3 py-1 rounded-full text-xs border transition-colors ${
+                          isSelected
+                            ? 'bg-amber-50 border-amber-300 text-amber-700'
+                            : isEnabled
+                            ? 'border-gray-200 text-gray-400 hover:bg-gray-50 cursor-pointer'
+                            : 'border-gray-100 text-gray-300 cursor-not-allowed'
+                        }`}
+                      >
+                        {formattaStato('vincitore')}
+                      </button>
+                    )
+                  })()}
                 </div>
               </div>
             ))}
