@@ -42,5 +42,11 @@ export async function POST(req: NextRequest) {
     console.log('errore update stato:', errStato)
   }
 
-  return NextResponse.json({ success: true, completate, totale })
-}
+return NextResponse.json({ 
+  success: true, 
+  completate, 
+  totale,
+  tutteAssegnazioni,
+  errUpdate: errUpdate?.message ?? null,
+  errSelect: errSelect?.message ?? null,
+})}
