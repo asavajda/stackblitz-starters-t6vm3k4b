@@ -9,6 +9,19 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+function formattaStato(stato: string) {
+  const labels: Record<string, string> = {
+    ricevuto: 'Ricevuto',
+    in_valutazione: 'In valutazione',
+    valutato: 'Valutato',
+    promosso: 'Promosso',
+    finalista: 'Finalista',
+    eliminato: 'Eliminato',
+    vincitore: 'Vincitore',
+  }
+  return labels[stato] ?? stato
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const [racconti, setRacconti] = useState<any[]>([])
@@ -150,19 +163,19 @@ export default function DashboardPage() {
 
   const tipoConfig: Record<string, { badge: string, attivo: string, label: string }> = {
     interno: {
-      badge:  'bg-purple-100 text-purple-700',
+      badge: 'bg-purple-100 text-purple-700',
       attivo: 'bg-purple-50 border-purple-400 text-purple-800',
-      label:  'INT',
+      label: 'INT',
     },
     lettore: {
-      badge:  'bg-blue-100 text-blue-700',
+      badge: 'bg-blue-100 text-blue-700',
       attivo: 'bg-blue-50 border-blue-400 text-blue-800',
-      label:  'LET',
+      label: 'LET',
     },
     qualita: {
-      badge:  'bg-amber-100 text-amber-700',
+      badge: 'bg-amber-100 text-amber-700',
       attivo: 'bg-amber-50 border-amber-400 text-amber-800',
-      label:  'QUA',
+      label: 'QUA',
     },
   }
 
@@ -226,7 +239,7 @@ export default function DashboardPage() {
                     </p>
                   </div>
                   <span className={`text-xs px-3 py-1 rounded-full shrink-0 ${statoBadge[r.stato]}`}>
-                    {r.stato}
+                    {formattaStato(r.stato)}
                   </span>
                 </div>
                 <div className="flex gap-2 mt-4 flex-wrap">
@@ -237,7 +250,7 @@ export default function DashboardPage() {
                       disabled={r.stato === s}
                       className="text-xs px-3 py-1 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30"
                     >
-                      {s}
+                      {formattaStato(s)}
                     </button>
                   ))}
                 </div>
@@ -256,10 +269,15 @@ export default function DashboardPage() {
               </button>
             </div>
             {racconti
-              .filter(r => ['ricevuto', 'in_valutazione', 'promosso', 'finalista'].includes(r.stato))
+              .filter(r => ['ricevuto', 'in_valutazione', 'valutato', 'promosso', 'finalista'].includes(r.stato))
               .map(r => (
                 <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-5">
-                  <p className="text-sm font-medium text-gray-800 mb-3">{r.titolo}</p>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-medium text-gray-800">{r.titolo}</p>
+                    <span className={`text-xs px-3 py-1 rounded-full shrink-0 ${statoBadge[r.stato]}`}>
+                      {formattaStato(r.stato)}
+                    </span>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {giurati.map(g => {
                       const assegnato = assegnazioniEsistenti.some(
@@ -303,7 +321,9 @@ export default function DashboardPage() {
                       <p className="text-sm font-medium text-gray-800">{m.titolo}</p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className={`text-xs px-3 py-1 rounded-full ${statoBadge[m.stato]}`}>{m.stato}</span>
+                      <span className={`text-xs px-3 py-1 rounded-full ${statoBadge[m.stato]}`}>
+                        {formattaStato(m.stato)}
+                      </span>
                       {m.media_complessiva && (
                         <span className="text-lg font-semibold text-gray-800">{m.media_complessiva}</span>
                       )}
