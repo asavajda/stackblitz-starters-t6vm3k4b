@@ -28,11 +28,11 @@ export default function DashboardPage() {
   const [assegnazioniEsistenti, setAssegnazioniEsistenti] = useState<any[]>([])
   const [valutazioni, setValutazioni] = useState<any[]>([])
   const [caricamento, setCaricamento] = useState(true)
-  const [sezione, setSezione] = useState<'racconti' | 'assegnazioni' | 'risultati' | 'giurati'>(() => {
+  const [sezione, setSezione] = useState<'racconti' | 'assegnazioni' | 'finalisti' | 'risultati' | 'giurati'>(() => {
     if (typeof window !== 'undefined') {
       const hash = window.location.hash.replace('#', '')
-      if (['racconti', 'assegnazioni', 'risultati', 'giurati'].includes(hash)) {
-        return hash as 'racconti' | 'assegnazioni' | 'risultati' | 'giurati'
+      if (['racconti', 'assegnazioni', 'finalisti', 'risultati', 'giurati'].includes(hash)) {
+        return hash as 'racconti' | 'assegnazioni' | 'finalisti' | 'risultati' | 'giurati'
       }
     }
     return 'racconti'
@@ -47,7 +47,7 @@ export default function DashboardPage() {
   const [aggiungendo, setAggiungendo] = useState(false)
   const [messaggioGiurato, setMessaggioGiurato] = useState('')
 
-  function cambiaSezione(s: 'racconti' | 'assegnazioni' | 'risultati' | 'giurati') {
+  function cambiaSezione(s: 'racconti' | 'assegnazioni' | 'finalisti' | 'risultati' | 'giurati') {
     setSezione(s)
     window.location.hash = s
   }
@@ -214,6 +214,9 @@ export default function DashboardPage() {
     { key: 'e', label: 'Giudizio complessivo' },
   ]
 
+  // Solo giurati interno e lettore per le assegnazioni
+  const giuratiAssegnabili = giurati.filter(g => ['interno', 'lettore'].includes(g.tipo_giurato))
+
   function CardAssegnazione({ r }: { r: any }) {
     const statoBlocco = ['valutato', 'finalista', 'eliminato', 'vincitore'].includes(r.stato)
     return (
@@ -233,7 +236,7 @@ export default function DashboardPage() {
           </span>
         </div>
         <div className="flex flex-wrap gap-2">
-          {giurati.map(g => {
+          {giuratiAssegnabili.map(g => {
             const assegnazione = assegnazioniEsistenti.find(
               a => a.racconto_id === r.id && a.giurato_id === g.id
             )
@@ -274,7 +277,8 @@ export default function DashboardPage() {
 
   const raccontinDaAssegnare = racconti.filter(r => r.stato === 'ricevuto')
   const raccontiInValutazione = racconti.filter(r => r.stato === 'in_valutazione')
-  const raccontiChiusi = racconti.filter(r => ['valutato', 'finalista', 'eliminato', 'vincitore'].includes(r.stato))
+  const raccontiValutatiEliminati = racconti.filter(r => ['valutato', 'eliminato'].includes(r.stato))
+  const raccontiFinalisti = racconti.filter(r => r.stato === 'finalista')
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -303,7 +307,7 @@ export default function DashboardPage() {
       <div className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
         <img src="/logo_tohorror_dark.png" alt="TOHorror" className="h-16" />
         <div className="flex gap-2">
-          {(['racconti', 'assegnazioni', 'risultati', 'giurati'] as const).map(s => (
+          {(['racconti', 'assegnazioni', 'finalisti', 'risultati', 'giurati'] as const).map(s => (
             <button
               key={s}
               onClick={() => cambiaSezione(s)}
@@ -463,16 +467,117 @@ export default function DashboardPage() {
 
             <div>
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
-                Valutati / Finalisti / Eliminati ({raccontiChiusi.length})
+                Valutati / Eliminati ({raccontiValutatiEliminati.length})
               </p>
-              {raccontiChiusi.length === 0 ? (
+              {raccontiValutatiEliminati.length === 0 ? (
                 <p className="text-xs text-gray-300">Nessun racconto in questa fase</p>
               ) : (
                 <div className="space-y-3">
-                  {raccontiChiusi.map(r => <CardAssegnazione key={r.id} r={r} />)}
+                  {raccontiValutatiEliminati.map(r => <CardAssegnazione key={r.id} r={r} />)}
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* SEZIONE FINALISTI */}
+        {sezione === 'finalisti' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm text-gray-400">{raccontiFinalisti.length} racconti finalisti</p>
+              <button onClick={carica} className="text-xs text-gray-400 hover:text-gray-600">
+                ↻ Aggiorna
+              </button>
+            </div>
+            {raccontiFinalisti.length === 0 ? (
+              <p className="text-xs text-gray-300">Nessun racconto finalista ancora</p>
+            ) : (
+              raccontiFinalisti.map(r => {
+                const valRacconto = valutazioni.filter(
+                  v => v.assegnazioni?.racconto_id === r.id
+                )
+                return (
+                  <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-5">
+                    <div className="flex items-start justify-between gap-4 mb-4">
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">{r.titolo}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          Autore: {r.autore_nome ? `${r.autore_nome} ${r.autore_cognome}` : `${r.profiles?.nome} ${r.profiles?.cognome}`}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          Caricato il: {new Date(r.inviato_il).toLocaleDateString('it-IT')}
+                        </p>
+                      </div>
+                      <span className="text-xs px-3 py-1 rounded-full bg-purple-50 text-purple-600 shrink-0">
+                        Finalista
+                      </span>
+                    </div>
+
+                    {/* Assegnazione giurati qualità */}
+                    <div className="mb-4">
+                      <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Assegna giurati qualità</p>
+                      <div className="flex flex-wrap gap-2">
+                        {giurati.filter(g => g.tipo_giurato === 'qualita').map(g => {
+                          const assegnazione = assegnazioniEsistenti.find(
+                            a => a.racconto_id === r.id && a.giurato_id === g.id
+                          )
+                          const assegnato = !!assegnazione
+                          const haValutato = assegnazione?.completata === true
+                          const cfg = tipoConfig['qualita']
+                          return (
+                            <button
+                              key={g.id}
+                              onClick={() => !haValutato && assegna(r.id, g.id, 'finale')}
+                              disabled={haValutato}
+                              title={haValutato ? 'Il giurato ha già valutato questo racconto' : ''}
+                              className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                                assegnato
+                                  ? haValutato ? `${cfg.attivo} opacity-50 cursor-not-allowed` : cfg.attivo
+                                  : haValutato ? 'border-gray-100 text-gray-300 cursor-not-allowed' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                              }`}
+                            >
+                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cfg.badge}`}>
+                                {cfg.label}
+                              </span>
+                              {assegnato ? '✓ ' : ''}{g.nome} {g.cognome}
+                              {haValutato && <span className="text-[10px] opacity-60">· valutato</span>}
+                            </button>
+                          )
+                        })}
+                        {giurati.filter(g => g.tipo_giurato === 'qualita').length === 0 && (
+                          <p className="text-xs text-gray-300">Nessun giurato di qualità disponibile</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Cambio stato */}
+                    <div className="flex items-center gap-2 border-t border-gray-100 pt-3">
+                      <p className="text-xs text-gray-400 mr-2">Stato:</p>
+                      <button
+                        onClick={() => aggiornaStato(r.id, 'vincitore')}
+                        className={`px-3 py-1 rounded-full text-xs border transition-colors ${
+                          r.stato === 'vincitore'
+                            ? 'bg-amber-50 border-amber-300 text-amber-700'
+                            : 'border-gray-200 text-gray-400 hover:bg-gray-50 cursor-pointer'
+                        }`}
+                      >
+                        Vincitore
+                      </button>
+                      <button
+                        onClick={() => aggiornaStato(r.id, 'eliminato')}
+                        className={`px-3 py-1 rounded-full text-xs border transition-colors ${
+                          r.stato === 'eliminato'
+                            ? 'bg-red-50 border-red-300 text-red-600'
+                            : 'border-gray-200 text-gray-400 hover:bg-gray-50 cursor-pointer'
+                        }`}
+                      >
+                        Eliminato
+                      </button>
+                    </div>
+                  </div>
+                )
+              })
+            )}
           </div>
         )}
 
