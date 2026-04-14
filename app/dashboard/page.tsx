@@ -99,6 +99,13 @@ export default function DashboardPage() {
     const racconto = racconti.find(r => r.id === racconto_id)
     if (['valutato', 'finalista', 'eliminato', 'vincitore'].includes(racconto?.stato)) return
 
+    const haValutato = assegnazioniEsistenti.some(a =>
+      a.racconto_id === racconto_id &&
+      a.giurato_id === giurato_id &&
+      a.completata === true
+    )
+    if (haValutato) return
+
     const esiste = assegnazioniEsistenti.some(
       a => a.racconto_id === racconto_id && a.giurato_id === giurato_id
     )
@@ -208,7 +215,7 @@ export default function DashboardPage() {
   ]
 
   function CardAssegnazione({ r }: { r: any }) {
-    const bloccato = ['valutato', 'finalista', 'eliminato', 'vincitore'].includes(r.stato)
+    const statoBlocco = ['valutato', 'finalista', 'eliminato', 'vincitore'].includes(r.stato)
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-5">
         <div className="flex items-center justify-between mb-3">
@@ -227,15 +234,19 @@ export default function DashboardPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           {giurati.map(g => {
-            const assegnato = assegnazioniEsistenti.some(
+            const assegnazione = assegnazioniEsistenti.find(
               a => a.racconto_id === r.id && a.giurato_id === g.id
             )
+            const assegnato = !!assegnazione
+            const haValutato = assegnazione?.completata === true
+            const bloccato = statoBlocco || haValutato
             const cfg = tipoConfig[g.tipo_giurato] || tipoConfig['lettore']
             return (
               <button
                 key={g.id}
                 onClick={() => !bloccato && assegna(r.id, g.id, r.stato === 'finalista' ? 'finale' : 'preliminare')}
                 disabled={bloccato}
+                title={haValutato ? 'Il giurato ha già valutato questo racconto' : ''}
                 className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border transition-colors ${
                   assegnato
                     ? bloccato ? `${cfg.attivo} opacity-50 cursor-not-allowed` : cfg.attivo
@@ -246,6 +257,7 @@ export default function DashboardPage() {
                   {cfg.label}
                 </span>
                 {assegnato ? '✓ ' : ''}{g.nome} {g.cognome}
+                {haValutato && <span className="text-[10px] opacity-60">· valutato</span>}
               </button>
             )
           })}
@@ -419,7 +431,6 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            {/* Da assegnare */}
             <div>
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
                 Da assegnare ({raccontinDaAssegnare.length})
@@ -435,7 +446,6 @@ export default function DashboardPage() {
 
             <div className="border-t border-gray-100" />
 
-            {/* In valutazione */}
             <div>
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
                 In valutazione ({raccontiInValutazione.length})
@@ -451,7 +461,6 @@ export default function DashboardPage() {
 
             <div className="border-t border-gray-100" />
 
-            {/* Chiusi */}
             <div>
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
                 Valutati / Finalisti / Eliminati ({raccontiChiusi.length})
