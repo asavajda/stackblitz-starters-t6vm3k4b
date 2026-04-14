@@ -67,7 +67,7 @@ export default function DashboardPage() {
     const [{ data: r }, { data: g }, { data: m }, { data: a }, { data: v }] = await Promise.all([
       supabase.from('racconti').select('*, profiles(nome, cognome)').order('inviato_il', { ascending: false }),
       supabase.from('profiles').select('*').eq('ruolo', 'giurato'),
-      supabase.from('medie_racconti').select('*').order('media_complessiva', { ascending: false }),
+      supabase.from('medie_racconti').select('*, racconti(autore_nome, autore_cognome, inviato_il, profiles(nome, cognome))').order('media_complessiva', { ascending: false }),
       supabase.from('assegnazioni').select('*'),
       supabase.from('valutazioni').select(`
         *,
@@ -214,7 +214,6 @@ export default function DashboardPage() {
     { key: 'e', label: 'Giudizio complessivo' },
   ]
 
-  // Solo giurati interno e lettore per le assegnazioni
   const giuratiAssegnabili = giurati.filter(g => ['interno', 'lettore'].includes(g.tipo_giurato))
 
   function CardAssegnazione({ r }: { r: any }) {
@@ -492,91 +491,84 @@ export default function DashboardPage() {
             {raccontiFinalisti.length === 0 ? (
               <p className="text-xs text-gray-300">Nessun racconto finalista ancora</p>
             ) : (
-              raccontiFinalisti.map(r => {
-                const valRacconto = valutazioni.filter(
-                  v => v.assegnazioni?.racconto_id === r.id
-                )
-                return (
-                  <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-5">
-                    <div className="flex items-start justify-between gap-4 mb-4">
-                      <div>
-                        <p className="text-sm font-medium text-gray-800">{r.titolo}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          Autore: {r.autore_nome ? `${r.autore_nome} ${r.autore_cognome}` : `${r.profiles?.nome} ${r.profiles?.cognome}`}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          Caricato il: {new Date(r.inviato_il).toLocaleDateString('it-IT')}
-                        </p>
-                      </div>
-                      <span className="text-xs px-3 py-1 rounded-full bg-purple-50 text-purple-600 shrink-0">
-                        Finalista
-                      </span>
+              raccontiFinalisti.map(r => (
+                <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-5">
+                  <div className="flex items-start justify-between gap-4 mb-4">
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">{r.titolo}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        Autore: {r.autore_nome ? `${r.autore_nome} ${r.autore_cognome}` : `${r.profiles?.nome} ${r.profiles?.cognome}`}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        Caricato il: {new Date(r.inviato_il).toLocaleDateString('it-IT')}
+                      </p>
                     </div>
+                    <span className="text-xs px-3 py-1 rounded-full bg-purple-50 text-purple-600 shrink-0">
+                      Finalista
+                    </span>
+                  </div>
 
-                    {/* Assegnazione giurati qualità */}
-                    <div className="mb-4">
-                      <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Assegna giurati qualità</p>
-                      <div className="flex flex-wrap gap-2">
-                        {giurati.filter(g => g.tipo_giurato === 'qualita').map(g => {
-                          const assegnazione = assegnazioniEsistenti.find(
-                            a => a.racconto_id === r.id && a.giurato_id === g.id
-                          )
-                          const assegnato = !!assegnazione
-                          const haValutato = assegnazione?.completata === true
-                          const cfg = tipoConfig['qualita']
-                          return (
-                            <button
-                              key={g.id}
-                              onClick={() => !haValutato && assegna(r.id, g.id, 'finale')}
-                              disabled={haValutato}
-                              title={haValutato ? 'Il giurato ha già valutato questo racconto' : ''}
-                              className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border transition-colors ${
-                                assegnato
-                                  ? haValutato ? `${cfg.attivo} opacity-50 cursor-not-allowed` : cfg.attivo
-                                  : haValutato ? 'border-gray-100 text-gray-300 cursor-not-allowed' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                              }`}
-                            >
-                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cfg.badge}`}>
-                                {cfg.label}
-                              </span>
-                              {assegnato ? '✓ ' : ''}{g.nome} {g.cognome}
-                              {haValutato && <span className="text-[10px] opacity-60">· valutato</span>}
-                            </button>
-                          )
-                        })}
-                        {giurati.filter(g => g.tipo_giurato === 'qualita').length === 0 && (
-                          <p className="text-xs text-gray-300">Nessun giurato di qualità disponibile</p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Cambio stato */}
-                    <div className="flex items-center gap-2 border-t border-gray-100 pt-3">
-                      <p className="text-xs text-gray-400 mr-2">Stato:</p>
-                      <button
-                        onClick={() => aggiornaStato(r.id, 'vincitore')}
-                        className={`px-3 py-1 rounded-full text-xs border transition-colors ${
-                          r.stato === 'vincitore'
-                            ? 'bg-amber-50 border-amber-300 text-amber-700'
-                            : 'border-gray-200 text-gray-400 hover:bg-gray-50 cursor-pointer'
-                        }`}
-                      >
-                        Vincitore
-                      </button>
-                      <button
-                        onClick={() => aggiornaStato(r.id, 'eliminato')}
-                        className={`px-3 py-1 rounded-full text-xs border transition-colors ${
-                          r.stato === 'eliminato'
-                            ? 'bg-red-50 border-red-300 text-red-600'
-                            : 'border-gray-200 text-gray-400 hover:bg-gray-50 cursor-pointer'
-                        }`}
-                      >
-                        Eliminato
-                      </button>
+                  <div className="mb-4">
+                    <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Assegna giurati qualità</p>
+                    <div className="flex flex-wrap gap-2">
+                      {giurati.filter(g => g.tipo_giurato === 'qualita').map(g => {
+                        const assegnazione = assegnazioniEsistenti.find(
+                          a => a.racconto_id === r.id && a.giurato_id === g.id
+                        )
+                        const assegnato = !!assegnazione
+                        const haValutato = assegnazione?.completata === true
+                        const cfg = tipoConfig['qualita']
+                        return (
+                          <button
+                            key={g.id}
+                            onClick={() => !haValutato && assegna(r.id, g.id, 'finale')}
+                            disabled={haValutato}
+                            title={haValutato ? 'Il giurato ha già valutato questo racconto' : ''}
+                            className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                              assegnato
+                                ? haValutato ? `${cfg.attivo} opacity-50 cursor-not-allowed` : cfg.attivo
+                                : haValutato ? 'border-gray-100 text-gray-300 cursor-not-allowed' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cfg.badge}`}>
+                              {cfg.label}
+                            </span>
+                            {assegnato ? '✓ ' : ''}{g.nome} {g.cognome}
+                            {haValutato && <span className="text-[10px] opacity-60">· valutato</span>}
+                          </button>
+                        )
+                      })}
+                      {giurati.filter(g => g.tipo_giurato === 'qualita').length === 0 && (
+                        <p className="text-xs text-gray-300">Nessun giurato di qualità disponibile</p>
+                      )}
                     </div>
                   </div>
-                )
-              })
+
+                  <div className="flex items-center gap-2 border-t border-gray-100 pt-3">
+                    <p className="text-xs text-gray-400 mr-2">Stato:</p>
+                    <button
+                      onClick={() => aggiornaStato(r.id, 'vincitore')}
+                      className={`px-3 py-1 rounded-full text-xs border transition-colors ${
+                        r.stato === 'vincitore'
+                          ? 'bg-amber-50 border-amber-300 text-amber-700'
+                          : 'border-gray-200 text-gray-400 hover:bg-gray-50 cursor-pointer'
+                      }`}
+                    >
+                      Vincitore
+                    </button>
+                    <button
+                      onClick={() => aggiornaStato(r.id, 'eliminato')}
+                      className={`px-3 py-1 rounded-full text-xs border transition-colors ${
+                        r.stato === 'eliminato'
+                          ? 'bg-red-50 border-red-300 text-red-600'
+                          : 'border-gray-200 text-gray-400 hover:bg-gray-50 cursor-pointer'
+                      }`}
+                    >
+                      Eliminato
+                    </button>
+                  </div>
+                </div>
+              ))
             )}
           </div>
         )}
@@ -589,6 +581,12 @@ export default function DashboardPage() {
               const valRacconto = valutazioni.filter(
                 v => v.assegnazioni?.racconto_id === m.racconto_id
               )
+              const autore = m.racconti?.autore_nome
+                ? `${m.racconti.autore_nome} ${m.racconti.autore_cognome}`
+                : `${m.racconti?.profiles?.nome} ${m.racconti?.profiles?.cognome}`
+              const dataCaricamento = m.racconti?.inviato_il
+                ? new Date(m.racconti.inviato_il).toLocaleDateString('it-IT')
+                : '—'
               return (
                 <div key={m.racconto_id} className="bg-white rounded-xl border border-gray-200 p-5">
                   <div className="flex items-center justify-between mb-4">
@@ -608,7 +606,10 @@ export default function DashboardPage() {
 
                   {valRacconto.length > 0 && (
                     <div className="mb-4">
-                      <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Valutazioni giurati</p>
+                      <div className="mb-3">
+                        <p className="text-xs text-gray-500">Autore: {autore}</p>
+                        <p className="text-xs text-gray-500">Caricato il: {dataCaricamento}</p>
+                      </div>
                       <div className="space-y-2">
                         <div className="grid grid-cols-7 gap-2 text-[10px] text-gray-400 uppercase px-2">
                           <span className="col-span-2">Giurato</span>
