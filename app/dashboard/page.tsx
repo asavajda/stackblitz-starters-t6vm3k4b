@@ -67,7 +67,7 @@ export default function DashboardPage() {
     const [{ data: r }, { data: g }, { data: m }, { data: a }, { data: v }] = await Promise.all([
       supabase.from('racconti').select('*, profiles(nome, cognome)').order('inviato_il', { ascending: false }),
       supabase.from('profiles').select('*').eq('ruolo', 'giurato'),
-      supabase.from('medie_racconti').select('*, racconti(autore_nome, autore_cognome, inviato_il, profiles(nome, cognome))').order('media_complessiva', { ascending: false }),
+      supabase.from('medie_racconti').select('*').order('media_complessiva', { ascending: false }),
       supabase.from('assegnazioni').select('*'),
       supabase.from('valutazioni').select(`
         *,
@@ -580,11 +580,12 @@ export default function DashboardPage() {
               const valRacconto = valutazioni.filter(
                 v => v.assegnazioni?.racconto_id === m.racconto_id
               )
-              const autore = m.racconti?.autore_nome
-                ? `${m.racconti.autore_nome} ${m.racconti.autore_cognome}`
-                : `${m.racconti?.profiles?.nome} ${m.racconti?.profiles?.cognome}`
-              const dataCaricamento = m.racconti?.inviato_il
-                ? new Date(m.racconti.inviato_il).toLocaleDateString('it-IT')
+              const racconto = racconti.find(r => r.id === m.racconto_id)
+              const autore = racconto?.autore_nome
+                ? `${racconto.autore_nome} ${racconto.autore_cognome}`
+                : `${racconto?.profiles?.nome} ${racconto?.profiles?.cognome}`
+              const dataCaricamento = racconto?.inviato_il
+                ? new Date(racconto.inviato_il).toLocaleDateString('it-IT')
                 : '—'
               return (
                 <div key={m.racconto_id} className="bg-white rounded-xl border border-gray-200 p-5">
