@@ -509,7 +509,6 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="mb-4">
-                    <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Assegna giurati qualità</p>
                     <div className="flex flex-wrap gap-2">
                       {giurati.filter(g => g.tipo_giurato === 'qualita').map(g => {
                         const assegnazione = assegnazioniEsistenti.find(
