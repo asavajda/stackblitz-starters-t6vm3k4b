@@ -9,7 +9,6 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-//
 function formattaStato(stato: string) {
   const labels: Record<string, string> = {
     ricevuto: 'Ricevuto',
@@ -304,9 +303,13 @@ const bloccato = statoBlocco || haValutato || giaOccupato
             const assegnazione = assegnazioniEsistenti.find(
               a => a.racconto_id === r.id && a.giurato_id === g.id
             )
-            const assegnato = !!assegnazione
-            const haValutato = assegnazione?.completata === true
-            const bloccato = statoBlocco || haValutato
+const assegnato = !!assegnazione
+const haValutato = assegnazione?.completata === true
+const giaOccupato = !assegnato && assegnazioniEsistenti.some(a =>
+  a.racconto_id === r.id &&
+  giurati.find(g => g.id === a.giurato_id)?.tipo_giurato === 'lettore'
+)
+const bloccato = statoBlocco || haValutato || giaOccupato
             const cfg = tipoConfig[g.tipo_giurato] || tipoConfig['lettore']
             return (
               <button
