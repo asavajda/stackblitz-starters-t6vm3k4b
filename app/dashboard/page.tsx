@@ -64,8 +64,9 @@ export default function DashboardPage() {
   .single()
 setProfilo(profiloData)
 
-    if (profilo?.ruolo !== 'admin') { router.push('/login'); return }
-
+if (profiloData?.ruolo !== 'admin') { router.push('/login'); return }
+setProfilo(profiloData)
+    
     const [{ data: r }, { data: g }, { data: m }, { data: a }, { data: v }] = await Promise.all([
       supabase.from('racconti').select('*, profiles(nome, cognome)').order('inviato_il', { ascending: false }),
       supabase.from('profiles').select('*').eq('ruolo', 'giurato'),
