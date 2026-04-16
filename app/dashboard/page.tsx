@@ -99,7 +99,7 @@ export default function DashboardPage() {
     const racconto = racconti.find(r => r.id === racconto_id)
 
     //Per la fase qualità i racconti sono finalisti - non bloccare
-   if (fase !== 'qualità') {
+   if (fase !== 'finale') {
     if (['valutato', 'finalista', 'eliminato', 'vincitore'].includes(racconto?.stato)) return
   } else {
     // Nella fase qualità blocca solo se già vinti/eliminati
