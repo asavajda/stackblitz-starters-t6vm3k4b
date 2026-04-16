@@ -251,7 +251,25 @@ setProfilo(profiloData)
             {formattaStato(r.stato)}
           </span>
         </div>
+       <div className="flex flex-wrap gap-2">
+  {(() => {
+    const interni = giuratiAssegnabili.filter(g => g.tipo_giurato === 'interno')
+    const lettori = giuratiAssegnabili.filter(g => g.tipo_giurato === 'lettore')
+    return (
+      <>
         <div className="flex flex-wrap gap-2">
+          {interni.map(g => <GiurataButton key={g.id} g={g} r={r} />)}
+        </div>
+        {interni.length > 0 && lettori.length > 0 && (
+          <div className="w-px bg-gray-200 mx-1 self-stretch" />
+        )}
+        <div className="flex flex-wrap gap-2">
+          {lettori.map(g => <GiurataButton key={g.id} g={g} r={r} />)}
+        </div>
+      </>
+    )
+  })()}
+</div>
           {giuratiAssegnabili.map(g => {
             const assegnazione = assegnazioniEsistenti.find(
               a => a.racconto_id === r.id && a.giurato_id === g.id
