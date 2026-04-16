@@ -9,6 +9,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+//
 function formattaStato(stato: string) {
   const labels: Record<string, string> = {
     ricevuto: 'Ricevuto',
