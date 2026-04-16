@@ -57,11 +57,12 @@ export default function DashboardPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/login'); return }
 
-    const { data: profilo } = await supabase
-      .from('profiles')
-      .select('ruolo, nome, cognome')
-      .eq('id', user.id)
-      .single()
+    const { data: profiloData } = await supabase
+  .from('profiles')
+  .select('ruolo, nome, cognome')
+  .eq('id', user.id)
+  .single()
+setProfilo(profiloData)
 
     if (profilo?.ruolo !== 'admin') { router.push('/login'); return }
 
