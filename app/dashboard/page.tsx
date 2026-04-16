@@ -153,6 +153,9 @@ if (tipoGiurato === 'interno' || tipoGiurato === 'lettore') {
         .insert({ racconto_id, giurato_id, fase })
         .select()
         .single()
+      
+console.log('insert result:', { data, error })
+      
       if (!error && data) {
         setAssegnazioniEsistenti(prev => [...prev, data])
         const racconto = racconti.find(r => r.id === racconto_id)
