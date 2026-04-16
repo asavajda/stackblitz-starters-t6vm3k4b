@@ -251,67 +251,72 @@ setProfilo(profiloData)
           {formattaStato(r.stato)}
         </span>
       </div>
-      <div className="flex flex-wrap gap-2 items-center">
-        {giuratiAssegnabili.filter(g => g.tipo_giurato === 'interno').map(g => {
-          const assegnazione = assegnazioniEsistenti.find(
-            a => a.racconto_id === r.id && a.giurato_id === g.id
-          )
-          const assegnato = !!assegnazione
-          const haValutato = assegnazione?.completata === true
-          const bloccato = statoBlocco || haValutato
-          const cfg = tipoConfig[g.tipo_giurato] || tipoConfig['lettore']
-          return (
-            <button
-              key={g.id}
-              onClick={() => !bloccato && assegna(r.id, g.id, r.stato === 'finalista' ? 'finale' : 'preliminare')}
-              disabled={bloccato}
-              title={haValutato ? 'Il giurato ha già valutato questo racconto' : ''}
-              className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border transition-colors ${
-                assegnato
-                  ? bloccato ? `${cfg.attivo} opacity-50 cursor-not-allowed` : cfg.attivo
-                  : bloccato ? 'border-gray-100 text-gray-300 cursor-not-allowed' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cfg.badge}`}>
-                {cfg.label}
-              </span>
-              {assegnato ? '✓ ' : ''}{g.nome} {g.cognome}
-              {haValutato && <span className="text-[10px] opacity-60">· valutato</span>}
-            </button>
-          )
-        })}
-        <div className="w-px h-6 bg-gray-200 mx-1" />
-        {giuratiAssegnabili.filter(g => g.tipo_giurato === 'lettore').map(g => {
-          const assegnazione = assegnazioniEsistenti.find(
-            a => a.racconto_id === r.id && a.giurato_id === g.id
-          )
-          const assegnato = !!assegnazione
-          const haValutato = assegnazione?.completata === true
-          const bloccato = statoBlocco || haValutato
-          const cfg = tipoConfig[g.tipo_giurato] || tipoConfig['lettore']
-          return (
-            <button
-              key={g.id}
-              onClick={() => !bloccato && assegna(r.id, g.id, r.stato === 'finalista' ? 'finale' : 'preliminare')}
-              disabled={bloccato}
-              title={haValutato ? 'Il giurato ha già valutato questo racconto' : ''}
-              className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border transition-colors ${
-                assegnato
-                  ? bloccato ? `${cfg.attivo} opacity-50 cursor-not-allowed` : cfg.attivo
-                  : bloccato ? 'border-gray-100 text-gray-300 cursor-not-allowed' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cfg.badge}`}>
-                {cfg.label}
-              </span>
-              {assegnato ? '✓ ' : ''}{g.nome} {g.cognome}
-              {haValutato && <span className="text-[10px] opacity-60">· valutato</span>}
-            </button>
-          )
-        })}
+      <div className="flex gap-4 items-start">
+        <div className="flex flex-wrap gap-2">
+          {giuratiAssegnabili.filter(g => g.tipo_giurato === 'interno').map(g => {
+            const assegnazione = assegnazioniEsistenti.find(
+              a => a.racconto_id === r.id && a.giurato_id === g.id
+            )
+            const assegnato = !!assegnazione
+            const haValutato = assegnazione?.completata === true
+            const bloccato = statoBlocco || haValutato
+            const cfg = tipoConfig[g.tipo_giurato] || tipoConfig['lettore']
+            return (
+              <button
+                key={g.id}
+                onClick={() => !bloccato && assegna(r.id, g.id, r.stato === 'finalista' ? 'finale' : 'preliminare')}
+                disabled={bloccato}
+                title={haValutato ? 'Il giurato ha già valutato questo racconto' : ''}
+                className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                  assegnato
+                    ? bloccato ? `${cfg.attivo} opacity-50 cursor-not-allowed` : cfg.attivo
+                    : bloccato ? 'border-gray-100 text-gray-300 cursor-not-allowed' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cfg.badge}`}>
+                  {cfg.label}
+                </span>
+                {assegnato ? '✓ ' : ''}{g.nome} {g.cognome}
+                {haValutato && <span className="text-[10px] opacity-60">· valutato</span>}
+              </button>
+            )
+          })}
+        </div>
+        <div className="w-px self-stretch bg-gray-200" />
+        <div className="flex flex-wrap gap-2">
+          {giuratiAssegnabili.filter(g => g.tipo_giurato === 'lettore').map(g => {
+            const assegnazione = assegnazioniEsistenti.find(
+              a => a.racconto_id === r.id && a.giurato_id === g.id
+            )
+            const assegnato = !!assegnazione
+            const haValutato = assegnazione?.completata === true
+            const bloccato = statoBlocco || haValutato
+            const cfg = tipoConfig[g.tipo_giurato] || tipoConfig['lettore']
+            return (
+              <button
+                key={g.id}
+                onClick={() => !bloccato && assegna(r.id, g.id, r.stato === 'finalista' ? 'finale' : 'preliminare')}
+                disabled={bloccato}
+                title={haValutato ? 'Il giurato ha già valutato questo racconto' : ''}
+                className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                  assegnato
+                    ? bloccato ? `${cfg.attivo} opacity-50 cursor-not-allowed` : cfg.attivo
+                    : bloccato ? 'border-gray-100 text-gray-300 cursor-not-allowed' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cfg.badge}`}>
+                  {cfg.label}
+                </span>
+                {assegnato ? '✓ ' : ''}{g.nome} {g.cognome}
+                {haValutato && <span className="text-[10px] opacity-60">· valutato</span>}
+              </button>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
+}
 }
 
   if (caricamento) return (
