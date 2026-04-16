@@ -224,8 +224,15 @@ setProfilo(profiloData)
     { key: 'e', label: 'Giudizio complessivo' },
   ]
 
-  const giuratiAssegnabili = giurati.filter(g => ['interno', 'lettore'].includes(g.tipo_giurato))
-
+  const giuratiAssegnabili = [
+  ...giurati
+    .filter(g => g.tipo_giurato === 'interno')
+    .sort((a, b) => a.cognome.localeCompare(b.cognome)),
+  ...giurati
+    .filter(g => g.tipo_giurato === 'lettore')
+    .sort((a, b) => a.cognome.localeCompare(b.cognome)),
+]
+  
   function CardAssegnazione({ r }: { r: any }) {
     const statoBlocco = ['valutato', 'finalista', 'eliminato', 'vincitore'].includes(r.stato)
     return (
