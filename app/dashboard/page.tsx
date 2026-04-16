@@ -527,7 +527,7 @@ export default function DashboardPage() {
                         return (
                           <button
                             key={g.id}
-                            onClick={() => !haValutato && assegna(r.id, g.id, 'qualità')}
+                            onClick={() => !haValutato && assegna(r.id, g.id, 'finale')}
                             disabled={haValutato}
                             title={haValutato ? 'Il giurato ha già valutato questo racconto' : ''}
                             className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border transition-colors ${
