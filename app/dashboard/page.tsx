@@ -246,6 +246,17 @@ if (tipoGiurato === 'interno' || tipoGiurato === 'lettore') {
   
   function CardAssegnazione({ r }: { r: any }) {
   const statoBlocco = ['valutato', 'finalista', 'eliminato', 'vincitore'].includes(r.stato)
+
+  // Calcola lo stato attuale delle assegnazioni per questo racconto
+  const assegnazioniRacconto = assegnazioniEsistenti.filter(a => a.racconto_id === r.id)
+  const internoAssegnato = assegnazioniRacconto.some(a =>
+    giurati.find(g => g.id === a.giurato_id)?.tipo_giurato === 'interno'
+  )
+  const lettoreAssegnato = assegnazioniRacconto.some(a =>
+    giurati.find(g => g.id === a.giurato_id)?.tipo_giurato === 'lettore'
+  )
+  const totaleAssegnati = assegnazioniRacconto.length
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5">
       <div className="flex items-center justify-between mb-3">
@@ -263,6 +274,8 @@ if (tipoGiurato === 'interno' || tipoGiurato === 'lettore') {
         </span>
       </div>
       <div className="flex gap-4 items-start">
+
+        {/* COLONNA INTERNI */}
         <div className="flex flex-wrap gap-2">
           {giuratiAssegnabili.filter(g => g.tipo_giurato === 'interno').map(g => {
             const assegnazione = assegnazioniEsistenti.find(
@@ -270,18 +283,29 @@ if (tipoGiurato === 'interno' || tipoGiurato === 'lettore') {
             )
             const assegnato = !!assegnazione
             const haValutato = assegnazione?.completata === true
-            const giaOccupato = !assegnato && assegnazioniEsistenti.some(a =>
-  a.racconto_id === r.id &&
-  giurati.find(g => g.id === a.giurato_id)?.tipo_giurato === 'interno'
-)
-const bloccato = statoBlocco || haValutato || giaOccupato
+
+            // Bloccato se:
+            // - stato racconto blocca le modifiche, oppure
+            // - ha già valutato (non si può rimuovere), oppure
+            // - non è assegnato MA lo slot interno è già occupato da un altro, oppure
+            // - non è assegnato e ci sono già 2 giurati totali
+            const bloccato =
+              statoBlocco ||
+              haValutato ||
+              (!assegnato && internoAssegnato) ||
+              (!assegnato && totaleAssegnati >= 2)
+
             const cfg = tipoConfig[g.tipo_giurato] || tipoConfig['lettore']
             return (
               <button
                 key={g.id}
                 onClick={() => !bloccato && assegna(r.id, g.id, r.stato === 'finalista' ? 'finale' : 'preliminare')}
                 disabled={bloccato}
-                title={haValutato ? 'Il giurato ha già valutato questo racconto' : ''}
+                title={
+                  haValutato ? 'Il giurato ha già valutato questo racconto' :
+                  !assegnato && internoAssegnato ? 'Slot interno già occupato' :
+                  !assegnato && totaleAssegnati >= 2 ? 'Già 2 giurati assegnati' : ''
+                }
                 className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border transition-colors ${
                   assegnato
                     ? bloccato ? `${cfg.attivo} opacity-50 cursor-not-allowed` : cfg.attivo
@@ -297,26 +321,41 @@ const bloccato = statoBlocco || haValutato || giaOccupato
             )
           })}
         </div>
+
+        {/* DIVISORE */}
         <div className="w-px self-stretch bg-gray-200" />
+
+        {/* COLONNA LETTORI */}
         <div className="flex flex-wrap gap-2">
           {giuratiAssegnabili.filter(g => g.tipo_giurato === 'lettore').map(g => {
             const assegnazione = assegnazioniEsistenti.find(
               a => a.racconto_id === r.id && a.giurato_id === g.id
             )
-const assegnato = !!assegnazione
-const haValutato = assegnazione?.completata === true
-const giaOccupato = !assegnato && assegnazioniEsistenti.some(a =>
-  a.racconto_id === r.id &&
-  giurati.find(g => g.id === a.giurato_id)?.tipo_giurato === 'lettore'
-)
-const bloccato = statoBlocco || haValutato || giaOccupato
+            const assegnato = !!assegnazione
+            const haValutato = assegnazione?.completata === true
+
+            // Bloccato se:
+            // - stato racconto blocca le modifiche, oppure
+            // - ha già valutato (non si può rimuovere), oppure
+            // - non è assegnato MA lo slot lettore è già occupato da un altro, oppure
+            // - non è assegnato e ci sono già 2 giurati totali
+            const bloccato =
+              statoBlocco ||
+              haValutato ||
+              (!assegnato && lettoreAssegnato) ||
+              (!assegnato && totaleAssegnati >= 2)
+
             const cfg = tipoConfig[g.tipo_giurato] || tipoConfig['lettore']
             return (
               <button
                 key={g.id}
                 onClick={() => !bloccato && assegna(r.id, g.id, r.stato === 'finalista' ? 'finale' : 'preliminare')}
                 disabled={bloccato}
-                title={haValutato ? 'Il giurato ha già valutato questo racconto' : ''}
+                title={
+                  haValutato ? 'Il giurato ha già valutato questo racconto' :
+                  !assegnato && lettoreAssegnato ? 'Slot lettore già occupato' :
+                  !assegnato && totaleAssegnati >= 2 ? 'Già 2 giurati assegnati' : ''
+                }
                 className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border transition-colors ${
                   assegnato
                     ? bloccato ? `${cfg.attivo} opacity-50 cursor-not-allowed` : cfg.attivo
@@ -332,6 +371,7 @@ const bloccato = statoBlocco || haValutato || giaOccupato
             )
           })}
         </div>
+
       </div>
     </div>
   )
