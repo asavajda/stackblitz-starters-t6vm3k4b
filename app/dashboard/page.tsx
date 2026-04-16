@@ -311,21 +311,35 @@ export default function DashboardPage() {
       `}</style>
 
       <div className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
-        <img src="/logo_tohorror_dark.png" alt="TOHorror" className="h-16" />
-        <div className="flex gap-2">
-          {(['racconti', 'assegnazioni', 'finalisti', 'risultati', 'giurati'] as const).map(s => (
-            <button
-              key={s}
-              onClick={() => cambiaSezione(s)}
-              className={`px-4 py-1.5 rounded-lg text-sm capitalize transition-colors ${
-                sezione === s ? 'bg-gray-800 text-white' : 'text-gray-500 hover:bg-gray-100'
-              }`}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-      </div>
+  <img src="/logo_tohorror_dark.png" alt="TOHorror" className="h-16" />
+  <div className="flex gap-2">
+    {(['racconti', 'assegnazioni', 'finalisti', 'risultati', 'giurati'] as const).map(s => (
+      <button
+        key={s}
+        onClick={() => cambiaSezione(s)}
+        className={`px-4 py-1.5 rounded-lg text-sm capitalize transition-colors ${
+          sezione === s ? 'bg-gray-800 text-white' : 'text-gray-500 hover:bg-gray-100'
+        }`}
+      >
+        {s}
+      </button>
+    ))}
+  </div>
+  <div className="flex items-center gap-3">
+    <div className="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center text-xs font-semibold">
+      {profilo?.nome?.[0]?.toUpperCase()}{profilo?.cognome?.[0]?.toUpperCase()}
+    </div>
+    <button
+      onClick={async () => {
+        await supabase.auth.signOut()
+        router.push('/login')
+      }}
+      className="text-sm text-gray-500 hover:text-gray-800 transition-colors"
+    >
+      Logout
+    </button>
+  </div>
+</div>
 
       <div className="px-8 py-8 max-w-5xl mx-auto">
 
