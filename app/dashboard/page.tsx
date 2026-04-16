@@ -58,7 +58,7 @@ export default function DashboardPage() {
 
     const { data: profilo } = await supabase
       .from('profiles')
-      .select('ruolo')
+      .select('ruolo, nome, cognome')
       .eq('id', user.id)
       .single()
 
