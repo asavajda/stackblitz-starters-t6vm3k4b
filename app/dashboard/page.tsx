@@ -153,9 +153,7 @@ if (tipoGiurato === 'interno' || tipoGiurato === 'lettore') {
         .insert({ racconto_id, giurato_id, fase })
         .select()
         .single()
-      
-console.log('insert result:', { data, error })
-      
+            
       if (!error && data) {
         setAssegnazioniEsistenti(prev => [...prev, data])
         const racconto = racconti.find(r => r.id === racconto_id)
@@ -298,6 +296,8 @@ console.log('insert result:', { data, error })
               (!assegnato && internoAssegnato) ||
               (!assegnato && totaleAssegnati >= 2)
 
+      console.log(g.cognome, { assegnato, haValutato, statoBlocco, internoAssegnato, totaleAssegnati, bloccato })
+
             const cfg = tipoConfig[g.tipo_giurato] || tipoConfig['lettore']
             return (
               <button
@@ -347,6 +347,8 @@ console.log('insert result:', { data, error })
               haValutato ||
               (!assegnato && lettoreAssegnato) ||
               (!assegnato && totaleAssegnati >= 2)
+
+      console.log(g.cognome, { assegnato, haValutato, statoBlocco, internoAssegnato, totaleAssegnati, bloccato })
 
             const cfg = tipoConfig[g.tipo_giurato] || tipoConfig['lettore']
             return (
