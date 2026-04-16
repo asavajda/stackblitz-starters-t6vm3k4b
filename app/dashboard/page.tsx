@@ -98,6 +98,7 @@ setProfilo(profiloData)
     setMedie(prev => prev.map(m => m.racconto_id === racconto_id ? { ...m, stato } : m))
   }
 
+  //FUNZIONE ASSEGNA
   async function assegna(racconto_id: string, giurato_id: string, fase: string) {
     const racconto = racconti.find(r => r.id === racconto_id)
 
@@ -109,6 +110,16 @@ setProfilo(profiloData)
     if (['eliminato', 'vincitore'].includes(racconto?.stato)) return
   }
 
+    // Limite: max 1 interno e max 1 lettore per racconto
+const tipoGiurato = giurati.find(g => g.id === giurato_id)?.tipo_giurato
+if (tipoGiurato === 'interno' || tipoGiurato === 'lettore') {
+  const giaAssegnatoStessoTipo = assegnazioniEsistenti.some(a =>
+    a.racconto_id === racconto_id &&
+    giurati.find(g => g.id === a.giurato_id)?.tipo_giurato === tipoGiurato
+  )
+  if (giaAssegnatoStessoTipo) return
+}
+    
     const haValutato = assegnazioniEsistenti.some(a =>
       a.racconto_id === racconto_id &&
       a.giurato_id === giurato_id &&
@@ -259,7 +270,11 @@ setProfilo(profiloData)
             )
             const assegnato = !!assegnazione
             const haValutato = assegnazione?.completata === true
-            const bloccato = statoBlocco || haValutato
+            const giaOccupato = !assegnato && assegnazioniEsistenti.some(a =>
+  a.racconto_id === r.id &&
+  giurati.find(g => g.id === a.giurato_id)?.tipo_giurato === 'interno'
+)
+const bloccato = statoBlocco || haValutato || giaOccupato
             const cfg = tipoConfig[g.tipo_giurato] || tipoConfig['lettore']
             return (
               <button
