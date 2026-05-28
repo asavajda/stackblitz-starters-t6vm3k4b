@@ -161,6 +161,11 @@ export default function DashboardPage() {
     setGiurati(prev => prev.map(g => g.id === id ? { ...g, attivo: false } : g))
   }
 
+  async function riabilitaGiurato(id: string) {
+  await supabase.from('profiles').update({ attivo: true }).eq('id', id)
+  setGiurati(prev => prev.map(g => g.id === id ? { ...g, attivo: true } : g))
+}
+
   async function generaLink(giuratoId: string, email: string) {
     setGenerando(giuratoId)
     const res = await fetch('/api/genera-link', {
