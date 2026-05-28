@@ -9,8 +9,6 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-// ─── Costanti ────────────────────────────────────────────────────────────────
-
 const STATI_LABEL: Record<string, string> = {
   ricevuto: 'Ricevuto', in_valutazione: 'In valutazione', valutato: 'Valutato',
   finalista: 'Finalista', eliminato: 'Eliminato', vincitore: 'Vincitore',
@@ -25,8 +23,8 @@ const STEP_AUTO_COLORI: Record<string, string> = {
 }
 const TIPO_CONFIG: Record<string, { badge: string; attivo: string; label: string }> = {
   interno: { badge: 'bg-purple-100 text-purple-700', attivo: 'bg-purple-50 border-purple-400 text-purple-800', label: 'INT' },
-  lettore: { badge: 'bg-blue-100 text-blue-700',   attivo: 'bg-blue-50 border-blue-400 text-blue-800',     label: 'LET' },
-  qualita: { badge: 'bg-amber-100 text-amber-700', attivo: 'bg-amber-50 border-amber-400 text-amber-800',  label: 'QUA' },
+  lettore: { badge: 'bg-blue-100 text-blue-700',    attivo: 'bg-blue-50 border-blue-400 text-blue-800',     label: 'LET' },
+  qualita: { badge: 'bg-amber-100 text-amber-700',  attivo: 'bg-amber-50 border-amber-400 text-amber-800',  label: 'QUA' },
 }
 const CRITERI = [
   { key: 'a', label: 'Incipit' }, { key: 'b', label: 'Svolta narrativa' },
@@ -38,24 +36,21 @@ type Sezione = typeof SEZIONI[number]
 
 function fmt(stato: string) { return STATI_LABEL[stato] ?? stato }
 
-// ─── Componente principale ────────────────────────────────────────────────────
-
 export default function DashboardPage() {
   const router = useRouter()
 
-  // stato
-  const [racconti, setRacconti]                   = useState<any[]>([])
-  const [giurati, setGiurati]                     = useState<any[]>([])
+  const [racconti, setRacconti]                           = useState<any[]>([])
+  const [giurati, setGiurati]                             = useState<any[]>([])
   const [assegnazioniEsistenti, setAssegnazioniEsistenti] = useState<any[]>([])
-  const [valutazioni, setValutazioni]             = useState<any[]>([])
-  const [medie, setMedie]                         = useState<any[]>([])
-  const [profilo, setProfilo]                     = useState<any>(null)
-  const [caricamento, setCaricamento]             = useState(true)
-  const [linkGenerati, setLinkGenerati]           = useState<Record<string, string>>({})
-  const [generando, setGenerando]                 = useState<string | null>(null)
-  const [nuovoGiurato, setNuovoGiurato]           = useState({ nome: '', cognome: '', email: '', tipo_giurato: 'lettore' })
-  const [aggiungendo, setAggiungendo]             = useState(false)
-  const [messaggioGiurato, setMessaggioGiurato]   = useState('')
+  const [valutazioni, setValutazioni]                     = useState<any[]>([])
+  const [medie, setMedie]                                 = useState<any[]>([])
+  const [profilo, setProfilo]                             = useState<any>(null)
+  const [caricamento, setCaricamento]                     = useState(true)
+  const [linkGenerati, setLinkGenerati]                   = useState<Record<string, string>>({})
+  const [generando, setGenerando]                         = useState<string | null>(null)
+  const [nuovoGiurato, setNuovoGiurato]                   = useState({ nome: '', cognome: '', email: '', tipo_giurato: 'lettore' })
+  const [aggiungendo, setAggiungendo]                     = useState(false)
+  const [messaggioGiurato, setMessaggioGiurato]           = useState('')
   const [sezione, setSezione] = useState<Sezione>(() => {
     if (typeof window === 'undefined') return 'racconti'
     const h = window.location.hash.replace('#', '')
@@ -64,16 +59,12 @@ export default function DashboardPage() {
 
   function cambiaSezione(s: Sezione) { setSezione(s); window.location.hash = s }
 
-  // ─── Caricamento dati ───────────────────────────────────────────────────────
-
   async function carica() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/login'); return }
-
     const { data: p } = await supabase.from('profiles').select('ruolo, nome, cognome').eq('id', user.id).single()
     if (p?.ruolo !== 'admin') { router.push('/login'); return }
     setProfilo(p)
-
     const [{ data: r }, { data: g }, { data: m }, { data: a }, { data: v }] = await Promise.all([
       supabase.from('racconti').select('*, profiles(nome, cognome)').order('inviato_il', { ascending: false }),
       supabase.from('profiles').select('*').eq('ruolo', 'giurato'),
@@ -81,7 +72,6 @@ export default function DashboardPage() {
       supabase.from('assegnazioni').select('*'),
       supabase.from('valutazioni').select('*, assegnazioni(racconto_id, giurato_id, profiles(nome, cognome))'),
     ])
-
     setRacconti(r || []); setGiurati(g || []); setMedie(m || [])
     setAssegnazioniEsistenti(a || []); setValutazioni(v || [])
     setCaricamento(false)
@@ -89,94 +79,72 @@ export default function DashboardPage() {
 
   useEffect(() => { carica() }, [])
 
-  // ─── Azioni racconti ────────────────────────────────────────────────────────
-
   async function aggiornaStato(racconto_id: string, stato: string) {
     await supabase.from('racconti').update({ stato }).eq('id', racconto_id)
     setRacconti(prev => prev.map(r => r.id === racconto_id ? { ...r, stato } : r))
     setMedie(prev => prev.map(m => m.racconto_id === racconto_id ? { ...m, stato } : m))
   }
 
-  // ─── Assegnazioni ───────────────────────────────────────────────────────────
-
   async function assegna(racconto_id: string, giurato_id: string, fase: string) {
     const racconto = racconti.find(r => r.id === racconto_id)
-
     if (fase !== 'finale') {
       if (['valutato', 'finalista', 'eliminato', 'vincitore'].includes(racconto?.stato)) return
     } else {
       if (['eliminato', 'vincitore'].includes(racconto?.stato)) return
     }
 
-   const tipoGiurato = giurati.find(g => g.id === giurato_id)?.tipo_giurato
-if (tipoGiurato === 'interno' || tipoGiurato === 'lettore') {
-  const assegnazioneEsistenteStessoTipo = assegnazioniEsistenti.find(a =>
-    a.racconto_id === racconto_id &&
-    giurati.find(g => g.id === a.giurato_id)?.tipo_giurato === tipoGiurato
-  )
+    const tipoGiurato = giurati.find(g => g.id === giurato_id)?.tipo_giurato
+    const assegnazioniRacconto = assegnazioniEsistenti.filter(a => a.racconto_id === racconto_id)
 
-  if (assegnazioneEsistenteStessoTipo) {
-    // C'è già un giurato di questo tipo assegnato
-    const èLoStessoGiurato = assegnazioneEsistenteStessoTipo.giurato_id === giurato_id
-    if (!èLoStessoGiurato) {
-      // Sta cercando di assegnare un ALTRO giurato dello stesso tipo
-      // Permesso solo se quello esistente NON ha ancora valutato
-      if (assegnazioneEsistenteStessoTipo.completata === true) return
-      // Altrimenti: rimuovi prima quello esistente, poi procedi con il nuovo
-      const { error } = await supabase.from('assegnazioni')
-        .delete()
-        .eq('racconto_id', racconto_id)
-        .eq('giurato_id', assegnazioneEsistenteStessoTipo.giurato_id)
-      if (error) return
-      setAssegnazioniEsistenti(prev => prev.filter(
-        a => !(a.racconto_id === racconto_id && a.giurato_id === assegnazioneEsistenteStessoTipo.giurato_id)
-      ))
-    }
-  }
-}
-
-    const haValutato = assegnazioniEsistenti.some(
-      a => a.racconto_id === racconto_id && a.giurato_id === giurato_id && a.completata === true
-    )
-    if (haValutato) return
-
-    const esiste = assegnazioniEsistenti.some(
-      a => a.racconto_id === racconto_id && a.giurato_id === giurato_id
-    )
-
-    if (esiste) {
+    // Clicco su un giurato GIA assegnato: toggle (rimuovi se non ha valutato)
+    const assegnazioneEsistente = assegnazioniRacconto.find(a => a.giurato_id === giurato_id)
+    if (assegnazioneEsistente) {
+      if (!!assegnazioneEsistente.completata) return
       const { error } = await supabase.from('assegnazioni')
         .delete().eq('racconto_id', racconto_id).eq('giurato_id', giurato_id)
-      if (!error) {
-        const nuove = assegnazioniEsistenti.filter(
-          a => !(a.racconto_id === racconto_id && a.giurato_id === giurato_id)
-        )
-        setAssegnazioniEsistenti(nuove)
-        if (nuove.filter(a => a.racconto_id === racconto_id).length === 0) {
-          await supabase.from('racconti').update({ stato: 'ricevuto' }).eq('id', racconto_id)
-          setRacconti(prev => prev.map(r => r.id === racconto_id ? { ...r, stato: 'ricevuto' } : r))
-        }
+      if (error) return
+      const nuove = assegnazioniEsistenti.filter(
+        a => !(a.racconto_id === racconto_id && a.giurato_id === giurato_id)
+      )
+      setAssegnazioniEsistenti(nuove)
+      if (nuove.filter(a => a.racconto_id === racconto_id).length === 0) {
+        await supabase.from('racconti').update({ stato: 'ricevuto' }).eq('id', racconto_id)
+        setRacconti(prev => prev.map(r => r.id === racconto_id ? { ...r, stato: 'ricevuto' } : r))
       }
-    } else {
-      const { data, error } = await supabase.from('assegnazioni')
-        .insert({ racconto_id, giurato_id, fase }).select().single()
-      if (!error && data) {
-        setAssegnazioniEsistenti(prev => [...prev, data])
-        if (racconto?.stato === 'ricevuto') {
-          await supabase.from('racconti').update({ stato: 'in_valutazione' }).eq('id', racconto_id)
-          setRacconti(prev => prev.map(r => r.id === racconto_id ? { ...r, stato: 'in_valutazione' } : r))
-        }
+      return
+    }
+
+    // Clicco su un giurato NON assegnato: sostituisci l'occupante se non ha valutato
+    if (tipoGiurato === 'interno' || tipoGiurato === 'lettore') {
+      const occupante = assegnazioniRacconto.find(a =>
+        giurati.find(g => g.id === a.giurato_id)?.tipo_giurato === tipoGiurato
+      )
+      if (occupante) {
+        if (!!occupante.completata) return
+        const { error } = await supabase.from('assegnazioni')
+          .delete().eq('racconto_id', racconto_id).eq('giurato_id', occupante.giurato_id)
+        if (error) return
+        setAssegnazioniEsistenti(prev => prev.filter(
+          a => !(a.racconto_id === racconto_id && a.giurato_id === occupante.giurato_id)
+        ))
       }
     }
-  }
 
-  // ─── Giurati ────────────────────────────────────────────────────────────────
+    // Inserisci il nuovo
+    const { data, error } = await supabase.from('assegnazioni')
+      .insert({ racconto_id, giurato_id, fase }).select().single()
+    if (error || !data) return
+    setAssegnazioniEsistenti(prev => [...prev, data])
+    if (racconto?.stato === 'ricevuto') {
+      await supabase.from('racconti').update({ stato: 'in_valutazione' }).eq('id', racconto_id)
+      setRacconti(prev => prev.map(r => r.id === racconto_id ? { ...r, stato: 'in_valutazione' } : r))
+    }
+  }
 
   async function aggiungiGiurato() {
     setAggiungendo(true); setMessaggioGiurato('')
     const res = await fetch('/api/invite-giurato', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(nuovoGiurato),
     })
     const data = await res.json()
@@ -185,7 +153,7 @@ if (tipoGiurato === 'interno' || tipoGiurato === 'lettore') {
     } else {
       setGiurati(prev => [...prev, { id: data.user.id, ...nuovoGiurato }])
       setNuovoGiurato({ nome: '', cognome: '', email: '', tipo_giurato: 'lettore' })
-      setMessaggioGiurato('✓ Giurato aggiunto. Genera il link di accesso dalla lista.')
+      setMessaggioGiurato('Giurato aggiunto. Genera il link di accesso dalla lista.')
     }
     setAggiungendo(false)
   }
@@ -199,53 +167,43 @@ if (tipoGiurato === 'interno' || tipoGiurato === 'lettore') {
   async function generaLink(giuratoId: string, email: string) {
     setGenerando(giuratoId)
     const res = await fetch('/api/genera-link', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
     })
     const data = await res.json()
-    if (data.link) {
-      setLinkGenerati(prev => ({ ...prev, [giuratoId]: data.link }))
-    } else {
-      setLinkGenerati(prev => ({ ...prev, [giuratoId]: '❌ Errore nella generazione' }))
-    }
+    setLinkGenerati(prev => ({ ...prev, [giuratoId]: data.link || 'Errore nella generazione' }))
     setGenerando(null)
   }
 
   async function copiaLink(giuratoId: string) {
     const link = linkGenerati[giuratoId]
     await navigator.clipboard.writeText(link)
-    setLinkGenerati(prev => ({ ...prev, [giuratoId]: '✓ Copiato!' }))
+    setLinkGenerati(prev => ({ ...prev, [giuratoId]: 'Copiato!' }))
     setTimeout(() => setLinkGenerati(prev => ({ ...prev, [giuratoId]: link })), 2000)
   }
-
-  // ─── Dati derivati ──────────────────────────────────────────────────────────
 
   const giuratiAssegnabili = [
     ...giurati.filter(g => g.tipo_giurato === 'interno').sort((a, b) => a.cognome.localeCompare(b.cognome)),
     ...giurati.filter(g => g.tipo_giurato === 'lettore').sort((a, b) => a.cognome.localeCompare(b.cognome)),
   ]
 
-  // ─── Sotto-componenti ───────────────────────────────────────────────────────
-
   function BtnGiurato({ g, racconto, tipo }: { g: any; racconto: any; tipo: 'interno' | 'lettore' | 'qualita' }) {
     const assegnazioniRacconto = assegnazioniEsistenti.filter(a => a.racconto_id === racconto.id)
     const assegnazione = assegnazioniRacconto.find(a => a.giurato_id === g.id)
     const assegnato    = !!assegnazione
-    const haValutato   = assegnazione?.completata === true
+    const haValutato   = !!assegnazione?.completata
     const statoBlocco  = ['valutato', 'finalista', 'eliminato', 'vincitore'].includes(racconto.stato)
-    const slotOccupatoEValutato = !assegnato && assegnazioniRacconto.some(a =>
-  giurati.find(x => x.id === a.giurato_id)?.tipo_giurato === tipo && a.completata === true
-)
-const bloccato = statoBlocco || haValutato || slotOccupatoEValutato
-  const cfg = TIPO_CONFIG[tipo] || TIPO_CONFIG.lettore
-
+    const slotValutato = !assegnato && assegnazioniRacconto.some(a =>
+      giurati.find(x => x.id === a.giurato_id)?.tipo_giurato === tipo && !!a.completata
+    )
+    const bloccato = statoBlocco || haValutato || slotValutato
+    const cfg = TIPO_CONFIG[tipo] || TIPO_CONFIG.lettore
     return (
       <button
         key={g.id}
         onClick={() => !bloccato && assegna(racconto.id, g.id, racconto.stato === 'finalista' ? 'finale' : 'preliminare')}
         disabled={bloccato}
-      title={haValutato ? 'Già valutato — non modificabile' : slotOccupatoEValutato ? `Slot ${tipo} occupato da giurato che ha già valutato` : ''}
+        title={haValutato ? 'Gia valutato - non modificabile' : slotValutato ? `Slot ${tipo} occupato da giurato che ha gia valutato` : ''}
         className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border transition-colors ${
           assegnato
             ? bloccato ? `${cfg.attivo} opacity-50 cursor-not-allowed` : cfg.attivo
@@ -253,8 +211,8 @@ const bloccato = statoBlocco || haValutato || slotOccupatoEValutato
         }`}
       >
         <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cfg.badge}`}>{cfg.label}</span>
-        {assegnato ? '✓ ' : ''}{g.nome} {g.cognome}
-        {haValutato && <span className="text-[10px] opacity-60">· valutato</span>}
+        {assegnato ? '+ ' : ''}{g.nome} {g.cognome}
+        {haValutato && <span className="text-[10px] opacity-60">valutato</span>}
       </button>
     )
   }
@@ -289,18 +247,16 @@ const bloccato = statoBlocco || haValutato || slotOccupatoEValutato
     )
   }
 
-  // ─── Rendering ──────────────────────────────────────────────────────────────
-
   if (caricamento) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <p className="text-gray-400 text-sm">Caricamento...</p>
     </div>
   )
 
-  const raccontinDaAssegnare    = racconti.filter(r => r.stato === 'ricevuto')
-  const raccontiInValutazione   = racconti.filter(r => r.stato === 'in_valutazione')
+  const raccontinDaAssegnare      = racconti.filter(r => r.stato === 'ricevuto')
+  const raccontiInValutazione     = racconti.filter(r => r.stato === 'in_valutazione')
   const raccontiValutatiEliminati = racconti.filter(r => ['valutato', 'eliminato'].includes(r.stato))
-  const raccontiFinalisti       = racconti.filter(r => r.stato === 'finalista')
+  const raccontiFinalisti         = racconti.filter(r => r.stato === 'finalista')
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -315,7 +271,6 @@ const bloccato = statoBlocco || haValutato || slotOccupatoEValutato
         }
       `}</style>
 
-      {/* NAVBAR */}
       <div className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
         <img src="/logo_tohorror_dark.png" alt="TOHorror" className="h-16" />
         <div className="flex gap-2">
@@ -339,7 +294,6 @@ const bloccato = statoBlocco || haValutato || slotOccupatoEValutato
 
       <div className="px-8 py-8 max-w-5xl mx-auto">
 
-        {/* ── RACCONTI ── */}
         {sezione === 'racconti' && (
           <div className="space-y-3">
             <div className="flex items-center justify-between mb-4">
@@ -356,7 +310,6 @@ const bloccato = statoBlocco || haValutato || slotOccupatoEValutato
                   Autore: {r.autore_nome ? `${r.autore_nome} ${r.autore_cognome}` : `${r.profiles?.nome} ${r.profiles?.cognome}`}
                 </p>
                 <p className="text-xs text-gray-400 mt-0.5">Caricato il: {new Date(r.inviato_il).toLocaleDateString('it-IT')}</p>
-
                 <div className="flex items-center mt-4 gap-2 flex-wrap">
                   {['ricevuto', 'in_valutazione', 'valutato'].map((s, i) => {
                     const idx = ['ricevuto','in_valutazione','valutato','finalista','eliminato','vincitore'].indexOf(r.stato)
@@ -400,12 +353,11 @@ const bloccato = statoBlocco || haValutato || slotOccupatoEValutato
           </div>
         )}
 
-        {/* ── ASSEGNAZIONI ── */}
         {sezione === 'assegnazioni' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-400">Assegna racconti ai giurati</p>
-              <button onClick={carica} className="text-xs text-gray-400 hover:text-gray-600">↻ Aggiorna</button>
+              <button onClick={carica} className="text-xs text-gray-400 hover:text-gray-600">Aggiorna</button>
             </div>
             {[
               { label: 'Da assegnare', list: raccontinDaAssegnare },
@@ -424,12 +376,11 @@ const bloccato = statoBlocco || haValutato || slotOccupatoEValutato
           </div>
         )}
 
-        {/* ── FINALISTI ── */}
         {sezione === 'finalisti' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between mb-4">
               <p className="text-sm text-gray-400">{raccontiFinalisti.length} racconti finalisti</p>
-              <button onClick={carica} className="text-xs text-gray-400 hover:text-gray-600">↻ Aggiorna</button>
+              <button onClick={carica} className="text-xs text-gray-400 hover:text-gray-600">Aggiorna</button>
             </div>
             {raccontiFinalisti.length === 0
               ? <p className="text-xs text-gray-300">Nessun racconto finalista ancora</p>
@@ -447,7 +398,7 @@ const bloccato = statoBlocco || haValutato || slotOccupatoEValutato
                   </div>
                   <div className="flex flex-wrap gap-2 mb-4">
                     {giurati.filter(g => g.tipo_giurato === 'qualita').length === 0
-                      ? <p className="text-xs text-gray-300">Nessun giurato di qualità disponibile</p>
+                      ? <p className="text-xs text-gray-300">Nessun giurato di qualita disponibile</p>
                       : giurati.filter(g => g.tipo_giurato === 'qualita').map(g =>
                           <BtnGiurato key={g.id} g={g} racconto={r} tipo="qualita" />
                         )
@@ -471,7 +422,6 @@ const bloccato = statoBlocco || haValutato || slotOccupatoEValutato
           </div>
         )}
 
-        {/* ── RISULTATI ── */}
         {sezione === 'risultati' && (
           <div className="space-y-3">
             <p className="text-sm text-gray-400 mb-4">Medie per racconto (ordinate per punteggio)</p>
@@ -496,7 +446,7 @@ const bloccato = statoBlocco || haValutato || slotOccupatoEValutato
                   {valRacconto.length > 0 && (
                     <div className="mb-4">
                       <p className="text-xs text-gray-500 mb-1">Autore: {autore}</p>
-                      <p className="text-xs text-gray-500 mb-3">Caricato il: {racconto?.inviato_il ? new Date(racconto.inviato_il).toLocaleDateString('it-IT') : '—'}</p>
+                      <p className="text-xs text-gray-500 mb-3">Caricato il: {racconto?.inviato_il ? new Date(racconto.inviato_il).toLocaleDateString('it-IT') : '-'}</p>
                       <div className="space-y-2">
                         <div className="grid grid-cols-7 gap-2 text-[10px] text-gray-400 uppercase px-2">
                           <span className="col-span-2">Giurato</span>
@@ -535,11 +485,8 @@ const bloccato = statoBlocco || haValutato || slotOccupatoEValutato
           </div>
         )}
 
-        {/* ── GIURATI ── */}
         {sezione === 'giurati' && (
           <div className="space-y-6">
-
-            {/* Form aggiunta */}
             <div className="bg-white rounded-xl border border-gray-200 p-5">
               <p className="text-sm font-medium text-gray-800 mb-1">Aggiungi giurato</p>
               <p className="text-xs text-gray-400 mb-4">
@@ -567,12 +514,12 @@ const bloccato = statoBlocco || haValutato || slotOccupatoEValutato
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
                     <option value="interno">Interno</option>
                     <option value="lettore">Lettore</option>
-                    <option value="qualita">Qualità</option>
+                    <option value="qualita">Qualita</option>
                   </select>
                 </div>
               </div>
               {messaggioGiurato && (
-                <p className={`text-sm mb-3 ${messaggioGiurato.includes('✓') ? 'text-green-600' : 'text-red-500'}`}>
+                <p className={`text-sm mb-3 ${messaggioGiurato.includes('Errore') ? 'text-red-500' : 'text-green-600'}`}>
                   {messaggioGiurato}
                 </p>
               )}
@@ -583,16 +530,15 @@ const bloccato = statoBlocco || haValutato || slotOccupatoEValutato
               </button>
             </div>
 
-            {/* Lista giurati */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-400">{giurati.length} giurati</p>
-                <button onClick={carica} className="text-xs text-gray-400 hover:text-gray-600">↻ Aggiorna lista</button>
+                <button onClick={carica} className="text-xs text-gray-400 hover:text-gray-600">Aggiorna lista</button>
               </div>
               {giurati.map(g => {
                 const cfg = TIPO_CONFIG[g.tipo_giurato] || TIPO_CONFIG.lettore
                 const link = linkGenerati[g.id]
-                const isCopied = link === '✓ Copiato!'
+                const isCopied = link === 'Copiato!'
                 return (
                   <div key={g.id} className="bg-white rounded-xl border border-gray-200 p-4">
                     <div className="flex items-center justify-between">
@@ -606,7 +552,7 @@ const bloccato = statoBlocco || haValutato || slotOccupatoEValutato
                       <div className="flex items-center gap-2">
                         <button onClick={() => generaLink(g.id, g.email)} disabled={generando === g.id}
                           className="text-xs px-3 py-1 rounded-lg border border-blue-200 text-blue-500 hover:bg-blue-50 disabled:opacity-50">
-                          {generando === g.id ? '...' : '🔗 Genera link'}
+                          {generando === g.id ? '...' : 'Genera link'}
                         </button>
                         <button onClick={() => eliminaGiurato(g.id)}
                           className="text-xs px-3 py-1 rounded-lg border border-red-200 text-red-500 hover:bg-red-50">
@@ -614,15 +560,13 @@ const bloccato = statoBlocco || haValutato || slotOccupatoEValutato
                         </button>
                       </div>
                     </div>
-
-                    {/* Link generato */}
                     {link && (
                       <div className="mt-3 flex items-center gap-2">
                         <input readOnly value={link}
                           className="flex-1 text-xs border border-gray-200 rounded-lg px-2 py-1.5 text-gray-500 bg-gray-50 truncate" />
                         <button onClick={() => copiaLink(g.id)}
                           className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${isCopied ? 'border-green-200 text-green-600 bg-green-50' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
-                          {isCopied ? '✓' : 'Copia'}
+                          {isCopied ? 'Copiato' : 'Copia'}
                         </button>
                       </div>
                     )}
