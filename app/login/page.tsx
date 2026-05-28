@@ -38,9 +38,9 @@ export default function LoginPage() {
       return
     }
 
-    if (profilo?.ruolo === 'admin') router.push('/dashboard')
-    else if (profilo?.ruolo === 'giurato') router.push('/giurato')
-    else router.push('/invio')
+if (profilo?.is_admin) router.push('/dashboard')
+else if (profilo?.ruolo === 'giurato') router.push('/giurato')
+else router.push('/invio')
   }
 
   return (
