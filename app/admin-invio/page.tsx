@@ -30,12 +30,6 @@ export default function AdminInvioPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
 
-      const { data: profilo } = await supabase
-        .from('profiles')
-        .select('ruolo')
-        .eq('id', user.id)
-        .single()
-
      const { data: profilo } = await supabase
   .from('profiles')
   .select('ruolo, is_admin')
