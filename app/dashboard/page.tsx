@@ -108,14 +108,15 @@ export default function DashboardPage() {
       if (['eliminato', 'vincitore'].includes(racconto?.stato)) return
     }
 
-    const tipoGiurato = giurati.find(g => g.id === giurato_id)?.tipo_giurato
-    if (tipoGiurato === 'interno' || tipoGiurato === 'lettore') {
-      const giaAssegnato = assegnazioniEsistenti.some(a =>
-        a.racconto_id === racconto_id &&
-        giurati.find(g => g.id === a.giurato_id)?.tipo_giurato === tipoGiurato
-      )
-      if (giaAssegnato) return
-    }
+   const tipoGiurato = giurati.find(g => g.id === giurato_id)?.tipo_giurato
+if (tipoGiurato === 'interno' || tipoGiurato === 'lettore') {
+  const slotOccupatoEValutato = assegnazioniEsistenti.some(a =>
+    a.racconto_id === racconto_id &&
+    giurati.find(g => g.id === a.giurato_id)?.tipo_giurato === tipoGiurato &&
+    a.completata === true
+  )
+  if (slotOccupatoEValutato) return
+}
 
     const haValutato = assegnazioniEsistenti.some(
       a => a.racconto_id === racconto_id && a.giurato_id === giurato_id && a.completata === true
