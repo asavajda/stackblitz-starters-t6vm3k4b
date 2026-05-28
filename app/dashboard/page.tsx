@@ -27,8 +27,9 @@ export default function DashboardPage() {
   const [giurati, setGiurati] = useState<any[]>([])
   const [assegnazioniEsistenti, setAssegnazioniEsistenti] = useState<any[]>([])
   const [valutazioni, setValutazioni] = useState<any[]>([])
-  const [caricamento, setCaricamento] = useState(true)
-  const [profilo, setProfilo] = useState<any>(null)
+const [caricamento, setCaricamento] = useState(true)
+const [linkGenerati, setLinkGenerati] = useState<Record<string, string>>({})
+const [generando, setGenerando] = useState<string | null>(null)  const [profilo, setProfilo] = useState<any>(null)
   const [sezione, setSezione] = useState<'racconti' | 'assegnazioni' | 'finalisti' | 'risultati' | 'giurati'>(() => {
     if (typeof window !== 'undefined') {
       const hash = window.location.hash.replace('#', '')
