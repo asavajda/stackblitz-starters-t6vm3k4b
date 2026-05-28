@@ -29,7 +29,7 @@ export default function LoginPage() {
 
     const { data: profilo } = await supabase
       .from('profiles')
-      .select('ruolo, must_change_password')
+     .select('ruolo, is_admin, must_change_password')
       .eq('id', data.user.id)
       .single()
 
