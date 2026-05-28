@@ -17,36 +17,54 @@ const CRITERI = [
   { key: 'e', label: 'Giudizio complessivo' },
 ]
 
+function Header({ profilo }: { profilo: any }) {
+  const router = useRouter()
+  return (
+    <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+      <img src="/logo_tohorror_dark.png" alt="TOHorror" className="h-10" />
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center text-xs font-semibold">
+          {profilo?.nome?.[0]?.toUpperCase()}{profilo?.cognome?.[0]?.toUpperCase()}
+        </div>
+        <button
+          onClick={async () => { await supabase.auth.signOut(); router.push('/login') }}
+          className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
+          Logout
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function GiuratoPage() {
   const router = useRouter()
-  const [assegnazioni, setAssegnazioni]       = useState<any[]>([])
-  const [caricamento, setCaricamento]         = useState(true)
+  const [assegnazioni, setAssegnazioni]           = useState<any[]>([])
+  const [caricamento, setCaricamento]             = useState(true)
+  const [profilo, setProfilo]                     = useState<any>(null)
   const [valutazioneAperta, setValutazioneAperta] = useState<any>(null)
-  const [votiEsistenti, setVotiEsistenti]     = useState<any>(null)
-  const [voti, setVoti]                       = useState({ a: 3, b: 3, c: 3, d: 3, e: 3 })
-  const [note, setNote]                       = useState('')
-  const [salvando, setSalvando]               = useState(false)
-  const [utenteId, setUtenteId]               = useState('')
-  const [mostraConferma, setMostraConferma]   = useState(false)
+  const [votiEsistenti, setVotiEsistenti]         = useState<any>(null)
+  const [voti, setVoti]                           = useState({ a: 3, b: 3, c: 3, d: 3, e: 3 })
+  const [note, setNote]                           = useState('')
+  const [salvando, setSalvando]                   = useState(false)
+  const [utenteId, setUtenteId]                   = useState('')
+  const [mostraConferma, setMostraConferma]       = useState(false)
 
   useEffect(() => {
     async function carica() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
 
-      // Controlla se deve cambiare la password
-      const { data: profilo } = await supabase
+      const { data: p } = await supabase
         .from('profiles')
-        .select('must_change_password')
+        .select('nome, cognome, must_change_password')
         .eq('id', user.id)
         .single()
 
-      if (profilo?.must_change_password) {
-        router.push('/set-password?required=1')
-        return
-      }
+      if (p?.must_change_password) { router.push('/set-password?required=1'); return }
 
+      setProfilo(p)
       setUtenteId(user.id)
+
       const { data } = await supabase
         .from('assegnazioni_giurato')
         .select('*')
@@ -72,17 +90,14 @@ export default function GiuratoPage() {
 
     if (assegnazione.completata) {
       const { data: valEsistente } = await supabase
-        .from('valutazioni')
-        .select('*')
-        .eq('assegnazione_id', assegnazione.assegnazione_id)
-        .single()
+        .from('valutazioni').select('*')
+        .eq('assegnazione_id', assegnazione.assegnazione_id).single()
       setVotiEsistenti(valEsistente)
     } else {
       setVotiEsistenti(null)
       setVoti({ a: 3, b: 3, c: 3, d: 3, e: 3 })
       setNote('')
     }
-
     setValutazioneAperta(assegnazione)
   }
 
@@ -118,8 +133,6 @@ export default function GiuratoPage() {
     setSalvando(false)
   }
 
-  // ─── Schermate ──────────────────────────────────────────────────────────────
-
   if (caricamento) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <p className="text-gray-400 text-sm">Caricamento...</p>
@@ -127,9 +140,9 @@ export default function GiuratoPage() {
   )
 
   if (valutazioneAperta) return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
+    <div className="min-h-screen bg-gray-50">
+      <Header profilo={profilo} />
 
-      {/* Modale conferma */}
       {mostraConferma && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-xl border border-gray-200 p-6 max-w-sm w-full shadow-lg">
@@ -151,105 +164,106 @@ export default function GiuratoPage() {
         </div>
       )}
 
-      <div className="bg-white p-8 rounded-xl border border-gray-200 max-w-xl mx-auto">
-        <button onClick={() => setValutazioneAperta(null)}
-          className="text-sm text-gray-400 hover:text-gray-600 mb-4 block">
-          ← Torna alla lista
-        </button>
-        <h2 className="text-xl font-semibold text-gray-800 mb-1">{valutazioneAperta.titolo}</h2>
-        <p className="text-xs text-gray-400 mb-6">Fase: {valutazioneAperta.fase}</p>
-        <p className="text-sm text-gray-500 mb-6">
-          {valutazioneAperta.tipo_invio === 'testo' ? 'Il testo si è aperto in una nuova scheda.' : 'Il file si è aperto in una nuova scheda.'}
-        </p>
+      <div className="py-12 px-4">
+        <div className="bg-white p-8 rounded-xl border border-gray-200 max-w-xl mx-auto">
+          <button onClick={() => setValutazioneAperta(null)}
+            className="text-sm text-gray-400 hover:text-gray-600 mb-4 block">
+            ← Torna alla lista
+          </button>
+          <h2 className="text-xl font-semibold text-gray-800 mb-1">{valutazioneAperta.titolo}</h2>
+          <p className="text-xs text-gray-400 mb-6">Fase: {valutazioneAperta.fase}</p>
+          <p className="text-sm text-gray-500 mb-6">
+            {valutazioneAperta.tipo_invio === 'testo' ? 'Il testo si è aperto in una nuova scheda.' : 'Il file si è aperto in una nuova scheda.'}
+          </p>
 
-        {/* Griglia voti — comune a entrambe le modalità */}
-        <div className="space-y-4 mb-6">
-          {CRITERI.map(c => (
-            <div key={c.key} className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 w-40">{c.label}</span>
-              <div className="flex gap-2">
-                {[1, 2, 3, 4, 5].map(n => {
-                  const attivo = valutazioneAperta.completata
-                    ? votiEsistenti?.[`criterio_${c.key}`] === n
-                    : voti[c.key as keyof typeof voti] === n
-                  return valutazioneAperta.completata ? (
-                    <div key={n} className={`w-8 h-8 rounded-full text-sm font-medium flex items-center justify-center ${attivo ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-300'}`}>
-                      {n}
-                    </div>
-                  ) : (
-                    <button key={n} onClick={() => setVoti(prev => ({ ...prev, [c.key]: n }))}
-                      className={`w-8 h-8 rounded-full text-sm font-medium transition-colors ${attivo ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
-                      {n}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Note */}
-        {valutazioneAperta.completata ? (
-          <>
-            <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-6">
-              <p className="text-sm text-amber-700 font-medium">Valutazione già inviata</p>
-              <p className="text-xs text-amber-600 mt-0.5">Le valutazioni non sono modificabili dopo l'invio.</p>
-            </div>
-            {votiEsistenti?.note && (
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Note</p>
-                <div className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-600 bg-gray-50">
-                  {votiEsistenti.note}
+          <div className="space-y-4 mb-6">
+            {CRITERI.map(c => (
+              <div key={c.key} className="flex items-center justify-between">
+                <span className="text-sm text-gray-600 w-40">{c.label}</span>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map(n => {
+                    const attivo = valutazioneAperta.completata
+                      ? votiEsistenti?.[`criterio_${c.key}`] === n
+                      : voti[c.key as keyof typeof voti] === n
+                    return valutazioneAperta.completata ? (
+                      <div key={n} className={`w-8 h-8 rounded-full text-sm font-medium flex items-center justify-center ${attivo ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-300'}`}>
+                        {n}
+                      </div>
+                    ) : (
+                      <button key={n} onClick={() => setVoti(prev => ({ ...prev, [c.key]: n }))}
+                        className={`w-8 h-8 rounded-full text-sm font-medium transition-colors ${attivo ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                        {n}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
-            )}
-          </>
-        ) : (
-          <>
-            <div className="mb-6">
-              <label className="block text-sm text-gray-600 mb-1">Note (opzionale)</label>
-              <textarea value={note} onChange={e => setNote(e.target.value)} rows={3}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 resize-none" />
-            </div>
-            <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 mb-4">
-              <p className="text-xs text-gray-500">⚠️ Attenzione: una volta inviata, la valutazione non potrà essere modificata.</p>
-            </div>
-            <button onClick={() => setMostraConferma(true)} disabled={salvando}
-              className="w-full bg-gray-800 text-white rounded-lg py-2 text-sm font-medium hover:bg-gray-700 disabled:opacity-50">
-              {salvando ? 'Salvataggio...' : 'Salva valutazione'}
-            </button>
-          </>
-        )}
+            ))}
+          </div>
+
+          {valutazioneAperta.completata ? (
+            <>
+              <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-6">
+                <p className="text-sm text-amber-700 font-medium">Valutazione già inviata</p>
+                <p className="text-xs text-amber-600 mt-0.5">Le valutazioni non sono modificabili dopo l'invio.</p>
+              </div>
+              {votiEsistenti?.note && (
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Note</p>
+                  <div className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-600 bg-gray-50">
+                    {votiEsistenti.note}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="mb-6">
+                <label className="block text-sm text-gray-600 mb-1">Note (opzionale)</label>
+                <textarea value={note} onChange={e => setNote(e.target.value)} rows={3}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 resize-none" />
+              </div>
+              <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 mb-4">
+                <p className="text-xs text-gray-500">⚠️ Attenzione: una volta inviata, la valutazione non potrà essere modificata.</p>
+              </div>
+              <button onClick={() => setMostraConferma(true)} disabled={salvando}
+                className="w-full bg-gray-800 text-white rounded-lg py-2 text-sm font-medium hover:bg-gray-700 disabled:opacity-50">
+                {salvando ? 'Salvataggio...' : 'Salva valutazione'}
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   )
 
-  // ─── Lista racconti ──────────────────────────────────────────────────────────
-
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-semibold text-gray-800 mb-6">I tuoi racconti</h1>
-        {assegnazioni.length === 0
-          ? <p className="text-gray-400 text-sm">Nessun racconto assegnato al momento.</p>
-          : (
-            <div className="space-y-3">
-              {assegnazioni.map(a => (
-                <div key={a.assegnazione_id}
-                  className="bg-white rounded-xl border border-gray-200 p-5 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">{a.titolo}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">Fase: {a.fase}</p>
+    <div className="min-h-screen bg-gray-50">
+      <Header profilo={profilo} />
+      <div className="py-12 px-4">
+        <div className="max-w-2xl mx-auto">
+          <h1 className="text-2xl font-semibold text-gray-800 mb-6">I tuoi racconti</h1>
+          {assegnazioni.length === 0
+            ? <p className="text-gray-400 text-sm">Nessun racconto assegnato al momento.</p>
+            : (
+              <div className="space-y-3">
+                {assegnazioni.map(a => (
+                  <div key={a.assegnazione_id}
+                    className="bg-white rounded-xl border border-gray-200 p-5 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">{a.titolo}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">Fase: {a.fase}</p>
+                    </div>
+                    <button onClick={() => apriRacconto(a)}
+                      className={`text-sm px-4 py-1.5 rounded-lg ${a.completata ? 'border border-gray-200 text-gray-600 hover:bg-gray-50' : 'bg-gray-800 text-white hover:bg-gray-700'}`}>
+                      {a.completata ? 'Vedi valutazione' : 'Valuta'}
+                    </button>
                   </div>
-                  <button onClick={() => apriRacconto(a)}
-                    className={`text-sm px-4 py-1.5 rounded-lg ${a.completata ? 'border border-gray-200 text-gray-600 hover:bg-gray-50' : 'bg-gray-800 text-white hover:bg-gray-700'}`}>
-                    {a.completata ? 'Vedi valutazione' : 'Valuta'}
-                  </button>
-                </div>
-              ))}
-            </div>
-          )
-        }
+                ))}
+              </div>
+            )
+          }
+        </div>
       </div>
     </div>
   )
