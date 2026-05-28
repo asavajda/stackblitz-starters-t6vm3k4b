@@ -60,10 +60,12 @@ export default function DashboardPage() {
   function cambiaSezione(s: Sezione) { setSezione(s); window.location.hash = s }
 
   async function carica() {
-const { data: p } = await supabase.from('profiles').select('ruolo, is_admin, nome, cognome').eq('id', user.id).single()
-if (!p?.is_admin) { router.push('/login'); return }
-    setProfilo(p)
-    const [{ data: r }, { data: g }, { data: m }, { data: a }, { data: v }] = await Promise.all([
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) { router.push('/login'); return }
+  const { data: p } = await supabase.from('profiles').select('ruolo, is_admin, nome, cognome').eq('id', user.id).single()
+  if (!p?.is_admin) { router.push('/login'); return }
+  setProfilo(p)
+  const [{ data: r }, { data: g }, { data: m }, { data: a }, { data: v }] = await Promise.all([
       supabase.from('racconti').select('*, profiles(nome, cognome)').order('inviato_il', { ascending: false }),
       supabase.from('profiles').select('*').eq('ruolo', 'giurato'),
       supabase.from('medie_racconti').select('*').order('media_complessiva', { ascending: false }),
