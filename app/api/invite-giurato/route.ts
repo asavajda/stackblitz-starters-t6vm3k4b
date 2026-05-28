@@ -17,35 +17,25 @@ export async function POST(req: NextRequest) {
       )
     }
 
-const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-  redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/set-password`,
-  data: {
-    ruolo: 'giurato',
-    nome,
-    cognome,
-  },
-})
+    // Crea utente con password temporanea, senza mandare email
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password: 'TOHorror2025!',
+      email_confirm: true, // niente email di conferma
+    })
 
-  if (error) {
-  console.log('Supabase error:', error.message, error.status)
-
-  const errorMessages: Record<string, string> = {
-    'A user with this email address has already been registered':
-      'Un utente con questa email è già registrato',
-    'Unable to validate email address: invalid format':
-      'Formato email non valido',
-    'Email rate limit exceeded':
-      'Troppe richieste, riprova tra qualche minuto',
-    'User not allowed':
-      'Operazione non consentita',
-  }
-
-  const messaggioItaliano =
-    errorMessages[error.message] ??
-    `Errore durante l'invio dell'invito: ${error.message}`
-
-  return NextResponse.json({ error: messaggioItaliano }, { status: 400 })
-}
+    if (error) {
+      const errorMessages: Record<string, string> = {
+        'A user with this email address has already been registered':
+          'Un utente con questa email è già registrato',
+        'Unable to validate email address: invalid format':
+          'Formato email non valido',
+      }
+      return NextResponse.json(
+        { error: errorMessages[error.message] ?? `Errore: ${error.message}` },
+        { status: 400 }
+      )
+    }
 
     await supabaseAdmin.from('profiles').upsert({
       id: data.user.id,
@@ -54,10 +44,10 @@ const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, 
       email,
       ruolo: 'giurato',
       tipo_giurato: tipo_giurato || 'lettore',
+      must_change_password: true,
     })
 
     return NextResponse.json({ success: true, user: data.user })
-
   } catch (err: any) {
     return NextResponse.json(
       { error: err.message || 'Errore interno del server' },
