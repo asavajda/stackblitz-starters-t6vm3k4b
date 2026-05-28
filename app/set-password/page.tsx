@@ -66,19 +66,6 @@ const { data: profile } = await supabase
 if (profile?.is_admin) router.push('/dashboard')
 else router.push('/giurato')
 
-    // Reindirizza in base al ruolo
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('ruolo')
-      .eq('id', user?.id)
-      .single()
-
-    if (profile?.ruolo === 'admin') {
-      router.push('/dashboard')
-    } else {
-      router.push('/giurato')
-    }
   }
 
   if (!sessioneOk) {
