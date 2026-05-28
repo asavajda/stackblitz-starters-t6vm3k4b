@@ -110,12 +110,29 @@ export default function DashboardPage() {
 
    const tipoGiurato = giurati.find(g => g.id === giurato_id)?.tipo_giurato
 if (tipoGiurato === 'interno' || tipoGiurato === 'lettore') {
-  const slotOccupatoEValutato = assegnazioniEsistenti.some(a =>
+  const assegnazioneEsistenteStessoTipo = assegnazioniEsistenti.find(a =>
     a.racconto_id === racconto_id &&
-    giurati.find(g => g.id === a.giurato_id)?.tipo_giurato === tipoGiurato &&
-    a.completata === true
+    giurati.find(g => g.id === a.giurato_id)?.tipo_giurato === tipoGiurato
   )
-  if (slotOccupatoEValutato) return
+
+  if (assegnazioneEsistenteStessoTipo) {
+    // C'è già un giurato di questo tipo assegnato
+    const èLoStessoGiurato = assegnazioneEsistenteStessoTipo.giurato_id === giurato_id
+    if (!èLoStessoGiurato) {
+      // Sta cercando di assegnare un ALTRO giurato dello stesso tipo
+      // Permesso solo se quello esistente NON ha ancora valutato
+      if (assegnazioneEsistenteStessoTipo.completata === true) return
+      // Altrimenti: rimuovi prima quello esistente, poi procedi con il nuovo
+      const { error } = await supabase.from('assegnazioni')
+        .delete()
+        .eq('racconto_id', racconto_id)
+        .eq('giurato_id', assegnazioneEsistenteStessoTipo.giurato_id)
+      if (error) return
+      setAssegnazioniEsistenti(prev => prev.filter(
+        a => !(a.racconto_id === racconto_id && a.giurato_id === assegnazioneEsistenteStessoTipo.giurato_id)
+      ))
+    }
+  }
 }
 
     const haValutato = assegnazioniEsistenti.some(
