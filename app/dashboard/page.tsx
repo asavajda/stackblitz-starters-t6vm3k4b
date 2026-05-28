@@ -281,13 +281,12 @@ export default function DashboardPage() {
             </button>
           ))}
         </div>
-        <button
-  onClick={() => router.push('/giurato')}
-  className="text-sm text-gray-500 hover:text-gray-800 transition-colors"
->
-  Area giurato
-</button>
-<div className="flex items-center gap-3">
+        <div className="flex items-center gap-3">
+  <button
+    onClick={() => router.push('/giurato')}
+    className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
+    Area giurato
+  </button>
   <div className="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center text-xs font-semibold">
     {profilo?.nome?.[0]?.toUpperCase()}{profilo?.cognome?.[0]?.toUpperCase()}
   </div>
