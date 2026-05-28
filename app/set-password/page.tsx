@@ -17,14 +17,15 @@ const supabase = createClient(
   const [errore, setErrore] = useState('')
   const [sessioneOk, setSessioneOk] = useState(false)
 
-  useEffect(() => {
-    // Supabase legge automaticamente il token dall'hash dell'URL
-    supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        setSessioneOk(true)
-      }
-    })
-  }, [])
+ useEffect(() => {
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN' && session) setSessioneOk(true)
+  })
+
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (session) setSessioneOk(true)
+  })
+}, [])
 
   const handleSubmit = async () => {
     setErrore('')
