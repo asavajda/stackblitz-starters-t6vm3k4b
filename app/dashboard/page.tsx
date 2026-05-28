@@ -360,12 +360,14 @@ export default function DashboardPage() {
 
   // Dati derivati risultati
   const medieFiltered = (() => {
-    let list = medie.filter(m => {
+   let list = medie.filter(m => {
   const racconto = racconti.find(r => r.id === m.racconto_id)
   if (!racconto) return false
-  // Solo valutato (con almeno una valutazione), finalista, eliminato
-  if (!['valutato', 'finalista', 'eliminato'].includes(racconto.stato)) return false
- if (racconto.stato === 'valutato' && valutazioni.filter(v => v.assegnazioni?.racconto_id === racconto.id).length === 0) return false
+  const hasValutazione = valutazioni.some(v => v.assegnazioni?.racconto_id === racconto.id)
+  // Escludi ricevuto e in_valutazione senza valutazioni
+  if (['ricevuto', 'in_valutazione'].includes(racconto.stato) && !hasValutazione) return false
+  // Escludi vincitore
+  if (racconto.stato === 'vincitore') return false
   const matchTesto = m.titolo?.toLowerCase().includes(risFilter.toLowerCase()) ||
     autoreLabel(racconto).toLowerCase().includes(risFilter.toLowerCase())
   return matchTesto
