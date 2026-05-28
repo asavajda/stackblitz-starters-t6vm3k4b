@@ -77,10 +77,10 @@ const supabase = createClient(
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <div style={styles.titolo}>☠</div>
+        <img src="/logo_tohorror_dark.png" alt="TOHorror" style={{ height: '60px', margin: '0 auto 1rem', display: 'block', filter: 'invert(1)' }} />
         <h1 style={styles.h1}>Imposta la tua password</h1>
         <p style={styles.sottotitolo}>
-          Scegli una password per accedere al portale TOHorror
+          Scegli una password per accedere al portale e valutare i racconti del Contest Letterario "I Racconti del Gatto Nero"
         </p>
 
         <div style={styles.campo}>
