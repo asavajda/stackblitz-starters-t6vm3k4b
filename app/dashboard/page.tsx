@@ -60,12 +60,12 @@ export default function DashboardPage() {
   function cambiaSezione(s: Sezione) { setSezione(s); window.location.hash = s }
 
   async function carica() {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) { router.push('/login'); return }
-  const { data: p } = await supabase.from('profiles').select('ruolo, is_admin, nome, cognome').eq('id', user.id).single()
-  if (!p?.is_admin) { router.push('/login'); return }
-  setProfilo(p)
-  const [{ data: r }, { data: g }, { data: m }, { data: a }, { data: v }] = await Promise.all([
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { router.push('/login'); return }
+    const { data: p } = await supabase.from('profiles').select('ruolo, is_admin, nome, cognome').eq('id', user.id).single()
+    if (!p?.is_admin) { router.push('/login'); return }
+    setProfilo(p)
+    const [{ data: r }, { data: g }, { data: m }, { data: a }, { data: v }] = await Promise.all([
       supabase.from('racconti').select('*, profiles(nome, cognome)').order('inviato_il', { ascending: false }),
       supabase.from('profiles').select('*').eq('ruolo', 'giurato'),
       supabase.from('medie_racconti').select('*').order('media_complessiva', { ascending: false }),
@@ -96,7 +96,6 @@ export default function DashboardPage() {
     const tipoGiurato = giurati.find(g => g.id === giurato_id)?.tipo_giurato
     const assegnazioniRacconto = assegnazioniEsistenti.filter(a => a.racconto_id === racconto_id)
 
-    // Clicco su un giurato GIA assegnato: toggle (rimuovi se non ha valutato)
     const assegnazioneEsistente = assegnazioniRacconto.find(a => a.giurato_id === giurato_id)
     if (assegnazioneEsistente) {
       if (!!assegnazioneEsistente.completata) return
@@ -114,7 +113,6 @@ export default function DashboardPage() {
       return
     }
 
-    // Clicco su un giurato NON assegnato: sostituisci l'occupante se non ha valutato
     if (tipoGiurato === 'interno' || tipoGiurato === 'lettore') {
       const occupante = assegnazioniRacconto.find(a =>
         giurati.find(g => g.id === a.giurato_id)?.tipo_giurato === tipoGiurato
@@ -130,7 +128,6 @@ export default function DashboardPage() {
       }
     }
 
-    // Inserisci il nuovo
     const { data, error } = await supabase.from('assegnazioni')
       .insert({ racconto_id, giurato_id, fase }).select().single()
     if (error || !data) return
@@ -151,17 +148,17 @@ export default function DashboardPage() {
     if (!res.ok) {
       setMessaggioGiurato(`Errore: ${data.error}`)
     } else {
-      setGiurati(prev => [...prev, { id: data.user.id, ...nuovoGiurato }])
+      setGiurati(prev => [...prev, { id: data.user.id, ...nuovoGiurato, attivo: true }])
       setNuovoGiurato({ nome: '', cognome: '', email: '', tipo_giurato: 'lettore' })
       setMessaggioGiurato('Giurato aggiunto. Genera il link di accesso dalla lista.')
     }
     setAggiungendo(false)
   }
 
-  async function eliminaGiurato(id: string) {
-    if (!confirm('Sei sicuro di voler eliminare questo giurato?')) return
-    await supabase.from('profiles').delete().eq('id', id)
-    setGiurati(prev => prev.filter(g => g.id !== id))
+  async function disabilitaGiurato(id: string) {
+    if (!confirm('Sei sicuro di voler disabilitare questo giurato?')) return
+    await supabase.from('profiles').update({ attivo: false }).eq('id', id)
+    setGiurati(prev => prev.map(g => g.id === id ? { ...g, attivo: false } : g))
   }
 
   async function generaLink(giuratoId: string, email: string) {
@@ -182,9 +179,10 @@ export default function DashboardPage() {
     setTimeout(() => setLinkGenerati(prev => ({ ...prev, [giuratoId]: link })), 2000)
   }
 
+  // Solo giurati attivi nelle assegnazioni
   const giuratiAssegnabili = [
-    ...giurati.filter(g => g.tipo_giurato === 'interno').sort((a, b) => a.cognome.localeCompare(b.cognome)),
-    ...giurati.filter(g => g.tipo_giurato === 'lettore').sort((a, b) => a.cognome.localeCompare(b.cognome)),
+    ...giurati.filter(g => g.tipo_giurato === 'interno' && g.attivo !== false).sort((a, b) => a.cognome.localeCompare(b.cognome)),
+    ...giurati.filter(g => g.tipo_giurato === 'lettore' && g.attivo !== false).sort((a, b) => a.cognome.localeCompare(b.cognome)),
   ]
 
   function BtnGiurato({ g, racconto, tipo }: { g: any; racconto: any; tipo: 'interno' | 'lettore' | 'qualita' }) {
@@ -218,6 +216,9 @@ export default function DashboardPage() {
   }
 
   function CardAssegnazione({ r }: { r: any }) {
+    const isChiusa = ['valutato', 'eliminato'].includes(r.stato)
+    const assegnazioniRacconto = assegnazioniEsistenti.filter(a => a.racconto_id === r.id)
+
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-5">
         <div className="flex items-center justify-between mb-3">
@@ -230,19 +231,43 @@ export default function DashboardPage() {
           </div>
           <span className={`text-xs px-3 py-1 rounded-full shrink-0 ${STATO_BADGE[r.stato]}`}>{fmt(r.stato)}</span>
         </div>
-        <div className="flex gap-4 items-start">
+
+        {isChiusa ? (
           <div className="flex flex-wrap gap-2">
-            {giuratiAssegnabili.filter(g => g.tipo_giurato === 'interno').map(g =>
-              <BtnGiurato key={g.id} g={g} racconto={r} tipo="interno" />
-            )}
+            {assegnazioniRacconto.length === 0
+              ? <p className="text-xs text-gray-300">Nessun giurato assegnato</p>
+              : assegnazioniRacconto.map(a => {
+                  const g = giurati.find(x => x.id === a.giurato_id)
+                  if (!g) return null
+                  const cfg = TIPO_CONFIG[g.tipo_giurato] || TIPO_CONFIG.lettore
+                  return (
+                    <div key={a.id} className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border ${a.completata ? cfg.attivo : 'border-gray-200 text-gray-400'}`}>
+                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cfg.badge}`}>{cfg.label}</span>
+                      {g.nome} {g.cognome}
+                      {a.completata
+                        ? <span className="text-[10px] opacity-60">· valutato</span>
+                        : <span className="text-[10px] text-red-400">· non valutato</span>
+                      }
+                    </div>
+                  )
+                })
+            }
           </div>
-          <div className="w-px self-stretch bg-gray-200" />
-          <div className="flex flex-wrap gap-2">
-            {giuratiAssegnabili.filter(g => g.tipo_giurato === 'lettore').map(g =>
-              <BtnGiurato key={g.id} g={g} racconto={r} tipo="lettore" />
-            )}
+        ) : (
+          <div className="flex gap-4 items-start">
+            <div className="flex flex-wrap gap-2">
+              {giuratiAssegnabili.filter(g => g.tipo_giurato === 'interno').map(g =>
+                <BtnGiurato key={g.id} g={g} racconto={r} tipo="interno" />
+              )}
+            </div>
+            <div className="w-px self-stretch bg-gray-200" />
+            <div className="flex flex-wrap gap-2">
+              {giuratiAssegnabili.filter(g => g.tipo_giurato === 'lettore').map(g =>
+                <BtnGiurato key={g.id} g={g} racconto={r} tipo="lettore" />
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     )
   }
@@ -253,10 +278,11 @@ export default function DashboardPage() {
     </div>
   )
 
-  const raccontinDaAssegnare      = racconti.filter(r => r.stato === 'ricevuto')
-  const raccontiInValutazione     = racconti.filter(r => r.stato === 'in_valutazione')
-  const raccontiValutatiEliminati = racconti.filter(r => ['valutato', 'eliminato'].includes(r.stato))
-  const raccontiFinalisti         = racconti.filter(r => r.stato === 'finalista')
+  const raccontinDaAssegnare  = racconti.filter(r => r.stato === 'ricevuto')
+  const raccontiInValutazione = racconti.filter(r => r.stato === 'in_valutazione')
+  const raccontiValutati      = racconti.filter(r => r.stato === 'valutato')
+  const raccontiEliminati     = racconti.filter(r => r.stato === 'eliminato')
+  const raccontiFinalisti     = racconti.filter(r => r.stato === 'finalista')
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -282,23 +308,23 @@ export default function DashboardPage() {
           ))}
         </div>
         <div className="flex items-center gap-3">
-  <button
-    onClick={() => router.push('/giurato')}
-    className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
-    Area giurato
-  </button>
-  <div className="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center text-xs font-semibold">
-    {profilo?.nome?.[0]?.toUpperCase()}{profilo?.cognome?.[0]?.toUpperCase()}
-  </div>
-  <button onClick={async () => { await supabase.auth.signOut(); router.push('/login') }}
-    className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
-    Logout
-  </button>
-</div>
+          <button onClick={() => router.push('/giurato')}
+            className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
+            Area giurato
+          </button>
+          <div className="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center text-xs font-semibold">
+            {profilo?.nome?.[0]?.toUpperCase()}{profilo?.cognome?.[0]?.toUpperCase()}
+          </div>
+          <button onClick={async () => { await supabase.auth.signOut(); router.push('/login') }}
+            className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
+            Logout
+          </button>
+        </div>
       </div>
 
       <div className="px-8 py-8 max-w-5xl mx-auto">
 
+        {/* RACCONTI */}
         {sezione === 'racconti' && (
           <div className="space-y-3">
             <div className="flex items-center justify-between mb-4">
@@ -358,6 +384,7 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* ASSEGNAZIONI */}
         {sezione === 'assegnazioni' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -367,7 +394,8 @@ export default function DashboardPage() {
             {[
               { label: 'Da assegnare', list: raccontinDaAssegnare },
               { label: 'In valutazione', list: raccontiInValutazione },
-              { label: 'Valutati / Eliminati', list: raccontiValutatiEliminati },
+              { label: 'Valutati', list: raccontiValutati },
+              { label: 'Eliminati', list: raccontiEliminati },
             ].map(({ label, list }, i) => (
               <div key={label}>
                 {i > 0 && <div className="border-t border-gray-100 mb-6" />}
@@ -381,6 +409,7 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* FINALISTI */}
         {sezione === 'finalisti' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between mb-4">
@@ -402,9 +431,9 @@ export default function DashboardPage() {
                     <span className="text-xs px-3 py-1 rounded-full bg-purple-50 text-purple-600 shrink-0">Finalista</span>
                   </div>
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {giurati.filter(g => g.tipo_giurato === 'qualita').length === 0
+                    {giurati.filter(g => g.tipo_giurato === 'qualita' && g.attivo !== false).length === 0
                       ? <p className="text-xs text-gray-300">Nessun giurato di qualita disponibile</p>
-                      : giurati.filter(g => g.tipo_giurato === 'qualita').map(g =>
+                      : giurati.filter(g => g.tipo_giurato === 'qualita' && g.attivo !== false).map(g =>
                           <BtnGiurato key={g.id} g={g} racconto={r} tipo="qualita" />
                         )
                     }
@@ -427,6 +456,7 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* RISULTATI */}
         {sezione === 'risultati' && (
           <div className="space-y-3">
             <p className="text-sm text-gray-400 mb-4">Medie per racconto (ordinate per punteggio)</p>
@@ -490,6 +520,7 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* GIURATI */}
         {sezione === 'giurati' && (
           <div className="space-y-6">
             <div className="bg-white rounded-xl border border-gray-200 p-5">
@@ -537,15 +568,16 @@ export default function DashboardPage() {
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{giurati.length} giurati</p>
+                <p className="text-sm text-gray-400">{giurati.filter(g => g.attivo !== false).length} giurati attivi · {giurati.filter(g => g.attivo === false).length} disabilitati</p>
                 <button onClick={carica} className="text-xs text-gray-400 hover:text-gray-600">Aggiorna lista</button>
               </div>
               {giurati.map(g => {
                 const cfg = TIPO_CONFIG[g.tipo_giurato] || TIPO_CONFIG.lettore
                 const link = linkGenerati[g.id]
                 const isCopied = link === 'Copiato!'
+                const disabilitato = g.attivo === false
                 return (
-                  <div key={g.id} className="bg-white rounded-xl border border-gray-200 p-4">
+                  <div key={g.id} className={`bg-white rounded-xl border p-4 ${disabilitato ? 'border-gray-100 opacity-50' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cfg.badge}`}>{cfg.label}</span>
@@ -553,19 +585,24 @@ export default function DashboardPage() {
                           <p className="text-sm font-medium text-gray-800">{g.nome} {g.cognome}</p>
                           <p className="text-xs text-gray-400 mt-0.5">{g.email}</p>
                         </div>
+                        {disabilitato && (
+                          <span className="text-[10px] text-red-400 border border-red-200 px-1.5 py-0.5 rounded">disabilitato</span>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
-                        <button onClick={() => generaLink(g.id, g.email)} disabled={generando === g.id}
-                          className="text-xs px-3 py-1 rounded-lg border border-blue-200 text-blue-500 hover:bg-blue-50 disabled:opacity-50">
-                          {generando === g.id ? '...' : 'Genera link'}
-                        </button>
-                        <button onClick={() => eliminaGiurato(g.id)}
-                          className="text-xs px-3 py-1 rounded-lg border border-red-200 text-red-500 hover:bg-red-50">
-                          Elimina
+                        {!disabilitato && (
+                          <button onClick={() => generaLink(g.id, g.email)} disabled={generando === g.id}
+                            className="text-xs px-3 py-1 rounded-lg border border-blue-200 text-blue-500 hover:bg-blue-50 disabled:opacity-50">
+                            {generando === g.id ? '...' : 'Genera link'}
+                          </button>
+                        )}
+                        <button onClick={() => disabilitaGiurato(g.id)} disabled={disabilitato}
+                          className="text-xs px-3 py-1 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-30">
+                          {disabilitato ? 'Disabilitato' : 'Disabilita'}
                         </button>
                       </div>
                     </div>
-                    {link && (
+                    {link && !disabilitato && (
                       <div className="mt-3 flex items-center gap-2">
                         <input readOnly value={link}
                           className="flex-1 text-xs border border-gray-200 rounded-lg px-2 py-1.5 text-gray-500 bg-gray-50 truncate" />
