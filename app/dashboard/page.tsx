@@ -365,7 +365,7 @@ export default function DashboardPage() {
   if (!racconto) return false
   // Solo valutato (con almeno una valutazione), finalista, eliminato
   if (!['valutato', 'finalista', 'eliminato'].includes(racconto.stato)) return false
-  if (racconto.stato === 'valutato' && !m.media_complessiva) return false
+ if (racconto.stato === 'valutato' && valutazioni.filter(v => v.assegnazioni?.racconto_id === racconto.id).length === 0) return false
   const matchTesto = m.titolo?.toLowerCase().includes(risFilter.toLowerCase()) ||
     autoreLabel(racconto).toLowerCase().includes(risFilter.toLowerCase())
   return matchTesto
