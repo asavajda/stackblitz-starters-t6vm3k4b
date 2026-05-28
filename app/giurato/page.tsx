@@ -56,11 +56,12 @@ export default function GiuratoPage() {
 
       const { data: p } = await supabase
         .from('profiles')
-        .select('nome, cognome, must_change_password')
+        .select('nome, cognome, ruolo, is_admin, must_change_password')
         .eq('id', user.id)
         .single()
 
       if (p?.must_change_password) { router.push('/set-password?required=1'); return }
+      if (p?.ruolo !== 'giurato' && !p?.is_admin) { router.push('/login'); return }
 
       setProfilo(p)
       setUtenteId(user.id)
