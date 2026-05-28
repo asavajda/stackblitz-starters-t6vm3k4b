@@ -33,8 +33,48 @@ const CRITERI = [
 ]
 const SEZIONI = ['racconti', 'assegnazioni', 'finalisti', 'risultati', 'giurati'] as const
 type Sezione = typeof SEZIONI[number]
+type SortKey = 'titolo' | 'autore' | 'data'
+type SortDir = 'asc' | 'desc'
 
 function fmt(stato: string) { return STATI_LABEL[stato] ?? stato }
+
+function autoreLabel(r: any) {
+  return r.autore_nome ? `${r.autore_nome} ${r.autore_cognome}` : `${r.profiles?.nome ?? ''} ${r.profiles?.cognome ?? ''}`
+}
+
+function sortRacconti(list: any[], key: SortKey, dir: SortDir) {
+  return [...list].sort((a, b) => {
+    let va = '', vb = ''
+    if (key === 'titolo') { va = a.titolo ?? ''; vb = b.titolo ?? '' }
+    if (key === 'autore') { va = autoreLabel(a); vb = autoreLabel(b) }
+    if (key === 'data')   { va = a.inviato_il ?? ''; vb = b.inviato_il ?? '' }
+    return dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
+  })
+}
+
+function SortBar({ sortKey, sortDir, onChange }: {
+  sortKey: SortKey; sortDir: SortDir
+  onChange: (k: SortKey, d: SortDir) => void
+}) {
+  function toggle(k: SortKey) {
+    if (sortKey === k) onChange(k, sortDir === 'asc' ? 'desc' : 'asc')
+    else onChange(k, 'asc')
+  }
+  const btn = (k: SortKey, label: string) => (
+    <button onClick={() => toggle(k)}
+      className={`text-xs px-2 py-1 rounded border transition-colors ${sortKey === k ? 'bg-gray-800 text-white border-gray-800' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+      {label} {sortKey === k ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+    </button>
+  )
+  return (
+    <div className="flex items-center gap-1">
+      <span className="text-xs text-gray-400 mr-1">Ordina:</span>
+      {btn('titolo', 'Titolo')}
+      {btn('autore', 'Autore')}
+      {btn('data', 'Data')}
+    </div>
+  )
+}
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -56,6 +96,29 @@ export default function DashboardPage() {
     const h = window.location.hash.replace('#', '')
     return (SEZIONI as readonly string[]).includes(h) ? h as Sezione : 'racconti'
   })
+
+  // ── Filtri e ordinamento racconti ──
+  const [raccontiFilter, setRaccontiFilter]   = useState('')
+  const [raccontiStato, setRaccontiStato]     = useState('')
+  const [raccontiSort, setRaccontiSort]       = useState<SortKey>('data')
+  const [raccontiDir, setRaccontiDir]         = useState<SortDir>('desc')
+
+  // ── Filtri e ordinamento assegnazioni ──
+  const [assFilter, setAssFilter]             = useState('')
+  const [assSort, setAssSort]                 = useState<SortKey>('data')
+  const [assDir, setAssDir]                   = useState<SortDir>('desc')
+  const [assOpen, setAssOpen]                 = useState<Record<string, boolean>>({
+    'Da assegnare': true, 'In valutazione': true, 'Valutati': false, 'Eliminati': false,
+  })
+
+  // ── Filtri e ordinamento risultati ──
+  const [risFilter, setRisFilter]             = useState('')
+  const [risSort, setRisSort]                 = useState<SortKey>('titolo')
+  const [risDir, setRisDir]                   = useState<SortDir>('asc')
+
+  // ── Filtri giurati ──
+  const [giuratiFilter, setGiuratiFilter]     = useState('')
+  const [giuratiSort, setGiuratiSort]         = useState<'nome' | 'cognome'>('cognome')
 
   function cambiaSezione(s: Sezione) { setSezione(s); window.location.hash = s }
 
@@ -92,19 +155,15 @@ export default function DashboardPage() {
     } else {
       if (['eliminato', 'vincitore'].includes(racconto?.stato)) return
     }
-
     const tipoGiurato = giurati.find(g => g.id === giurato_id)?.tipo_giurato
     const assegnazioniRacconto = assegnazioniEsistenti.filter(a => a.racconto_id === racconto_id)
-
     const assegnazioneEsistente = assegnazioniRacconto.find(a => a.giurato_id === giurato_id)
     if (assegnazioneEsistente) {
       if (!!assegnazioneEsistente.completata) return
       const { error } = await supabase.from('assegnazioni')
         .delete().eq('racconto_id', racconto_id).eq('giurato_id', giurato_id)
       if (error) return
-      const nuove = assegnazioniEsistenti.filter(
-        a => !(a.racconto_id === racconto_id && a.giurato_id === giurato_id)
-      )
+      const nuove = assegnazioniEsistenti.filter(a => !(a.racconto_id === racconto_id && a.giurato_id === giurato_id))
       setAssegnazioniEsistenti(nuove)
       if (nuove.filter(a => a.racconto_id === racconto_id).length === 0) {
         await supabase.from('racconti').update({ stato: 'ricevuto' }).eq('id', racconto_id)
@@ -112,7 +171,6 @@ export default function DashboardPage() {
       }
       return
     }
-
     if (tipoGiurato === 'interno' || tipoGiurato === 'lettore') {
       const occupante = assegnazioniRacconto.find(a =>
         giurati.find(g => g.id === a.giurato_id)?.tipo_giurato === tipoGiurato
@@ -127,7 +185,6 @@ export default function DashboardPage() {
         ))
       }
     }
-
     const { data, error } = await supabase.from('assegnazioni')
       .insert({ racconto_id, giurato_id, fase }).select().single()
     if (error || !data) return
@@ -156,18 +213,15 @@ export default function DashboardPage() {
   }
 
   async function disabilitaGiurato(id: string) {
-  if (!confirm('Sei sicuro di voler disabilitare questo giurato?')) return
-  const { error, data } = await supabase.from('profiles').update({ attivo: false }).eq('id', id).select()
-  console.log('disabilita result:', { error, data, id })
-  if (!error) {
+    if (!confirm('Sei sicuro di voler disabilitare questo giurato?')) return
+    await supabase.from('profiles').update({ attivo: false }).eq('id', id)
     setGiurati(prev => prev.map(g => g.id === id ? { ...g, attivo: false } : g))
   }
-}
 
   async function riabilitaGiurato(id: string) {
-  await supabase.from('profiles').update({ attivo: true }).eq('id', id)
-  setGiurati(prev => prev.map(g => g.id === id ? { ...g, attivo: true } : g))
-}
+    await supabase.from('profiles').update({ attivo: true }).eq('id', id)
+    setGiurati(prev => prev.map(g => g.id === id ? { ...g, attivo: true } : g))
+  }
 
   async function generaLink(giuratoId: string, email: string) {
     setGenerando(giuratoId)
@@ -187,7 +241,6 @@ export default function DashboardPage() {
     setTimeout(() => setLinkGenerati(prev => ({ ...prev, [giuratoId]: link })), 2000)
   }
 
-  // Solo giurati attivi nelle assegnazioni
   const giuratiAssegnabili = [
     ...giurati.filter(g => g.tipo_giurato === 'interno' && g.attivo !== false).sort((a, b) => a.cognome.localeCompare(b.cognome)),
     ...giurati.filter(g => g.tipo_giurato === 'lettore' && g.attivo !== false).sort((a, b) => a.cognome.localeCompare(b.cognome)),
@@ -205,8 +258,7 @@ export default function DashboardPage() {
     const bloccato = statoBlocco || haValutato || slotValutato
     const cfg = TIPO_CONFIG[tipo] || TIPO_CONFIG.lettore
     return (
-      <button
-        key={g.id}
+      <button key={g.id}
         onClick={() => !bloccato && assegna(racconto.id, g.id, racconto.stato === 'finalista' ? 'finale' : 'preliminare')}
         disabled={bloccato}
         title={haValutato ? 'Gia valutato - non modificabile' : slotValutato ? `Slot ${tipo} occupato da giurato che ha gia valutato` : ''}
@@ -214,11 +266,10 @@ export default function DashboardPage() {
           assegnato
             ? bloccato ? `${cfg.attivo} opacity-50 cursor-not-allowed` : cfg.attivo
             : bloccato ? 'border-gray-100 text-gray-300 cursor-not-allowed' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-        }`}
-      >
+        }`}>
         <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cfg.badge}`}>{cfg.label}</span>
-        {assegnato ? '+ ' : ''}{g.nome} {g.cognome}
-        {haValutato && <span className="text-[10px] opacity-60">valutato</span>}
+        {assegnato ? '✓ ' : ''}{g.nome} {g.cognome}
+        {haValutato && <span className="text-[10px] opacity-60">· valutato</span>}
       </button>
     )
   }
@@ -226,20 +277,16 @@ export default function DashboardPage() {
   function CardAssegnazione({ r }: { r: any }) {
     const isChiusa = ['valutato', 'eliminato'].includes(r.stato)
     const assegnazioniRacconto = assegnazioniEsistenti.filter(a => a.racconto_id === r.id)
-
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-5">
         <div className="flex items-center justify-between mb-3">
           <div>
             <p className="text-sm font-medium text-gray-800">{r.titolo}</p>
-            <p className="text-xs text-gray-400 mt-0.5">
-              Autore: {r.autore_nome ? `${r.autore_nome} ${r.autore_cognome}` : `${r.profiles?.nome} ${r.profiles?.cognome}`}
-            </p>
+            <p className="text-xs text-gray-400 mt-0.5">Autore: {autoreLabel(r)}</p>
             <p className="text-xs text-gray-400 mt-0.5">Caricato il: {new Date(r.inviato_il).toLocaleDateString('it-IT')}</p>
           </div>
           <span className={`text-xs px-3 py-1 rounded-full shrink-0 ${STATO_BADGE[r.stato]}`}>{fmt(r.stato)}</span>
         </div>
-
         {isChiusa ? (
           <div className="flex flex-wrap gap-2">
             {assegnazioniRacconto.length === 0
@@ -286,11 +333,70 @@ export default function DashboardPage() {
     </div>
   )
 
-  const raccontinDaAssegnare  = racconti.filter(r => r.stato === 'ricevuto')
-  const raccontiInValutazione = racconti.filter(r => r.stato === 'in_valutazione')
-  const raccontiValutati      = racconti.filter(r => r.stato === 'valutato')
-  const raccontiEliminati     = racconti.filter(r => r.stato === 'eliminato')
+  // Dati derivati racconti
+  const raccontiFiltrati = sortRacconti(
+    racconti.filter(r => {
+      const matchTesto = r.titolo?.toLowerCase().includes(raccontiFilter.toLowerCase()) ||
+        autoreLabel(r).toLowerCase().includes(raccontiFilter.toLowerCase())
+      const matchStato = raccontiStato ? r.stato === raccontiStato : true
+      return matchTesto && matchStato
+    }),
+    raccontiSort, raccontiDir
+  )
+
+  // Dati derivati assegnazioni
+  const assFiltra = (list: any[]) => sortRacconti(
+    list.filter(r =>
+      r.titolo?.toLowerCase().includes(assFilter.toLowerCase()) ||
+      autoreLabel(r).toLowerCase().includes(assFilter.toLowerCase())
+    ),
+    assSort, assDir
+  )
+  const raccontinDaAssegnare  = assFiltra(racconti.filter(r => r.stato === 'ricevuto'))
+  const raccontiInValutazione = assFiltra(racconti.filter(r => r.stato === 'in_valutazione'))
+  const raccontiValutati      = assFiltra(racconti.filter(r => r.stato === 'valutato'))
+  const raccontiEliminati     = assFiltra(racconti.filter(r => r.stato === 'eliminato'))
   const raccontiFinalisti     = racconti.filter(r => r.stato === 'finalista')
+
+  // Dati derivati risultati
+  const medieFiltered = (() => {
+    let list = medie.filter(m => {
+      const racconto = racconti.find(r => r.id === m.racconto_id)
+      if (!racconto) return true
+      const matchTesto = m.titolo?.toLowerCase().includes(risFilter.toLowerCase()) ||
+        autoreLabel(racconto).toLowerCase().includes(risFilter.toLowerCase())
+      return matchTesto
+    })
+    if (risSort === 'titolo') list = [...list].sort((a, b) => risDir === 'asc' ? (a.titolo ?? '').localeCompare(b.titolo ?? '') : (b.titolo ?? '').localeCompare(a.titolo ?? ''))
+    if (risSort === 'autore') list = [...list].sort((a, b) => {
+      const ra = racconti.find(r => r.id === a.racconto_id)
+      const rb = racconti.find(r => r.id === b.racconto_id)
+      const va = ra ? autoreLabel(ra) : ''; const vb = rb ? autoreLabel(rb) : ''
+      return risDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
+    })
+    if (risSort === 'data') list = [...list].sort((a, b) => {
+      const ra = racconti.find(r => r.id === a.racconto_id)
+      const rb = racconti.find(r => r.id === b.racconto_id)
+      const va = ra?.inviato_il ?? ''; const vb = rb?.inviato_il ?? ''
+      return risDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
+    })
+    return list
+  })()
+
+  // Dati derivati giurati
+  const giuratiFiltrati = [...giurati]
+    .filter(g => `${g.nome} ${g.cognome}`.toLowerCase().includes(giuratiFilter.toLowerCase()))
+    .sort((a, b) => giuratiSort === 'cognome'
+      ? a.cognome.localeCompare(b.cognome)
+      : a.nome.localeCompare(b.nome)
+    )
+
+  const sezioniAssegnazioni = [
+    { label: 'Da assegnare', list: raccontinDaAssegnare },
+    { label: 'In valutazione', list: raccontiInValutazione },
+    { label: 'Valutati', list: raccontiValutati },
+    { label: 'Eliminati', list: raccontiEliminati },
+  ]
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -335,19 +441,32 @@ export default function DashboardPage() {
         {/* RACCONTI */}
         {sezione === 'racconti' && (
           <div className="space-y-3">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-2">
               <p className="text-sm text-gray-400">{racconti.length} racconti ricevuti</p>
               <button onClick={() => router.push('/admin-invio')}
                 className="text-sm bg-gray-800 text-white px-4 py-1.5 rounded-lg hover:bg-gray-700">
                 Carica racconto
               </button>
             </div>
-            {racconti.map(r => (
+            <div className="flex items-center gap-3 mb-4">
+              <input
+                type="text" placeholder="Cerca per titolo o autore..."
+                value={raccontiFilter} onChange={e => setRaccontiFilter(e.target.value)}
+                className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
+              <select value={raccontiStato} onChange={e => setRaccontiStato(e.target.value)}
+                className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
+                <option value="">Tutti gli stati</option>
+                {Object.entries(STATI_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+              <SortBar sortKey={raccontiSort} sortDir={raccontiDir}
+                onChange={(k, d) => { setRaccontiSort(k); setRaccontiDir(d) }} />
+            </div>
+            {raccontiFiltrati.length === 0
+              ? <p className="text-xs text-gray-300">Nessun racconto trovato</p>
+              : raccontiFiltrati.map(r => (
               <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-5">
                 <p className="text-sm font-medium text-gray-800">{r.titolo}</p>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  Autore: {r.autore_nome ? `${r.autore_nome} ${r.autore_cognome}` : `${r.profiles?.nome} ${r.profiles?.cognome}`}
-                </p>
+                <p className="text-xs text-gray-400 mt-0.5">Autore: {autoreLabel(r)}</p>
                 <p className="text-xs text-gray-400 mt-0.5">Caricato il: {new Date(r.inviato_il).toLocaleDateString('it-IT')}</p>
                 <div className="flex items-center mt-4 gap-2 flex-wrap">
                   {['ricevuto', 'in_valutazione', 'valutato'].map((s, i) => {
@@ -395,23 +514,29 @@ export default function DashboardPage() {
         {/* ASSEGNAZIONI */}
         {sezione === 'assegnazioni' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-400">Assegna racconti ai giurati</p>
+            <div className="flex items-center gap-3">
+              <input type="text" placeholder="Cerca per titolo o autore..."
+                value={assFilter} onChange={e => setAssFilter(e.target.value)}
+                className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
+              <SortBar sortKey={assSort} sortDir={assDir}
+                onChange={(k, d) => { setAssSort(k); setAssDir(d) }} />
               <button onClick={carica} className="text-xs text-gray-400 hover:text-gray-600">Aggiorna</button>
             </div>
-            {[
-              { label: 'Da assegnare', list: raccontinDaAssegnare },
-              { label: 'In valutazione', list: raccontiInValutazione },
-              { label: 'Valutati', list: raccontiValutati },
-              { label: 'Eliminati', list: raccontiEliminati },
-            ].map(({ label, list }, i) => (
+
+            {sezioniAssegnazioni.map(({ label, list }) => (
               <div key={label}>
-                {i > 0 && <div className="border-t border-gray-100 mb-6" />}
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">{label} ({list.length})</p>
-                {list.length === 0
-                  ? <p className="text-xs text-gray-300">Nessun racconto</p>
-                  : <div className="space-y-3">{list.map(r => <CardAssegnazione key={r.id} r={r} />)}</div>
-                }
+                <button
+                  onClick={() => setAssOpen(prev => ({ ...prev, [label]: !prev[label] }))}
+                  className="flex items-center gap-2 w-full text-left mb-3">
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label} ({list.length})</span>
+                  <span className="text-gray-400 text-xs">{assOpen[label] ? '▲' : '▼'}</span>
+                </button>
+                {assOpen[label] && (
+                  list.length === 0
+                    ? <p className="text-xs text-gray-300 mb-3">Nessun racconto</p>
+                    : <div className="space-y-3 mb-3">{list.map(r => <CardAssegnazione key={r.id} r={r} />)}</div>
+                )}
+                <div className="border-t border-gray-100" />
               </div>
             ))}
           </div>
@@ -431,9 +556,7 @@ export default function DashboardPage() {
                   <div className="flex items-start justify-between gap-4 mb-4">
                     <div>
                       <p className="text-sm font-medium text-gray-800">{r.titolo}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        Autore: {r.autore_nome ? `${r.autore_nome} ${r.autore_cognome}` : `${r.profiles?.nome} ${r.profiles?.cognome}`}
-                      </p>
+                      <p className="text-xs text-gray-400 mt-0.5">Autore: {autoreLabel(r)}</p>
                       <p className="text-xs text-gray-400 mt-0.5">Caricato il: {new Date(r.inviato_il).toLocaleDateString('it-IT')}</p>
                     </div>
                     <span className="text-xs px-3 py-1 rounded-full bg-purple-50 text-purple-600 shrink-0">Finalista</span>
@@ -467,13 +590,19 @@ export default function DashboardPage() {
         {/* RISULTATI */}
         {sezione === 'risultati' && (
           <div className="space-y-3">
-            <p className="text-sm text-gray-400 mb-4">Medie per racconto (ordinate per punteggio)</p>
-            {medie.map((m, i) => {
+            <div className="flex items-center gap-3 mb-4">
+              <input type="text" placeholder="Cerca per titolo o autore..."
+                value={risFilter} onChange={e => setRisFilter(e.target.value)}
+                className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
+              <SortBar sortKey={risSort} sortDir={risDir}
+                onChange={(k, d) => { setRisSort(k); setRisDir(d) }} />
+            </div>
+            {medieFiltered.length === 0
+              ? <p className="text-xs text-gray-300">Nessun risultato trovato</p>
+              : medieFiltered.map((m, i) => {
               const valRacconto = valutazioni.filter(v => v.assegnazioni?.racconto_id === m.racconto_id)
               const racconto = racconti.find(r => r.id === m.racconto_id)
-              const autore = racconto?.autore_nome
-                ? `${racconto.autore_nome} ${racconto.autore_cognome}`
-                : `${racconto?.profiles?.nome} ${racconto?.profiles?.cognome}`
+              const autore = racconto ? autoreLabel(racconto) : ''
               return (
                 <div key={m.racconto_id} className="bg-white rounded-xl border border-gray-200 p-5">
                   <div className="flex items-center justify-between mb-4">
@@ -575,11 +704,26 @@ export default function DashboardPage() {
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{giurati.filter(g => g.attivo !== false).length} giurati attivi · {giurati.filter(g => g.attivo === false).length} disabilitati</p>
-                <button onClick={carica} className="text-xs text-gray-400 hover:text-gray-600">Aggiorna lista</button>
+              <div className="flex items-center gap-3">
+                <input type="text" placeholder="Cerca per nome..."
+                  value={giuratiFilter} onChange={e => setGiuratiFilter(e.target.value)}
+                  className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-gray-400">Ordina:</span>
+                  {(['cognome', 'nome'] as const).map(k => (
+                    <button key={k} onClick={() => setGiuratiSort(k)}
+                      className={`text-xs px-2 py-1 rounded border transition-colors capitalize ${giuratiSort === k ? 'bg-gray-800 text-white border-gray-800' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                      {k}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-400 whitespace-nowrap">
+                  {giurati.filter(g => g.attivo !== false).length} attivi · {giurati.filter(g => g.attivo === false).length} disabilitati
+                </p>
+                <button onClick={carica} className="text-xs text-gray-400 hover:text-gray-600">Aggiorna</button>
               </div>
-              {giurati.map(g => {
+
+              {giuratiFiltrati.map(g => {
                 const cfg = TIPO_CONFIG[g.tipo_giurato] || TIPO_CONFIG.lettore
                 const link = linkGenerati[g.id]
                 const isCopied = link === 'Copiato!'
@@ -605,16 +749,16 @@ export default function DashboardPage() {
                           </button>
                         )}
                         {disabilitato ? (
-  <button onClick={() => riabilitaGiurato(g.id)}
-    className="text-xs px-3 py-1 rounded-lg border border-green-200 text-green-600 hover:bg-green-50">
-    Riabilita
-  </button>
-) : (
-  <button onClick={() => disabilitaGiurato(g.id)}
-    className="text-xs px-3 py-1 rounded-lg border border-red-200 text-red-500 hover:bg-red-50">
-    Disabilita
-  </button>
-)}
+                          <button onClick={() => riabilitaGiurato(g.id)}
+                            className="text-xs px-3 py-1 rounded-lg border border-green-200 text-green-600 hover:bg-green-50">
+                            Riabilita
+                          </button>
+                        ) : (
+                          <button onClick={() => disabilitaGiurato(g.id)}
+                            className="text-xs px-3 py-1 rounded-lg border border-red-200 text-red-500 hover:bg-red-50">
+                            Disabilita
+                          </button>
+                        )}
                       </div>
                     </div>
                     {link && !disabilitato && (
