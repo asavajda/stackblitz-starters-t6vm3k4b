@@ -601,10 +601,17 @@ export default function DashboardPage() {
                             {generando === g.id ? '...' : 'Genera link'}
                           </button>
                         )}
-                        <button onClick={() => disabilitaGiurato(g.id)} disabled={disabilitato}
-                          className="text-xs px-3 py-1 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-30">
-                          {disabilitato ? 'Disabilitato' : 'Disabilita'}
-                        </button>
+                        {disabilitato ? (
+  <button onClick={() => riabilitaGiurato(g.id)}
+    className="text-xs px-3 py-1 rounded-lg border border-green-200 text-green-600 hover:bg-green-50">
+    Riabilita
+  </button>
+) : (
+  <button onClick={() => disabilitaGiurato(g.id)}
+    className="text-xs px-3 py-1 rounded-lg border border-red-200 text-red-500 hover:bg-red-50">
+    Disabilita
+  </button>
+)}
                       </div>
                     </div>
                     {link && !disabilitato && (
