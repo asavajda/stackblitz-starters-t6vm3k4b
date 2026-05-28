@@ -18,9 +18,6 @@ const STATO_BADGE: Record<string, string> = {
   valutato: 'bg-teal-50 text-teal-600', finalista: 'bg-purple-50 text-purple-600',
   eliminato: 'bg-red-50 text-red-500', vincitore: 'bg-amber-100 text-amber-600',
 }
-const STEP_AUTO_COLORI: Record<string, string> = {
-  ricevuto: 'bg-gray-400 text-white', in_valutazione: 'bg-blue-400 text-white', valutato: 'bg-teal-500 text-white',
-}
 const TIPO_CONFIG: Record<string, { badge: string; attivo: string; label: string }> = {
   interno: { badge: 'bg-purple-100 text-purple-700', attivo: 'bg-purple-50 border-purple-400 text-purple-800', label: 'INT' },
   lettore: { badge: 'bg-blue-100 text-blue-700',    attivo: 'bg-blue-50 border-blue-400 text-blue-800',     label: 'LET' },
@@ -32,6 +29,7 @@ const CRITERI = [
   { key: 'e', label: 'Giudizio complessivo' },
 ]
 const SEZIONI = ['racconti', 'assegnazioni', 'finalisti', 'risultati', 'giurati'] as const
+const STATI_ORDINE = ['ricevuto', 'in_valutazione', 'valutato', 'finalista', 'eliminato', 'vincitore']
 type Sezione = typeof SEZIONI[number]
 type SortKey = 'titolo' | 'autore' | 'data'
 type SortDir = 'asc' | 'desc'
@@ -97,28 +95,24 @@ export default function DashboardPage() {
     return (SEZIONI as readonly string[]).includes(h) ? h as Sezione : 'racconti'
   })
 
-  // ── Filtri e ordinamento racconti ──
-  const [raccontiFilter, setRaccontiFilter]   = useState('')
-  const [raccontiStato, setRaccontiStato]     = useState('')
-  const [raccontiSort, setRaccontiSort]       = useState<SortKey>('data')
-  const [raccontiDir, setRaccontiDir]         = useState<SortDir>('desc')
+  const [raccontiFilter, setRaccontiFilter] = useState('')
+  const [raccontiStato, setRaccontiStato]   = useState('')
+  const [raccontiSort, setRaccontiSort]     = useState<SortKey>('data')
+  const [raccontiDir, setRaccontiDir]       = useState<SortDir>('desc')
 
-  // ── Filtri e ordinamento assegnazioni ──
-  const [assFilter, setAssFilter]             = useState('')
-  const [assSort, setAssSort]                 = useState<SortKey>('data')
-  const [assDir, setAssDir]                   = useState<SortDir>('desc')
-  const [assOpen, setAssOpen]                 = useState<Record<string, boolean>>({
+  const [assFilter, setAssFilter] = useState('')
+  const [assSort, setAssSort]     = useState<SortKey>('data')
+  const [assDir, setAssDir]       = useState<SortDir>('desc')
+  const [assOpen, setAssOpen]     = useState<Record<string, boolean>>({
     'Da assegnare': true, 'In valutazione': true, 'Valutati': false, 'Eliminati': false,
   })
 
-  // ── Filtri e ordinamento risultati ──
-  const [risFilter, setRisFilter]             = useState('')
-  const [risSort, setRisSort]                 = useState<SortKey>('titolo')
-  const [risDir, setRisDir]                   = useState<SortDir>('asc')
+  const [risFilter, setRisFilter] = useState('')
+  const [risSort, setRisSort]     = useState<SortKey>('titolo')
+  const [risDir, setRisDir]       = useState<SortDir>('asc')
 
-  // ── Filtri giurati ──
-  const [giuratiFilter, setGiuratiFilter]     = useState('')
-  const [giuratiSort, setGiuratiSort]         = useState<'nome' | 'cognome'>('cognome')
+  const [giuratiFilter, setGiuratiFilter] = useState('')
+  const [giuratiSort, setGiuratiSort]     = useState<'nome' | 'cognome'>('cognome')
 
   function cambiaSezione(s: Sezione) { setSezione(s); window.location.hash = s }
 
@@ -333,7 +327,6 @@ export default function DashboardPage() {
     </div>
   )
 
-  // Dati derivati racconti
   const raccontiFiltrati = sortRacconti(
     racconti.filter(r => {
       const matchTesto = r.titolo?.toLowerCase().includes(raccontiFilter.toLowerCase()) ||
@@ -344,7 +337,6 @@ export default function DashboardPage() {
     raccontiSort, raccontiDir
   )
 
-  // Dati derivati assegnazioni
   const assFiltra = (list: any[]) => sortRacconti(
     list.filter(r =>
       r.titolo?.toLowerCase().includes(assFilter.toLowerCase()) ||
@@ -358,20 +350,17 @@ export default function DashboardPage() {
   const raccontiEliminati     = assFiltra(racconti.filter(r => r.stato === 'eliminato'))
   const raccontiFinalisti     = racconti.filter(r => r.stato === 'finalista')
 
-  // Dati derivati risultati
   const medieFiltered = (() => {
-   let list = medie.filter(m => {
-  const racconto = racconti.find(r => r.id === m.racconto_id)
-  if (!racconto) return false
-  const hasValutazione = valutazioni.some(v => v.assegnazioni?.racconto_id === racconto.id)
-  // Escludi ricevuto e in_valutazione senza valutazioni
-  if (['ricevuto', 'in_valutazione'].includes(racconto.stato) && !hasValutazione) return false
-  // Escludi vincitore
-  if (racconto.stato === 'vincitore') return false
-  const matchTesto = m.titolo?.toLowerCase().includes(risFilter.toLowerCase()) ||
-    autoreLabel(racconto).toLowerCase().includes(risFilter.toLowerCase())
-  return matchTesto
-})
+    let list = medie.filter(m => {
+      const racconto = racconti.find(r => r.id === m.racconto_id)
+      if (!racconto) return false
+      const hasValutazione = valutazioni.some(v => v.assegnazioni?.racconto_id === racconto.id)
+      if (['ricevuto', 'in_valutazione'].includes(racconto.stato) && !hasValutazione) return false
+      if (racconto.stato === 'vincitore') return false
+      const matchTesto = m.titolo?.toLowerCase().includes(risFilter.toLowerCase()) ||
+        autoreLabel(racconto).toLowerCase().includes(risFilter.toLowerCase())
+      return matchTesto
+    })
     if (risSort === 'titolo') list = [...list].sort((a, b) => risDir === 'asc' ? (a.titolo ?? '').localeCompare(b.titolo ?? '') : (b.titolo ?? '').localeCompare(a.titolo ?? ''))
     if (risSort === 'autore') list = [...list].sort((a, b) => {
       const ra = racconti.find(r => r.id === a.racconto_id)
@@ -388,7 +377,6 @@ export default function DashboardPage() {
     return list
   })()
 
-  // Dati derivati giurati
   const giuratiFiltrati = [...giurati]
     .filter(g => `${g.nome} ${g.cognome}`.toLowerCase().includes(giuratiFilter.toLowerCase()))
     .sort((a, b) => giuratiSort === 'cognome'
@@ -403,19 +391,14 @@ export default function DashboardPage() {
     { label: 'Eliminati', list: raccontiEliminati },
   ]
 
+  const activeClass: Record<string, string> = {
+    finalista: 'bg-purple-50 border-purple-300 text-purple-700',
+    eliminato: 'bg-red-50 border-red-300 text-red-600',
+    vincitore: 'bg-amber-50 border-amber-300 text-amber-700',
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <style>{`
-        .pill-auto { cursor: not-allowed; position: relative; }
-        .pill-auto:hover::after {
-          content: 'Gestito automaticamente dal sistema';
-          position: absolute; bottom: calc(100% + 6px); left: 50%;
-          transform: translateX(-50%); background: #1f2937; color: white;
-          font-size: 11px; padding: 4px 8px; border-radius: 6px;
-          white-space: nowrap; pointer-events: none; z-index: 10;
-        }
-      `}</style>
-
       <div className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
         <img src="/logo_tohorror_dark.png" alt="TOHorror" className="h-16" />
         <div className="flex gap-2">
@@ -454,8 +437,7 @@ export default function DashboardPage() {
               </button>
             </div>
             <div className="flex items-center gap-3 mb-4">
-              <input
-                type="text" placeholder="Cerca per titolo o autore..."
+              <input type="text" placeholder="Cerca per titolo o autore..."
                 value={raccontiFilter} onChange={e => setRaccontiFilter(e.target.value)}
                 className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
               <select value={raccontiStato} onChange={e => setRaccontiStato(e.target.value)}
@@ -468,51 +450,50 @@ export default function DashboardPage() {
             </div>
             {raccontiFiltrati.length === 0
               ? <p className="text-xs text-gray-300">Nessun racconto trovato</p>
-              : raccontiFiltrati.map(r => (
-              <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-5">
-                <p className="text-sm font-medium text-gray-800">{r.titolo}</p>
-                <p className="text-xs text-gray-400 mt-0.5">Autore: {autoreLabel(r)}</p>
-                <p className="text-xs text-gray-400 mt-0.5">Caricato il: {new Date(r.inviato_il).toLocaleDateString('it-IT')}</p>
-                <div className="flex items-center mt-4 gap-2 flex-wrap">
-                  {['ricevuto', 'in_valutazione', 'valutato'].map((s, i) => {
-                    const idx = ['ricevuto','in_valutazione','valutato','finalista','eliminato','vincitore'].indexOf(r.stato)
-                    const ok = idx >= i
-                    return (
-                      <div key={s} className="flex items-center gap-2">
-                        <div className={`pill-auto flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${ok ? STEP_AUTO_COLORI[s] : 'bg-gray-100 text-gray-400'}`}>
-                          {ok && <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                          {fmt(s)}
-                        </div>
-                        {i < 2 && <span className="text-gray-300 text-xs">›</span>}
+              : raccontiFiltrati.map(r => {
+                const idx = STATI_ORDINE.indexOf(r.stato)
+                const pct = Math.round((idx / (STATI_ORDINE.length - 1)) * 100)
+                const isEnabled = ['valutato','finalista','eliminato','vincitore'].includes(r.stato)
+                return (
+                  <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-5">
+                    <p className="text-sm font-medium text-gray-800">{r.titolo}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">Autore: {autoreLabel(r)}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">Caricato il: {new Date(r.inviato_il).toLocaleDateString('it-IT')}</p>
+                    <div className="mt-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-medium text-gray-800">{fmt(r.stato)}</span>
+                        <span className="text-xs text-gray-400">{idx + 1} / {STATI_ORDINE.length}</span>
                       </div>
-                    )
-                  })}
-                  <span className="text-gray-300 text-xs">›</span>
-                  {(['finalista', 'eliminato'] as const).map(key => {
-                    const isSelected = r.stato === key
-                    const isEnabled  = ['valutato','finalista','eliminato','vincitore'].includes(r.stato)
-                    const active: Record<string, string> = { finalista: 'bg-purple-50 border-purple-300 text-purple-700', eliminato: 'bg-red-50 border-red-300 text-red-600' }
-                    return (
-                      <button key={key} onClick={() => isEnabled && aggiornaStato(r.id, key)} disabled={!isEnabled}
-                        className={`px-3 py-1 rounded-full text-xs border transition-colors ${isSelected ? active[key] : isEnabled ? 'border-gray-200 text-gray-400 hover:bg-gray-50' : 'border-gray-100 text-gray-300 cursor-not-allowed'}`}>
-                        {fmt(key)}
-                      </button>
-                    )
-                  })}
-                  <span className="text-gray-300 text-xs">›</span>
-                  {(() => {
-                    const isSelected = r.stato === 'vincitore'
-                    const isEnabled  = ['valutato','finalista','eliminato','vincitore'].includes(r.stato)
-                    return (
-                      <button onClick={() => isEnabled && aggiornaStato(r.id, 'vincitore')} disabled={!isEnabled}
-                        className={`px-3 py-1 rounded-full text-xs border transition-colors ${isSelected ? 'bg-amber-50 border-amber-300 text-amber-700' : isEnabled ? 'border-gray-200 text-gray-400 hover:bg-gray-50' : 'border-gray-100 text-gray-300 cursor-not-allowed'}`}>
-                        {fmt('vincitore')}
-                      </button>
-                    )
-                  })()}
-                </div>
-              </div>
-            ))}
+                      <div className="relative h-1.5 bg-gray-100 rounded-full overflow-hidden mb-1">
+                        <div className="absolute left-0 top-0 h-full bg-gray-800 rounded-full transition-all duration-300"
+                          style={{ width: `${pct}%` }} />
+                      </div>
+                      <div className="flex justify-between mb-3">
+                        {STATI_ORDINE.map(s => (
+                          <span key={s} className={`text-[10px] ${r.stato === s ? 'text-gray-800 font-medium' : 'text-gray-300'}`}>
+                            {fmt(s)}
+                          </span>
+                        ))}
+                      </div>
+                      {isEnabled && (
+                        <div className="flex gap-2 justify-end">
+                          {(['finalista', 'eliminato'] as const).map(key => (
+                            <button key={key} onClick={() => aggiornaStato(r.id, key)}
+                              className={`px-3 py-1 rounded-full text-xs border transition-colors ${r.stato === key ? activeClass[key] : 'border-gray-200 text-gray-400 hover:bg-gray-50'}`}>
+                              {fmt(key)}
+                            </button>
+                          ))}
+                          <button onClick={() => aggiornaStato(r.id, 'vincitore')}
+                            className={`px-3 py-1 rounded-full text-xs border transition-colors ${r.stato === 'vincitore' ? activeClass['vincitore'] : 'border-gray-200 text-gray-400 hover:bg-gray-50'}`}>
+                            {fmt('vincitore')}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })
+            }
           </div>
         )}
 
@@ -527,7 +508,6 @@ export default function DashboardPage() {
                 onChange={(k, d) => { setAssSort(k); setAssDir(d) }} />
               <button onClick={carica} className="text-xs text-gray-400 hover:text-gray-600">Aggiorna</button>
             </div>
-
             {sezioniAssegnazioni.map(({ label, list }) => (
               <div key={label}>
                 <button
@@ -576,15 +556,12 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex items-center gap-2 border-t border-gray-100 pt-3">
                     <p className="text-xs text-gray-400 mr-2">Stato:</p>
-                    {(['vincitore', 'eliminato'] as const).map(key => {
-                      const active: Record<string, string> = { vincitore: 'bg-amber-50 border-amber-300 text-amber-700', eliminato: 'bg-red-50 border-red-300 text-red-600' }
-                      return (
-                        <button key={key} onClick={() => aggiornaStato(r.id, key)}
-                          className={`px-3 py-1 rounded-full text-xs border transition-colors ${r.stato === key ? active[key] : 'border-gray-200 text-gray-400 hover:bg-gray-50'}`}>
-                          {fmt(key)}
-                        </button>
-                      )
-                    })}
+                    {(['vincitore', 'eliminato'] as const).map(key => (
+                      <button key={key} onClick={() => aggiornaStato(r.id, key)}
+                        className={`px-3 py-1 rounded-full text-xs border transition-colors ${r.stato === key ? activeClass[key] : 'border-gray-200 text-gray-400 hover:bg-gray-50'}`}>
+                        {fmt(key)}
+                      </button>
+                    ))}
                   </div>
                 </div>
               ))
@@ -605,60 +582,61 @@ export default function DashboardPage() {
             {medieFiltered.length === 0
               ? <p className="text-xs text-gray-300">Nessun risultato trovato</p>
               : medieFiltered.map((m, i) => {
-              const valRacconto = valutazioni.filter(v => v.assegnazioni?.racconto_id === m.racconto_id)
-              const racconto = racconti.find(r => r.id === m.racconto_id)
-              const autore = racconto ? autoreLabel(racconto) : ''
-              return (
-                <div key={m.racconto_id} className="bg-white rounded-xl border border-gray-200 p-5">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-gray-300 font-medium w-5">{i + 1}</span>
-                      <p className="text-sm font-medium text-gray-800">{m.titolo}</p>
+                const valRacconto = valutazioni.filter(v => v.assegnazioni?.racconto_id === m.racconto_id)
+                const racconto = racconti.find(r => r.id === m.racconto_id)
+                const autore = racconto ? autoreLabel(racconto) : ''
+                return (
+                  <div key={m.racconto_id} className="bg-white rounded-xl border border-gray-200 p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-gray-300 font-medium w-5">{i + 1}</span>
+                        <p className="text-sm font-medium text-gray-800">{m.titolo}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className={`text-xs px-3 py-1 rounded-full ${STATO_BADGE[m.stato]}`}>{fmt(m.stato)}</span>
+                        {m.media_complessiva && <span className="text-lg font-semibold text-gray-800">{m.media_complessiva}</span>}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className={`text-xs px-3 py-1 rounded-full ${STATO_BADGE[m.stato]}`}>{fmt(m.stato)}</span>
-                      {m.media_complessiva && <span className="text-lg font-semibold text-gray-800">{m.media_complessiva}</span>}
-                    </div>
-                  </div>
-                  {valRacconto.length > 0 && (
-                    <div className="mb-4">
-                      <p className="text-xs text-gray-500 mb-1">Autore: {autore}</p>
-                      <p className="text-xs text-gray-500 mb-3">Caricato il: {racconto?.inviato_il ? new Date(racconto.inviato_il).toLocaleDateString('it-IT') : '-'}</p>
-                      <div className="space-y-2">
-                        <div className="grid grid-cols-7 gap-2 text-[10px] text-gray-400 uppercase px-2">
-                          <span className="col-span-2">Giurato</span>
-                          {CRITERI.map(c => <span key={c.key} className="text-center">{c.label}</span>)}
+                    {valRacconto.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-xs text-gray-500 mb-1">Autore: {autore}</p>
+                        <p className="text-xs text-gray-500 mb-3">Caricato il: {racconto?.inviato_il ? new Date(racconto.inviato_il).toLocaleDateString('it-IT') : '-'}</p>
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-7 gap-2 text-[10px] text-gray-400 uppercase px-2">
+                            <span className="col-span-2">Giurato</span>
+                            {CRITERI.map(c => <span key={c.key} className="text-center">{c.label}</span>)}
+                          </div>
+                          {valRacconto.map(v => (
+                            <div key={v.id} className="grid grid-cols-7 gap-2 bg-gray-50 rounded-lg px-2 py-1.5 text-xs">
+                              <span className="col-span-2 text-gray-600 truncate">
+                                {v.assegnazioni?.profiles?.nome} {v.assegnazioni?.profiles?.cognome}
+                              </span>
+                              {CRITERI.map(c => (
+                                <span key={c.key} className="text-center text-gray-700 font-medium">{v[`criterio_${c.key}`]}</span>
+                              ))}
+                            </div>
+                          ))}
                         </div>
-                        {valRacconto.map(v => (
-                          <div key={v.id} className="grid grid-cols-7 gap-2 bg-gray-50 rounded-lg px-2 py-1.5 text-xs">
-                            <span className="col-span-2 text-gray-600 truncate">
-                              {v.assegnazioni?.profiles?.nome} {v.assegnazioni?.profiles?.cognome}
-                            </span>
-                            {CRITERI.map(c => (
-                              <span key={c.key} className="text-center text-gray-700 font-medium">{v[`criterio_${c.key}`]}</span>
-                            ))}
-                          </div>
-                        ))}
                       </div>
-                    </div>
-                  )}
-                  {m.media_complessiva && (
-                    <div>
-                      <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Medie</p>
-                      <div className="grid grid-cols-5 gap-2">
-                        {CRITERI.map(c => (
-                          <div key={c.key} className="text-center bg-gray-50 rounded-lg py-2">
-                            <p className="text-[10px] text-gray-400 mb-1">{c.label}</p>
-                            <p className="text-sm font-semibold text-gray-700">{m[`media_${c.key}`]}</p>
-                          </div>
-                        ))}
+                    )}
+                    {m.media_complessiva && (
+                      <div>
+                        <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Medie</p>
+                        <div className="grid grid-cols-5 gap-2">
+                          {CRITERI.map(c => (
+                            <div key={c.key} className="text-center bg-gray-50 rounded-lg py-2">
+                              <p className="text-[10px] text-gray-400 mb-1">{c.label}</p>
+                              <p className="text-sm font-semibold text-gray-700">{m[`media_${c.key}`]}</p>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {!m.media_complessiva && <p className="text-xs text-gray-300">Nessuna valutazione ancora</p>}
-                </div>
-              )
-            })}
+                    )}
+                    {!m.media_complessiva && <p className="text-xs text-gray-300">Nessuna valutazione ancora</p>}
+                  </div>
+                )
+              })
+            }
           </div>
         )}
 
@@ -727,7 +705,6 @@ export default function DashboardPage() {
                 </p>
                 <button onClick={carica} className="text-xs text-gray-400 hover:text-gray-600">Aggiorna</button>
               </div>
-
               {giuratiFiltrati.map(g => {
                 const cfg = TIPO_CONFIG[g.tipo_giurato] || TIPO_CONFIG.lettore
                 const link = linkGenerati[g.id]
