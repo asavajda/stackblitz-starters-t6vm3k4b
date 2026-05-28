@@ -36,7 +36,13 @@ export default function AdminInvioPage() {
         .eq('id', user.id)
         .single()
 
-      if (profilo?.ruolo !== 'admin') { router.push('/login'); return }
+     const { data: profilo } = await supabase
+  .from('profiles')
+  .select('ruolo, is_admin')
+  .eq('id', user.id)
+  .single()
+
+if (!profilo?.is_admin) { router.push('/login'); return }
 
       const { data } = await supabase
         .from('edizioni')
