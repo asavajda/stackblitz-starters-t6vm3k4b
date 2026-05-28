@@ -60,8 +60,8 @@ export default function DashboardPage() {
   function cambiaSezione(s: Sezione) { setSezione(s); window.location.hash = s }
 
   async function carica() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { router.push('/login'); return }
+    const { data: p } = await supabase.from('profiles').select('ruolo, is_admin, nome, cognome')...
+if (!p?.is_admin) { router.push('/login'); return }
     const { data: p } = await supabase.from('profiles').select('ruolo, nome, cognome').eq('id', user.id).single()
     if (p?.ruolo !== 'admin') { router.push('/login'); return }
     setProfilo(p)
