@@ -23,11 +23,16 @@ function Header({ profilo }: { profilo: any }) {
     <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
       <img src="/logo_tohorror_dark.png" alt="TOHorror" className="h-10" />
       <div className="flex items-center gap-3">
+        {profilo?.is_admin && (
+          <button onClick={() => router.push('/dashboard')}
+            className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
+            Dashboard
+          </button>
+        )}
         <div className="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center text-xs font-semibold">
           {profilo?.nome?.[0]?.toUpperCase()}{profilo?.cognome?.[0]?.toUpperCase()}
         </div>
-        <button
-          onClick={async () => { await supabase.auth.signOut(); router.push('/login') }}
+        <button onClick={async () => { await supabase.auth.signOut(); router.push('/login') }}
           className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
           Logout
         </button>
