@@ -216,18 +216,18 @@ export default function DashboardPage() {
     const assegnato    = !!assegnazione
     const haValutato   = assegnazione?.completata === true
     const statoBlocco  = ['valutato', 'finalista', 'eliminato', 'vincitore'].includes(racconto.stato)
-    const slotOccupato = !assegnato && assegnazioniRacconto.some(
-      a => giurati.find(x => x.id === a.giurato_id)?.tipo_giurato === tipo
-    )
-    const bloccato = statoBlocco || haValutato || slotOccupato
-    const cfg = TIPO_CONFIG[tipo] || TIPO_CONFIG.lettore
+    const slotOccupatoEValutato = !assegnato && assegnazioniRacconto.some(a =>
+  giurati.find(x => x.id === a.giurato_id)?.tipo_giurato === tipo && a.completata === true
+)
+const bloccato = statoBlocco || haValutato || slotOccupatoEValutato
+  const cfg = TIPO_CONFIG[tipo] || TIPO_CONFIG.lettore
 
     return (
       <button
         key={g.id}
         onClick={() => !bloccato && assegna(racconto.id, g.id, racconto.stato === 'finalista' ? 'finale' : 'preliminare')}
         disabled={bloccato}
-        title={haValutato ? 'Già valutato' : slotOccupato ? `Slot ${tipo} occupato` : ''}
+      title={haValutato ? 'Già valutato — non modificabile' : slotOccupatoEValutato ? `Slot ${tipo} occupato da giurato che ha già valutato` : ''}
         className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border transition-colors ${
           assegnato
             ? bloccato ? `${cfg.attivo} opacity-50 cursor-not-allowed` : cfg.attivo
