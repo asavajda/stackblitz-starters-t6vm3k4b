@@ -156,10 +156,13 @@ export default function DashboardPage() {
   }
 
   async function disabilitaGiurato(id: string) {
-    if (!confirm('Sei sicuro di voler disabilitare questo giurato?')) return
-    await supabase.from('profiles').update({ attivo: false }).eq('id', id)
+  if (!confirm('Sei sicuro di voler disabilitare questo giurato?')) return
+  const { error, data } = await supabase.from('profiles').update({ attivo: false }).eq('id', id).select()
+  console.log('disabilita result:', { error, data, id })
+  if (!error) {
     setGiurati(prev => prev.map(g => g.id === id ? { ...g, attivo: false } : g))
   }
+}
 
   async function riabilitaGiurato(id: string) {
   await supabase.from('profiles').update({ attivo: true }).eq('id', id)
