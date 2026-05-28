@@ -49,6 +49,23 @@ const supabase = createClient(
       return
     }
 
+    const { data: { user } } = await supabase.auth.getUser()
+if (user) {
+  await supabase
+    .from('profiles')
+    .update({ must_change_password: false })
+    .eq('id', user.id)
+}
+
+const { data: profile } = await supabase
+  .from('profiles')
+  .select('ruolo, is_admin')
+  .eq('id', user?.id)
+  .single()
+
+if (profile?.is_admin) router.push('/dashboard')
+else router.push('/giurato')
+
     // Reindirizza in base al ruolo
     const { data: { user } } = await supabase.auth.getUser()
     const { data: profile } = await supabase
