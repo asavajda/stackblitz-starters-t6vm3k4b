@@ -298,7 +298,7 @@ export default function InvioPage() {
                 className={`w-full text-sm ${campiErrore.includes('file') ? 'text-red-500' : 'text-gray-500'}`}
               />
               <p className="text-xs text-amber-600 mt-1">
-                Il racconto non deve superare 18.000 battute (spazi inclusi). La verifica e a carico dell autore.
+                Il racconto non deve superare 18.000 battute (spazi inclusi). La verifica è a carico dell'autore.
               </p>
             </div>
           )}
