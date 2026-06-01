@@ -439,9 +439,9 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm text-gray-400">{racconti.length} racconti ricevuti</p>
               <button onClick={() => router.push('/admin-invio')}
-                className="text-sm bg-gray-800 text-white px-4 py-1.5 rounded-lg hover:bg-gray-700">
-                Carica racconto
-              </button>
+  className="text-sm bg-gray-800 text-white px-5 py-2 rounded-lg hover:bg-gray-700 font-medium">
+  + Carica racconto
+</button>
             </div>
             <div className="flex items-center gap-3 mb-4">
               <input type="text" placeholder="Cerca per titolo o autore..."
