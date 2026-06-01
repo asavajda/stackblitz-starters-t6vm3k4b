@@ -382,12 +382,16 @@ export default function DashboardPage() {
       return risDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
     })
     if (risSort === 'data') list = [...list].sort((a, b) => {
-      const ra = racconti.find(r => r.id === a.racconto_id)
-      const rb = racconti.find(r => r.id === b.racconto_id)
-      const va = ra?.inviato_il ?? ''; const vb = rb?.inviato_il ?? ''
-      return risDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
-    })
-    return list
+  const ra = racconti.find(r => r.id === a.racconto_id)
+  const rb = racconti.find(r => r.id === b.racconto_id)
+  const va = ra?.inviato_il ?? ''; const vb = rb?.inviato_il ?? ''
+  return risDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
+})
+if (risSort === 'stato') list = [...list].sort((a, b) => {
+  const va = a.stato ?? ''; const vb = b.stato ?? ''
+  return risDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
+})
+return list
   })()
 
   const giuratiFiltrati = [...giurati]
