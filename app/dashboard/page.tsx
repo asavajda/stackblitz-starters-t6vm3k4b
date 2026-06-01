@@ -38,7 +38,7 @@ const activeClass: Record<string, string> = {
   vincitore: 'bg-amber-50 border-amber-300 text-amber-700',
 }
 type Sezione = typeof SEZIONI[number]
-type SortKey = 'titolo' | 'autore' | 'data'
+type SortKey = 'titolo' | 'autore' | 'data' | 'stato'
 type SortDir = 'asc' | 'desc'
 
 function fmt(stato: string) { return STATI_LABEL[stato] ?? stato }
@@ -53,6 +53,7 @@ function sortRacconti(list: any[], key: SortKey, dir: SortDir) {
     if (key === 'titolo') { va = a.titolo ?? ''; vb = b.titolo ?? '' }
     if (key === 'autore') { va = autoreLabel(a); vb = autoreLabel(b) }
     if (key === 'data')   { va = a.inviato_il ?? ''; vb = b.inviato_il ?? '' }
+    if (key === 'stato')  { va = a.stato ?? ''; vb = b.stato ?? '' }
     return dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
   })
 }
@@ -77,6 +78,7 @@ function SortBar({ sortKey, sortDir, onChange }: {
       {btn('titolo', 'Titolo')}
       {btn('autore', 'Autore')}
       {btn('data', 'Data')}
+      {btn('stato', 'Stato')}
     </div>
   )
 }
