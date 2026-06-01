@@ -181,7 +181,7 @@ export default function InvioPage() {
         <p className="text-sm text-gray-500 mb-2">26th ToHorror Fantastic Film Fest</p>
         
         <a
-          href="https://www.tohorrorfilmfest.it/wp-content/uploads/2025/04/bando-contest-letterario-2025_TOHorror.pdf"
+          href="https://www.tohorrorfilmfest.it/wp-content/uploads/2026/05/Bando-Contest-Letterario-2026_TOHorror.pdf"
           target="_blank"
           rel="noopener noreferrer"
           className="text-sm text-blue-600 hover:underline mb-6 block"
