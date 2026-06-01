@@ -14,9 +14,12 @@ const STATI_LABEL: Record<string, string> = {
   finalista: 'Finalista', eliminato: 'Eliminato', vincitore: 'Vincitore',
 }
 const STATO_BADGE: Record<string, string> = {
-  ricevuto: 'bg-gray-100 text-gray-600', in_valutazione: 'bg-blue-50 text-blue-600',
-  valutato: 'bg-teal-50 text-teal-600', finalista: 'bg-purple-50 text-purple-600',
-  eliminato: 'bg-red-50 text-red-500', vincitore: 'bg-amber-100 text-amber-600',
+  ricevuto:       'bg-gray-100 text-gray-700',
+  in_valutazione: 'bg-blue-100 text-blue-700',
+  valutato:       'bg-blue-100 text-blue-700',
+  finalista:      'bg-purple-100 text-purple-700',
+  eliminato:      'bg-red-100 text-red-700',
+  vincitore:      'bg-amber-100 text-amber-700',
 }
 const TIPO_CONFIG: Record<string, { badge: string; attivo: string; label: string }> = {
   interno: { badge: 'bg-purple-100 text-purple-700', attivo: 'bg-purple-50 border-purple-400 text-purple-800', label: 'INT' },
@@ -244,6 +247,10 @@ export default function DashboardPage() {
     ...giurati.filter(g => g.tipo_giurato === 'lettore' && g.attivo !== false).sort((a, b) => a.cognome.localeCompare(b.cognome)),
   ]
 
+  function contaValutazioniCompletate(racconto_id: string) {
+    return assegnazioniEsistenti.filter(a => a.racconto_id === racconto_id && !!a.completata).length
+  }
+
   function BtnGiurato({ g, racconto, tipo }: { g: any; racconto: any; tipo: 'interno' | 'lettore' | 'qualita' }) {
     const assegnazioniRacconto = assegnazioniEsistenti.filter(a => a.racconto_id === racconto.id)
     const assegnazione = assegnazioniRacconto.find(a => a.giurato_id === g.id)
@@ -283,7 +290,7 @@ export default function DashboardPage() {
             <p className="text-xs text-gray-400 mt-0.5">Autore: {autoreLabel(r)}</p>
             <p className="text-xs text-gray-400 mt-0.5">Caricato il: {new Date(r.inviato_il).toLocaleDateString('it-IT')}</p>
           </div>
-          <span className={`text-xs px-3 py-1 rounded-full shrink-0 ${STATO_BADGE[r.stato]}`}>{fmt(r.stato)}</span>
+          <span className={`text-xs px-3 py-1 rounded-full shrink-0 font-medium ${STATO_BADGE[r.stato]}`}>{fmt(r.stato)}</span>
         </div>
         {isChiusa ? (
           <div className="flex flex-wrap gap-2">
@@ -449,7 +456,12 @@ export default function DashboardPage() {
             {raccontiFiltrati.length === 0
               ? <p className="text-xs text-gray-300">Nessun racconto trovato</p>
               : raccontiFiltrati.map(r => {
-                  const isEnabled = ['valutato','finalista','eliminato','vincitore'].includes(r.stato)
+                  const nValutazioni = contaValutazioniCompletate(r.id)
+                  const nAssegnati = assegnazioniEsistenti.filter(a => a.racconto_id === r.id).length
+                  const inCorso = ['ricevuto', 'in_valutazione', 'valutato'].includes(r.stato)
+                  const puoDecidere = inCorso && nValutazioni >= 1
+                  const badgeLabel = r.stato === 'valutato' ? 'In valutazione' : fmt(r.stato)
+                  const badgeClass = r.stato === 'valutato' ? STATO_BADGE['in_valutazione'] : STATO_BADGE[r.stato]
                   return (
                     <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between gap-4">
                       <div>
@@ -457,10 +469,13 @@ export default function DashboardPage() {
                         <p className="text-xs text-gray-400 mt-0.5">{autoreLabel(r)} · {new Date(r.inviato_il).toLocaleDateString('it-IT')}</p>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className={`text-xs px-3 py-1 rounded-full border ${STATO_BADGE[r.stato]}`}>
-                          {fmt(r.stato)}
+                        {inCorso && nAssegnati > 0 && (
+                          <span className="text-xs text-gray-400">{nValutazioni}/{nAssegnati}</span>
+                        )}
+                        <span className={`text-xs px-3 py-1 rounded-full font-medium ${badgeClass}`}>
+                          {badgeLabel}
                         </span>
-                        {isEnabled && (['finalista', 'eliminato', 'vincitore'] as const).map(key => (
+                        {puoDecidere && (['finalista', 'eliminato'] as const).map(key => (
                           <button key={key} onClick={() => aggiornaStato(r.id, key)}
                             className={`text-xs px-3 py-1 rounded-full border transition-colors ${
                               r.stato === key ? activeClass[key] : 'border-gray-200 text-gray-400 hover:bg-gray-50'
@@ -468,6 +483,14 @@ export default function DashboardPage() {
                             {fmt(key)}
                           </button>
                         ))}
+                        {['finalista', 'eliminato', 'vincitore'].includes(r.stato) && r.stato !== 'eliminato' && (
+                          <button onClick={() => aggiornaStato(r.id, 'vincitore')}
+                            className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                              r.stato === 'vincitore' ? activeClass['vincitore'] : 'border-gray-200 text-gray-400 hover:bg-gray-50'
+                            }`}>
+                            {fmt('vincitore')}
+                          </button>
+                        )}
                       </div>
                     </div>
                   )
@@ -523,7 +546,7 @@ export default function DashboardPage() {
                       <p className="text-xs text-gray-400 mt-0.5">Autore: {autoreLabel(r)}</p>
                       <p className="text-xs text-gray-400 mt-0.5">Caricato il: {new Date(r.inviato_il).toLocaleDateString('it-IT')}</p>
                     </div>
-                    <span className="text-xs px-3 py-1 rounded-full bg-purple-50 text-purple-600 shrink-0">Finalista</span>
+                    <span className="text-xs px-3 py-1 rounded-full bg-purple-100 text-purple-700 font-medium shrink-0">Finalista</span>
                   </div>
                   <div className="flex flex-wrap gap-2 mb-4">
                     {giurati.filter(g => g.tipo_giurato === 'qualita' && g.attivo !== false).length === 0
@@ -572,7 +595,7 @@ export default function DashboardPage() {
                         <p className="text-sm font-medium text-gray-800">{m.titolo}</p>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className={`text-xs px-3 py-1 rounded-full ${STATO_BADGE[m.stato]}`}>{fmt(m.stato)}</span>
+                        <span className={`text-xs px-3 py-1 rounded-full font-medium ${STATO_BADGE[m.stato]}`}>{fmt(m.stato)}</span>
                         {m.media_complessiva && <span className="text-lg font-semibold text-gray-800">{m.media_complessiva}</span>}
                       </div>
                     </div>
