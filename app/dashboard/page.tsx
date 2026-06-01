@@ -16,7 +16,7 @@ const STATI_LABEL: Record<string, string> = {
 const STATO_BADGE: Record<string, string> = {
   ricevuto:       'bg-gray-100 text-gray-700',
   in_valutazione: 'bg-blue-100 text-blue-700',
-  valutato:       'bg-blue-100 text-blue-700',
+ valutato: 'bg-green-100 text-green-700',
   finalista:      'bg-purple-100 text-purple-700',
   eliminato:      'bg-red-100 text-red-700',
   vincitore:      'bg-amber-100 text-amber-700',
