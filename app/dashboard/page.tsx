@@ -469,7 +469,7 @@ return list
                   const badgeLabel = (r.stato === 'valutato' || (r.stato === 'in_valutazione' && nValutazioni >= 2)) ? 'Valutato' : fmt(r.stato)
 const badgeClass = (r.stato === 'valutato' || (r.stato === 'in_valutazione' && nValutazioni >= 2)) ? STATO_BADGE['valutato'] : STATO_BADGE[r.stato]
                   return (
-                   className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between gap-4">
+                    <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between gap-4">
                       <div>
                         <p className="text-sm font-medium text-gray-800">{r.titolo}</p>
                         <p className="text-xs text-gray-400 mt-0.5">{autoreLabel(r)} · {new Date(r.inviato_il).toLocaleDateString('it-IT')}</p>
