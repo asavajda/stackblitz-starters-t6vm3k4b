@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   icons: {
     icon: '/favicon.ico',
   },
-  description: 'Portale di valutazione racconti del Contest Letterario "I Racconti del Gatto Nero" — 26th TOHorror Fantastic Film Festp',
+  description: 'Portale di valutazione racconti del Contest Letterario "I Racconti del Gatto Nero" — 26th TOHorror Fantastic Film Fest',
   openGraph: {
     images: [
       {
