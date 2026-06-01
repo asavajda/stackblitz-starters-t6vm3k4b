@@ -466,8 +466,8 @@ return list
                   const nAssegnati = assegnazioniEsistenti.filter(a => a.racconto_id === r.id).length
                   const inCorso = ['ricevuto', 'in_valutazione', 'valutato'].includes(r.stato)
                   const puoDecidere = inCorso && nValutazioni >= 2
-                  const badgeLabel = r.stato === 'valutato' ? 'In valutazione' : fmt(r.stato)
-                  const badgeClass = r.stato === 'valutato' ? STATO_BADGE['in_valutazione'] : STATO_BADGE[r.stato]
+                  const badgeLabel = (r.stato === 'valutato' || (r.stato === 'in_valutazione' && nValutazioni >= 2)) ? 'Valutato' : fmt(r.stato)
+const badgeClass = (r.stato === 'valutato' || (r.stato === 'in_valutazione' && nValutazioni >= 2)) ? STATO_BADGE['valutato'] : STATO_BADGE[r.stato]
                   return (
                     <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between gap-4">
                       <div>
