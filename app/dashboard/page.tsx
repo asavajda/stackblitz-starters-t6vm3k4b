@@ -29,7 +29,11 @@ const CRITERI = [
   { key: 'e', label: 'Giudizio complessivo' },
 ]
 const SEZIONI = ['racconti', 'assegnazioni', 'finalisti', 'risultati', 'giurati'] as const
-const STATI_ORDINE = ['ricevuto', 'in_valutazione', 'valutato', 'finalista', 'eliminato', 'vincitore']
+const activeClass: Record<string, string> = {
+  finalista: 'bg-purple-50 border-purple-300 text-purple-700',
+  eliminato: 'bg-red-50 border-red-300 text-red-600',
+  vincitore: 'bg-amber-50 border-amber-300 text-amber-700',
+}
 type Sezione = typeof SEZIONI[number]
 type SortKey = 'titolo' | 'autore' | 'data'
 type SortDir = 'asc' | 'desc'
@@ -391,12 +395,6 @@ export default function DashboardPage() {
     { label: 'Eliminati', list: raccontiEliminati },
   ]
 
-  const activeClass: Record<string, string> = {
-    finalista: 'bg-purple-50 border-purple-300 text-purple-700',
-    eliminato: 'bg-red-50 border-red-300 text-red-600',
-    vincitore: 'bg-amber-50 border-amber-300 text-amber-700',
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
@@ -450,30 +448,31 @@ export default function DashboardPage() {
             </div>
             {raccontiFiltrati.length === 0
               ? <p className="text-xs text-gray-300">Nessun racconto trovato</p>
-              : {raccontiFiltrati.map(r => {
-  const isEnabled = ['valutato','finalista','eliminato','vincitore'].includes(r.stato)
-  return (
-    <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between gap-4">
-      <div>
-        <p className="text-sm font-medium text-gray-800">{r.titolo}</p>
-        <p className="text-xs text-gray-400 mt-0.5">{autoreLabel(r)} · {new Date(r.inviato_il).toLocaleDateString('it-IT')}</p>
-      </div>
-      <div className="flex items-center gap-2 flex-shrink-0">
-        <span className={`text-xs px-3 py-1 rounded-full border ${STATO_BADGE[r.stato]}`}>
-          {fmt(r.stato)}
-        </span>
-        {isEnabled && (['finalista', 'eliminato', 'vincitore'] as const).map(key => (
-          <button key={key} onClick={() => aggiornaStato(r.id, key)}
-            className={`text-xs px-3 py-1 rounded-full border transition-colors ${
-              r.stato === key ? activeClass[key] : 'border-gray-200 text-gray-400 hover:bg-gray-50'
-            }`}>
-            {fmt(key)}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-})}
+              : raccontiFiltrati.map(r => {
+                  const isEnabled = ['valutato','finalista','eliminato','vincitore'].includes(r.stato)
+                  return (
+                    <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">{r.titolo}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{autoreLabel(r)} · {new Date(r.inviato_il).toLocaleDateString('it-IT')}</p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className={`text-xs px-3 py-1 rounded-full border ${STATO_BADGE[r.stato]}`}>
+                          {fmt(r.stato)}
+                        </span>
+                        {isEnabled && (['finalista', 'eliminato', 'vincitore'] as const).map(key => (
+                          <button key={key} onClick={() => aggiornaStato(r.id, key)}
+                            className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                              r.stato === key ? activeClass[key] : 'border-gray-200 text-gray-400 hover:bg-gray-50'
+                            }`}>
+                            {fmt(key)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })
+            }
           </div>
         )}
 
