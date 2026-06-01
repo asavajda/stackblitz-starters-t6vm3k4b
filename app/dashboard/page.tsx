@@ -485,8 +485,8 @@ export default function DashboardPage() {
                             {fmt(key)}
                           </button>
                         ))}
-                        {['finalista', 'eliminato', 'vincitore'].includes(r.stato) && r.stato !== 'eliminato' && (
-                          <button onClick={() => aggiornaStato(r.id, 'vincitore')}
+                        {r.stato === 'finalista' && (
+  <button onClick={() => aggiornaStato(r.id, 'vincitore')}
                             className={`text-xs px-3 py-1 rounded-full border transition-colors ${
                               r.stato === 'vincitore' ? activeClass['vincitore'] : 'border-gray-200 text-gray-400 hover:bg-gray-50'
                             }`}>
