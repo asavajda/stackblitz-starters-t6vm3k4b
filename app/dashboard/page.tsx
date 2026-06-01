@@ -450,50 +450,30 @@ export default function DashboardPage() {
             </div>
             {raccontiFiltrati.length === 0
               ? <p className="text-xs text-gray-300">Nessun racconto trovato</p>
-              : raccontiFiltrati.map(r => {
-                const idx = STATI_ORDINE.indexOf(r.stato)
-                const pct = Math.round((idx / (STATI_ORDINE.length - 1)) * 100)
-                const isEnabled = ['valutato','finalista','eliminato','vincitore'].includes(r.stato)
-                return (
-                  <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-5">
-                    <p className="text-sm font-medium text-gray-800">{r.titolo}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">Autore: {autoreLabel(r)}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">Caricato il: {new Date(r.inviato_il).toLocaleDateString('it-IT')}</p>
-                    <div className="mt-4">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-medium text-gray-800">{fmt(r.stato)}</span>
-                        <span className="text-xs text-gray-400">{idx + 1} / {STATI_ORDINE.length}</span>
-                      </div>
-                      <div className="relative h-1.5 bg-gray-100 rounded-full overflow-hidden mb-1">
-                        <div className="absolute left-0 top-0 h-full bg-gray-800 rounded-full transition-all duration-300"
-                          style={{ width: `${pct}%` }} />
-                      </div>
-                      <div className="flex justify-between mb-3">
-                        {STATI_ORDINE.map(s => (
-                          <span key={s} className={`text-[10px] ${r.stato === s ? 'text-gray-800 font-medium' : 'text-gray-300'}`}>
-                            {fmt(s)}
-                          </span>
-                        ))}
-                      </div>
-                      {isEnabled && (
-                        <div className="flex gap-2 justify-end">
-                          {(['finalista', 'eliminato'] as const).map(key => (
-                            <button key={key} onClick={() => aggiornaStato(r.id, key)}
-                              className={`px-3 py-1 rounded-full text-xs border transition-colors ${r.stato === key ? activeClass[key] : 'border-gray-200 text-gray-400 hover:bg-gray-50'}`}>
-                              {fmt(key)}
-                            </button>
-                          ))}
-                          <button onClick={() => aggiornaStato(r.id, 'vincitore')}
-                            className={`px-3 py-1 rounded-full text-xs border transition-colors ${r.stato === 'vincitore' ? activeClass['vincitore'] : 'border-gray-200 text-gray-400 hover:bg-gray-50'}`}>
-                            {fmt('vincitore')}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )
-              })
-            }
+              {raccontiFiltrati.map(r => {
+  const isEnabled = ['valutato','finalista','eliminato','vincitore'].includes(r.stato)
+  return (
+    <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between gap-4">
+      <div>
+        <p className="text-sm font-medium text-gray-800">{r.titolo}</p>
+        <p className="text-xs text-gray-400 mt-0.5">{autoreLabel(r)} · {new Date(r.inviato_il).toLocaleDateString('it-IT')}</p>
+      </div>
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <span className={`text-xs px-3 py-1 rounded-full border ${STATO_BADGE[r.stato]}`}>
+          {fmt(r.stato)}
+        </span>
+        {isEnabled && (['finalista', 'eliminato', 'vincitore'] as const).map(key => (
+          <button key={key} onClick={() => aggiornaStato(r.id, key)}
+            className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+              r.stato === key ? activeClass[key] : 'border-gray-200 text-gray-400 hover:bg-gray-50'
+            }`}>
+            {fmt(key)}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+})}
           </div>
         )}
 
