@@ -461,7 +461,7 @@ export default function DashboardPage() {
                   const nValutazioni = contaValutazioniCompletate(r.id)
                   const nAssegnati = assegnazioniEsistenti.filter(a => a.racconto_id === r.id).length
                   const inCorso = ['ricevuto', 'in_valutazione', 'valutato'].includes(r.stato)
-                  const puoDecidere = inCorso && nValutazioni >= 1
+                  const puoDecidere = inCorso && nValutazioni >= 2
                   const badgeLabel = r.stato === 'valutato' ? 'In valutazione' : fmt(r.stato)
                   const badgeClass = r.stato === 'valutato' ? STATO_BADGE['in_valutazione'] : STATO_BADGE[r.stato]
                   return (
