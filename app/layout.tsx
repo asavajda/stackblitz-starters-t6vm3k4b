@@ -7,8 +7,11 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'contest racconti - toHorror',
   icons: {
-    icon: '/favicon.ico',
-  },
+  icon: [
+    { url: '/favicon.ico', type: 'image/x-icon' },
+  ],
+  apple: '/favicon_512.png',
+},
   description: 'Portale di valutazione racconti del Contest Letterario "I Racconti del Gatto Nero" — 26th TOHorror Fantastic Film Fest',
   openGraph: {
     images: [
