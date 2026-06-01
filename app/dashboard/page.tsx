@@ -450,7 +450,7 @@ export default function DashboardPage() {
             </div>
             {raccontiFiltrati.length === 0
               ? <p className="text-xs text-gray-300">Nessun racconto trovato</p>
-              {raccontiFiltrati.map(r => {
+              : {raccontiFiltrati.map(r => {
   const isEnabled = ['valutato','finalista','eliminato','vincitore'].includes(r.stato)
   return (
     <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between gap-4">
