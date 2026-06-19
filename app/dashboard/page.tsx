@@ -690,9 +690,11 @@ onDoubleClick={() => {
                                     <p className="text-sm font-medium text-gray-800">{r.titolo}</p>
                                     <p className="text-xs text-gray-400 mt-0.5">Autore: {autoreLabel(r)}</p>
                                     <p className="text-xs text-gray-400 mt-0.5">Caricato il: {new Date(r.inviato_il).toLocaleDateString('it-IT')}</p>
-                                    {bloccoId && (
-                                      <p className="text-[10px] text-gray-300 mt-0.5">Blocco: {bloccoId.slice(0, 8)}…</p>
-                                    )}
+                                   {bloccoId && (
+  <p className="text-[10px] text-gray-300 mt-0.5">
+    Blocco {blocchi.findIndex(b => b.id === bloccoId) + 1}
+  </p>
+)}
                                   </div>
                                   <span className={`text-xs px-3 py-1 rounded-full shrink-0 font-medium ${STATO_BADGE[r.stato]}`}>{fmt(r.stato)}</span>
                                 </div>
