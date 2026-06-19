@@ -410,12 +410,12 @@ return list
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
+      <div className={`border-b px-8 py-4 flex items-center justify-between ${process.env.NEXT_PUBLIC_ENV === 'staging' ? 'bg-[#4A90A4] border-[#3a7a8e]' : 'bg-white border-gray-200'}`}>
         <img src="/logo_tohorror_dark.png" alt="TOHorror" className="h-16" />
         <div className="flex gap-2">
           {SEZIONI.map(s => (
             <button key={s} onClick={() => cambiaSezione(s)}
-              className={`px-4 py-1.5 rounded-lg text-sm capitalize transition-colors ${sezione === s ? 'bg-gray-800 text-white' : 'text-gray-500 hover:bg-gray-100'}`}>
+              className={`px-4 py-1.5 rounded-lg text-sm capitalize transition-colors ${sezione === s ? (process.env.NEXT_PUBLIC_ENV === 'staging' ? 'bg-white/20 text-white' : 'bg-gray-800 text-white') : (process.env.NEXT_PUBLIC_ENV === 'staging' ? 'text-white/70 hover:bg-white/10' : 'text-gray-500 hover:bg-gray-100')}`}>
               {s}
             </button>
           ))}
