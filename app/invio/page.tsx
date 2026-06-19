@@ -290,7 +290,7 @@ export default function InvioPage() {
             </div>
           ) : (
             <div>
-              <label className="block text-sm text-gray-600 mb-1">File (PDF, Word, odt)</label>
+              <label className="block text-sm text-gray-600 mb-1">File (PDF, DOCX)</label>
               <input
                 type="file"
                 accept=".pdf,.docx"
