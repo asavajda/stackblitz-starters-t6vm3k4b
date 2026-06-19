@@ -93,6 +93,7 @@ export default function DashboardPage() {
   const [valutazioni, setValutazioni]                     = useState<any[]>([])
   const [medie, setMedie]                                 = useState<any[]>([])
   const [blocchi, setBlocchi]                             = useState<any[]>([])
+  const [blocchiCompletatiIds, setBlocchiCompletatiIds]   = useState<string[]>([])
   const [profilo, setProfilo]                             = useState<any>(null)
   const [caricamento, setCaricamento]                     = useState(true)
   const [linkGenerati, setLinkGenerati]                   = useState<Record<string, string>>({})
@@ -143,16 +144,18 @@ export default function DashboardPage() {
     const { data: p } = await supabase.from('profiles').select('ruolo, is_admin, nome, cognome').eq('id', user.id).single()
     if (!p?.is_admin) { router.push('/login'); return }
     setProfilo(p)
-    const [{ data: r }, { data: g }, { data: m }, { data: a }, { data: v }, { data: b }] = await Promise.all([
+    const [{ data: r }, { data: g }, { data: m }, { data: a }, { data: v }, { data: b }, { data: bg }] = await Promise.all([
       supabase.from('racconti').select('*, profiles(nome, cognome)').order('inviato_il', { ascending: false }),
       supabase.from('profiles').select('*').eq('ruolo', 'giurato'),
       supabase.from('medie_racconti').select('*').order('media_complessiva', { ascending: false }),
       supabase.from('assegnazioni').select('*'),
       supabase.from('valutazioni').select('*, assegnazioni(racconto_id, giurato_id, profiles(nome, cognome))'),
       supabase.from('blocchi').select('*').order('creato_il', { ascending: false }),
+      supabase.from('blocchi_giurato').select('blocco_id').eq('completato', true),
     ])
     setRacconti(r || []); setGiurati(g || []); setMedie(m || [])
     setAssegnazioniEsistenti(a || []); setValutazioni(v || []); setBlocchi(b || [])
+    setBlocchiCompletatiIds((bg || []).map((x: any) => x.blocco_id))
     setCaricamento(false)
   }
 
@@ -343,8 +346,10 @@ export default function DashboardPage() {
     let list = medie.filter(m => {
       const racconto = racconti.find(r => r.id === m.racconto_id)
       if (!racconto) return false
-      const hasValutazione = valutazioni.some(v => v.assegnazioni?.racconto_id === racconto.id)
-      if (['ricevuto', 'in_valutazione'].includes(racconto.stato) && !hasValutazione) return false
+      const assRacconto = assegnazioniEsistenti.filter(a => a.racconto_id === racconto.id)
+      const bloccoId = assRacconto[0]?.blocco_id
+      const bloccoCompletato = bloccoId ? blocchiCompletatiIds.includes(bloccoId) : false
+      if (!bloccoCompletato && ['ricevuto', 'in_valutazione', 'valutato'].includes(racconto.stato)) return false
       if (racconto.stato === 'vincitore') return false
       const matchTesto = m.titolo?.toLowerCase().includes(risFilter.toLowerCase()) ||
         autoreLabel(racconto).toLowerCase().includes(risFilter.toLowerCase())
@@ -555,10 +560,6 @@ export default function DashboardPage() {
                           multiple
                           value={selectedDisponibili}
                           onChange={e => setSelectedDisponibili(Array.from(e.target.selectedOptions, o => o.value))}
-onDoubleClick={() => {
-  setNuovoBloccoRacconti(prev => [...prev, ...selectedDisponibili.filter(id => !prev.includes(id))])
-  setSelectedDisponibili([])
-}}
                           className="flex-1 border border-gray-200 rounded-lg text-xs min-h-[160px] focus:outline-none focus:ring-1 focus:ring-gray-300"
                         >
                           {raccontiDisponibili
@@ -619,10 +620,6 @@ onDoubleClick={() => {
                           multiple
                           value={selectedScelti}
                           onChange={e => setSelectedScelti(Array.from(e.target.selectedOptions, o => o.value))}
-onDoubleClick={() => {
-  setNuovoBloccoRacconti(prev => prev.filter(id => !selectedScelti.includes(id)))
-  setSelectedScelti([])
-}}
                           className="flex-1 border border-gray-200 rounded-lg text-xs min-h-[160px] focus:outline-none focus:ring-1 focus:ring-gray-300"
                         >
                           {nuovoBloccoRacconti
@@ -690,11 +687,9 @@ onDoubleClick={() => {
                                     <p className="text-sm font-medium text-gray-800">{r.titolo}</p>
                                     <p className="text-xs text-gray-400 mt-0.5">Autore: {autoreLabel(r)}</p>
                                     <p className="text-xs text-gray-400 mt-0.5">Caricato il: {new Date(r.inviato_il).toLocaleDateString('it-IT')}</p>
-                                   {bloccoId && (
-  <p className="text-[10px] text-gray-300 mt-0.5">
-    Blocco {blocchi.findIndex(b => b.id === bloccoId) + 1}
-  </p>
-)}
+                                    {bloccoId && (
+                                      <p className="text-[10px] text-gray-300 mt-0.5">Blocco: {bloccoId.slice(0, 8)}…</p>
+                                    )}
                                   </div>
                                   <span className={`text-xs px-3 py-1 rounded-full shrink-0 font-medium ${STATO_BADGE[r.stato]}`}>{fmt(r.stato)}</span>
                                 </div>
