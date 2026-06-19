@@ -781,7 +781,13 @@ export default function DashboardPage() {
             {medieFiltered.length === 0
               ? <p className="text-xs text-gray-300">Nessun risultato trovato</p>
               : medieFiltered.map((m, i) => {
-                const valRacconto = valutazioni.filter(v => v.assegnazioni?.racconto_id === m.racconto_id)
+                const assDelRacconto = assegnazioniEsistenti.filter(a => a.racconto_id === m.racconto_id)
+const valRacconto = valutazioni.filter(v => {
+  if (v.assegnazioni?.racconto_id !== m.racconto_id) return false
+  const ass = assDelRacconto.find(a => a.id === v.assegnazioni?.id || a.giurato_id === v.assegnazioni?.giurato_id)
+  const bloccoId = ass?.blocco_id
+  return bloccoId ? blocchiCompletatiIds.includes(bloccoId) : false
+})
                 const racconto = racconti.find(r => r.id === m.racconto_id)
                 const autore = racconto ? autoreLabel(racconto) : ''
                 return (
