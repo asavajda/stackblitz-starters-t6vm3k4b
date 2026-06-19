@@ -107,14 +107,11 @@ export default function DashboardPage() {
   })
 
   // Stato nuovo blocco
-const [nuovoBloccoInterno, setNuovoBloccoInterno]   = useState('')
-const [nuovoBloccoLettore, setNuovoBloccoLettore]   = useState('')
-const [nuovoBloccoRacconti, setNuovoBloccoRacconti] = useState<string[]>([])
-const [creandoBlocco, setCreandoBlocco]             = useState(false)
-const [messaggioBlocco, setMessaggioBlocco]         = useState('')
-const [raccontiDisponibiliFilter, setRaccontiDisponibiliFilter] = useState('')
-const [selectedDisponibili, setSelectedDisponibili] = useState<string[]>([])
-const [selectedScelti, setSelectedScelti]           = useState<string[]>([])
+  const [nuovoBloccoInterno, setNuovoBloccoInterno]   = useState('')
+  const [nuovoBloccoLettore, setNuovoBloccoLettore]   = useState('')
+  const [nuovoBloccoRacconti, setNuovoBloccoRacconti] = useState<string[]>([])
+  const [creandoBlocco, setCreandoBlocco]             = useState(false)
+  const [messaggioBlocco, setMessaggioBlocco]         = useState('')
 
   const [raccontiFilter, setRaccontiFilter] = useState('')
   const [raccontiStato, setRaccontiStato]   = useState('')
@@ -523,32 +520,112 @@ const [selectedScelti, setSelectedScelti]           = useState<string[]>([])
                 </div>
               </div>
 
-              {/* Selezione racconti */}
+              {/* Selezione racconti — dual listbox */}
               <div className="mb-4">
                 <label className="block text-xs text-gray-500 mb-2">
-                  Racconti disponibili ({raccontiDisponibili.length} ricevuti)
+                  Racconti
                   {nuovoBloccoRacconti.length > 0 && (
                     <span className="ml-2 text-gray-800 font-medium">{nuovoBloccoRacconti.length} selezionati</span>
                   )}
                 </label>
-                {raccontiDisponibili.length === 0
+                {raccontiDisponibili.length === 0 && nuovoBloccoRacconti.length === 0
                   ? <p className="text-xs text-gray-300">Nessun racconto disponibile da assegnare</p>
                   : (
-                    <div className="border border-gray-200 rounded-lg divide-y divide-gray-100 max-h-48 overflow-y-auto">
-                      {raccontiDisponibili.map(r => (
-                        <label key={r.id} className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-gray-50 transition-colors ${nuovoBloccoRacconti.includes(r.id) ? 'bg-blue-50' : ''}`}>
-                          <input
-                            type="checkbox"
-                            checked={nuovoBloccoRacconti.includes(r.id)}
-                            onChange={() => toggleRaccontoBlocco(r.id)}
-                            className="rounded border-gray-300"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-gray-800 truncate">{r.titolo}</p>
-                            <p className="text-[10px] text-gray-400">{autoreLabel(r)}</p>
-                          </div>
-                        </label>
-                      ))}
+                    <div className="flex gap-2 items-stretch">
+                      {/* Colonna sinistra — disponibili */}
+                      <div className="flex-1 flex flex-col">
+                        <span className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">
+                          Disponibili ({raccontiDisponibili.filter(r =>
+                            !nuovoBloccoRacconti.includes(r.id) &&
+                            (r.titolo?.toLowerCase().includes(raccontiDisponibiliFilter.toLowerCase()) ||
+                            autoreLabel(r).toLowerCase().includes(raccontiDisponibiliFilter.toLowerCase()))
+                          ).length})
+                        </span>
+                        <input
+                          type="text"
+                          placeholder="Cerca..."
+                          value={raccontiDisponibiliFilter}
+                          onChange={e => setRaccontiDisponibiliFilter(e.target.value)}
+                          className="border border-gray-200 rounded-lg px-2 py-1 text-xs mb-1 focus:outline-none focus:ring-1 focus:ring-gray-300"
+                        />
+                        <select
+                          multiple
+                          value={selectedDisponibili}
+                          onChange={e => setSelectedDisponibili(Array.from(e.target.selectedOptions, o => o.value))}
+                          className="flex-1 border border-gray-200 rounded-lg text-xs min-h-[160px] focus:outline-none focus:ring-1 focus:ring-gray-300"
+                        >
+                          {raccontiDisponibili
+                            .filter(r =>
+                              !nuovoBloccoRacconti.includes(r.id) &&
+                              (r.titolo?.toLowerCase().includes(raccontiDisponibiliFilter.toLowerCase()) ||
+                              autoreLabel(r).toLowerCase().includes(raccontiDisponibiliFilter.toLowerCase()))
+                            )
+                            .sort((a, b) => (a.titolo ?? '').localeCompare(b.titolo ?? ''))
+                            .map(r => (
+                              <option key={r.id} value={r.id}>
+                                {r.titolo} — {autoreLabel(r)}
+                              </option>
+                            ))
+                          }
+                        </select>
+                      </div>
+
+                      {/* Frecce centrali */}
+                      <div className="flex flex-col justify-center gap-2 pt-10">
+                        <button
+                          onClick={() => {
+                            setNuovoBloccoRacconti(prev => [...prev, ...selectedDisponibili.filter(id => !prev.includes(id))])
+                            setSelectedDisponibili([])
+                          }}
+                          disabled={selectedDisponibili.length === 0}
+                          className="px-2 py-1.5 rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed text-sm font-medium"
+                          title="Aggiungi selezionati"
+                        >›</button>
+                        <button
+                          onClick={() => {
+                            setNuovoBloccoRacconti(prev => prev.filter(id => !selectedScelti.includes(id)))
+                            setSelectedScelti([])
+                          }}
+                          disabled={selectedScelti.length === 0}
+                          className="px-2 py-1.5 rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed text-sm font-medium"
+                          title="Rimuovi selezionati"
+                        >‹</button>
+                        <button
+                          onClick={() => {
+                            setNuovoBloccoRacconti([])
+                            setSelectedDisponibili([])
+                            setSelectedScelti([])
+                          }}
+                          disabled={nuovoBloccoRacconti.length === 0}
+                          className="px-2 py-1.5 rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed text-xs"
+                          title="Rimuovi tutti"
+                        >«</button>
+                      </div>
+
+                      {/* Colonna destra — selezionati */}
+                      <div className="flex-1 flex flex-col">
+                        <span className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">
+                          Selezionati ({nuovoBloccoRacconti.length})
+                        </span>
+                        <div className="mb-1 h-[26px]" />
+                        <select
+                          multiple
+                          value={selectedScelti}
+                          onChange={e => setSelectedScelti(Array.from(e.target.selectedOptions, o => o.value))}
+                          className="flex-1 border border-gray-200 rounded-lg text-xs min-h-[160px] focus:outline-none focus:ring-1 focus:ring-gray-300"
+                        >
+                          {nuovoBloccoRacconti
+                            .map(id => raccontiDisponibili.find(r => r.id === id))
+                            .filter(Boolean)
+                            .sort((a, b) => (a!.titolo ?? '').localeCompare(b!.titolo ?? ''))
+                            .map(r => (
+                              <option key={r!.id} value={r!.id}>
+                                {r!.titolo} — {autoreLabel(r)}
+                              </option>
+                            ))
+                          }
+                        </select>
+                      </div>
                     </div>
                   )
                 }
