@@ -44,6 +44,7 @@ function Header({ profilo }: { profilo: any }) {
 export default function GiuratoPage() {
   const router = useRouter()
   const [assegnazioni, setAssegnazioni]           = useState<any[]>([])
+  const [bonusMap, setBonusMap]                   = useState<Record<string, boolean>>({})
   const [caricamento, setCaricamento]             = useState(true)
   const [profilo, setProfilo]                     = useState<any>(null)
   const [valutazioneAperta, setValutazioneAperta] = useState<any>(null)
@@ -55,6 +56,31 @@ export default function GiuratoPage() {
   const [utenteId, setUtenteId]                   = useState('')
   const [mostraConferma, setMostraConferma]       = useState(false)
   const [blocchiAperti, setBlocchiAperti]         = useState<Record<string, boolean>>({})
+
+  async function caricaDati(userId: string) {
+    const { data } = await supabase
+      .from('assegnazioni_giurato')
+      .select('*')
+      .eq('giurato_id', userId)
+
+    const ass = data || []
+    setAssegnazioni(ass)
+
+    // Carica bonus per le assegnazioni completate
+    const assIds = ass.map((a: any) => a.assegnazione_id)
+    const { data: valData } = assIds.length > 0
+      ? await supabase.from('valutazioni').select('assegnazione_id, bonus').in('assegnazione_id', assIds)
+      : { data: [] }
+    const bMap: Record<string, boolean> = {}
+    ;(valData || []).forEach((v: any) => { bMap[v.assegnazione_id] = v.bonus })
+    setBonusMap(bMap)
+
+    // Apri di default tutti i blocchi
+    const ids = ass.map((a: any) => a.blocco_id).filter(Boolean).filter((id: string, i: number, arr: string[]) => arr.indexOf(id) === i) as string[]
+    const open: Record<string, boolean> = {}
+    ids.forEach(id => { open[id] = true })
+    setBlocchiAperti(open)
+  }
 
   useEffect(() => {
     async function carica() {
@@ -72,21 +98,7 @@ export default function GiuratoPage() {
 
       setProfilo(p)
       setUtenteId(user.id)
-
-      const { data } = await supabase
-        .from('assegnazioni_giurato')
-        .select('*')
-        .eq('giurato_id', user.id)
-
-      const ass = data || []
-      setAssegnazioni(ass)
-
-      // Apri di default tutti i blocchi
-      const ids = ass.map((a: any) => a.blocco_id).filter(Boolean).filter((id: string, i: number, arr: string[]) => arr.indexOf(id) === i) as string[]
-      const open: Record<string, boolean> = {}
-      ids.forEach(id => { open[id] = true })
-      setBlocchiAperti(open)
-
+      await caricaDati(user.id)
       setCaricamento(false)
     }
     carica()
@@ -119,21 +131,10 @@ export default function GiuratoPage() {
     setValutazioneAperta(assegnazione)
   }
 
-  // Controlla se il bonus è già stato assegnato in questo blocco a un altro racconto
-  function bonusGiaAssegnatoInBlocco(assegnazione: any) {
-    if (!assegnazione.blocco_id) return false
-    return assegnazioni.some(a =>
-      a.blocco_id === assegnazione.blocco_id &&
-      a.assegnazione_id !== assegnazione.assegnazione_id &&
-      a.completata
-      // nota: verificheremmo il bonus dalla valutazione, ma lo teniamo semplice per ora
-    )
-  }
-
   async function salvaValutazione() {
     setSalvando(true)
 
-    // Se bonus è attivo, controlla se esiste già una valutazione con bonus nel blocco
+    // Controlla se il bonus è già stato usato in questo blocco
     if (bonus && valutazioneAperta.blocco_id) {
       const assStessoBlocco = assegnazioni.filter(a =>
         a.blocco_id === valutazioneAperta.blocco_id &&
@@ -181,9 +182,7 @@ export default function GiuratoPage() {
       }),
     })
 
-    const { data: aggiornate } = await supabase
-      .from('assegnazioni_giurato').select('*').eq('giurato_id', utenteId)
-    setAssegnazioni(aggiornate || [])
+    await caricaDati(utenteId)
     setValutazioneAperta(null)
     setSalvando(false)
   }
@@ -199,8 +198,8 @@ export default function GiuratoPage() {
     return Object.entries(map).map(([blocco_id, ass]) => ({
       blocco_id,
       assegnazioni: ass,
-      tutteCompletate: ass.every(a => a.completata),
-      dataAssegnazione: ass[0]?.assegnato_il,
+      nCompletate: ass.filter(a => a.completata).length,
+      nTotali: ass.length,
     }))
   })()
 
@@ -339,20 +338,15 @@ export default function GiuratoPage() {
               <div className="space-y-4">
                 {blocchi.map((blocco, i) => {
                   const isAperto = blocchiAperti[blocco.blocco_id] ?? true
-                  const nCompletate = blocco.assegnazioni.filter(a => a.completata).length
-                  const nTotali = blocco.assegnazioni.length
+                  const { nCompletate, nTotali } = blocco
                   return (
                     <div key={blocco.blocco_id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                       <button
                         onClick={() => setBlocchiAperti(prev => ({ ...prev, [blocco.blocco_id]: !prev[blocco.blocco_id] }))}
                         className="w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors">
                         <div className="flex items-center gap-3">
-                          <span className="text-sm font-medium text-gray-700">
-                            Blocco {i + 1}
-                          </span>
-                          <span className="text-xs text-gray-400">
-                            {nTotali} {nTotali === 1 ? 'racconto' : 'racconti'}
-                          </span>
+                          <span className="text-sm font-medium text-gray-700">Blocco {i + 1}</span>
+                          <span className="text-xs text-gray-400">{nTotali} {nTotali === 1 ? 'racconto' : 'racconti'}</span>
                           {nCompletate === nTotali && nTotali > 0 && (
                             <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Completato</span>
                           )}
@@ -368,7 +362,12 @@ export default function GiuratoPage() {
                           {blocco.assegnazioni.map(a => (
                             <div key={a.assegnazione_id} className="flex items-center justify-between px-5 py-3">
                               <div>
-                                <p className="text-sm font-medium text-gray-800">{a.titolo}</p>
+                                <p className="text-sm font-medium text-gray-800">
+                                  {a.titolo}
+                                  {bonusMap[a.assegnazione_id] && (
+                                    <span className="ml-2 text-amber-500 text-xs">★ bonus</span>
+                                  )}
+                                </p>
                                 <p className="text-xs text-gray-400 mt-0.5">Fase: {a.fase}</p>
                               </div>
                               <button onClick={() => apriRacconto(a)}
