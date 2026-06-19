@@ -555,6 +555,10 @@ export default function DashboardPage() {
                           multiple
                           value={selectedDisponibili}
                           onChange={e => setSelectedDisponibili(Array.from(e.target.selectedOptions, o => o.value))}
+onDoubleClick={() => {
+  setNuovoBloccoRacconti(prev => [...prev, ...selectedDisponibili.filter(id => !prev.includes(id))])
+  setSelectedDisponibili([])
+}}
                           className="flex-1 border border-gray-200 rounded-lg text-xs min-h-[160px] focus:outline-none focus:ring-1 focus:ring-gray-300"
                         >
                           {raccontiDisponibili
@@ -615,6 +619,10 @@ export default function DashboardPage() {
                           multiple
                           value={selectedScelti}
                           onChange={e => setSelectedScelti(Array.from(e.target.selectedOptions, o => o.value))}
+onDoubleClick={() => {
+  setNuovoBloccoRacconti(prev => prev.filter(id => !selectedScelti.includes(id)))
+  setSelectedScelti([])
+}}
                           className="flex-1 border border-gray-200 rounded-lg text-xs min-h-[160px] focus:outline-none focus:ring-1 focus:ring-gray-300"
                         >
                           {nuovoBloccoRacconti
