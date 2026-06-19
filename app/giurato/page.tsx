@@ -14,18 +14,18 @@ const CRITERI = [
   { key: 'b', label: 'Svolta narrativa' },
   { key: 'c', label: 'Climax' },
   { key: 'd', label: 'Scioglimento' },
-  { key: 'e', label: 'Giudizio complessivo' },
 ]
 
 function Header({ profilo }: { profilo: any }) {
   const router = useRouter()
+  const isStaging = process.env.NEXT_PUBLIC_ENV === 'staging'
   return (
-    <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+    <div className={`border-b px-6 py-3 flex items-center justify-between ${isStaging ? 'bg-[#4A90A4] border-[#3a7a8e]' : 'bg-white border-gray-200'}`}>
       <img src="/logo_tohorror_dark.png" alt="TOHorror" className="h-10" />
       <div className="flex items-center gap-3">
         {profilo?.is_admin && (
           <button onClick={() => router.push('/dashboard')}
-            className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
+            className={`text-sm transition-colors ${isStaging ? 'text-white/70 hover:text-white' : 'text-gray-500 hover:text-gray-800'}`}>
             Dashboard
           </button>
         )}
@@ -33,7 +33,7 @@ function Header({ profilo }: { profilo: any }) {
           {profilo?.nome?.[0]?.toUpperCase()}{profilo?.cognome?.[0]?.toUpperCase()}
         </div>
         <button onClick={async () => { await supabase.auth.signOut(); router.push('/login') }}
-          className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
+          className={`text-sm transition-colors ${isStaging ? 'text-white/70 hover:text-white' : 'text-gray-500 hover:text-gray-800'}`}>
           Logout
         </button>
       </div>
@@ -48,11 +48,13 @@ export default function GiuratoPage() {
   const [profilo, setProfilo]                     = useState<any>(null)
   const [valutazioneAperta, setValutazioneAperta] = useState<any>(null)
   const [votiEsistenti, setVotiEsistenti]         = useState<any>(null)
-  const [voti, setVoti]                           = useState({ a: 3, b: 3, c: 3, d: 3, e: 3 })
+  const [voti, setVoti]                           = useState({ a: 3, b: 3, c: 3, d: 3 })
+  const [bonus, setBonus]                         = useState(false)
   const [note, setNote]                           = useState('')
   const [salvando, setSalvando]                   = useState(false)
   const [utenteId, setUtenteId]                   = useState('')
   const [mostraConferma, setMostraConferma]       = useState(false)
+  const [blocchiAperti, setBlocchiAperti]         = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     async function carica() {
@@ -76,7 +78,15 @@ export default function GiuratoPage() {
         .select('*')
         .eq('giurato_id', user.id)
 
-      setAssegnazioni(data || [])
+      const ass = data || []
+      setAssegnazioni(ass)
+
+      // Apri di default tutti i blocchi
+      const ids = [...new Set(ass.map((a: any) => a.blocco_id).filter(Boolean))] as string[]
+      const open: Record<string, boolean> = {}
+      ids.forEach(id => { open[id] = true })
+      setBlocchiAperti(open)
+
       setCaricamento(false)
     }
     carica()
@@ -99,20 +109,59 @@ export default function GiuratoPage() {
         .from('valutazioni').select('*')
         .eq('assegnazione_id', assegnazione.assegnazione_id).single()
       setVotiEsistenti(valEsistente)
+      setBonus(valEsistente?.bonus ?? false)
     } else {
       setVotiEsistenti(null)
-      setVoti({ a: 3, b: 3, c: 3, d: 3, e: 3 })
+      setVoti({ a: 3, b: 3, c: 3, d: 3 })
+      setBonus(false)
       setNote('')
     }
     setValutazioneAperta(assegnazione)
   }
 
+  // Controlla se il bonus è già stato assegnato in questo blocco a un altro racconto
+  function bonusGiaAssegnatoInBlocco(assegnazione: any) {
+    if (!assegnazione.blocco_id) return false
+    return assegnazioni.some(a =>
+      a.blocco_id === assegnazione.blocco_id &&
+      a.assegnazione_id !== assegnazione.assegnazione_id &&
+      a.completata
+      // nota: verificheremmo il bonus dalla valutazione, ma lo teniamo semplice per ora
+    )
+  }
+
   async function salvaValutazione() {
     setSalvando(true)
+
+    // Se bonus è attivo, controlla se esiste già una valutazione con bonus nel blocco
+    if (bonus && valutazioneAperta.blocco_id) {
+      const assStessoBlocco = assegnazioni.filter(a =>
+        a.blocco_id === valutazioneAperta.blocco_id &&
+        a.assegnazione_id !== valutazioneAperta.assegnazione_id &&
+        a.completata
+      )
+      if (assStessoBlocco.length > 0) {
+        const { data: valBlocco } = await supabase
+          .from('valutazioni')
+          .select('bonus')
+          .in('assegnazione_id', assStessoBlocco.map(a => a.assegnazione_id))
+        const bonusGiaUsato = valBlocco?.some(v => v.bonus)
+        if (bonusGiaUsato) {
+          alert('Hai già assegnato il bonus a un altro racconto in questo blocco.')
+          setSalvando(false)
+          return
+        }
+      }
+    }
+
     const { error } = await supabase.from('valutazioni').insert({
       assegnazione_id: valutazioneAperta.assegnazione_id,
-      criterio_a: voti.a, criterio_b: voti.b, criterio_c: voti.c,
-      criterio_d: voti.d, criterio_e: voti.e, note,
+      criterio_a: voti.a,
+      criterio_b: voti.b,
+      criterio_c: voti.c,
+      criterio_d: voti.d,
+      bonus,
+      note,
     })
 
     if (error) {
@@ -138,6 +187,22 @@ export default function GiuratoPage() {
     setValutazioneAperta(null)
     setSalvando(false)
   }
+
+  // Raggruppa assegnazioni per blocco
+  const blocchi = (() => {
+    const map: Record<string, any[]> = {}
+    assegnazioni.forEach(a => {
+      const key = a.blocco_id ?? 'senza_blocco'
+      if (!map[key]) map[key] = []
+      map[key].push(a)
+    })
+    return Object.entries(map).map(([blocco_id, ass]) => ({
+      blocco_id,
+      assegnazioni: ass,
+      tutteCompletate: ass.every(a => a.completata),
+      dataAssegnazione: ass[0]?.assegnato_il,
+    }))
+  })()
 
   if (caricamento) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -205,6 +270,25 @@ export default function GiuratoPage() {
                 </div>
               </div>
             ))}
+
+            {/* Bonus +1 */}
+            <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+              <div>
+                <span className="text-sm text-gray-600">Bonus +1</span>
+                <p className="text-[10px] text-gray-400 mt-0.5">Puoi assegnarlo a un solo racconto per blocco</p>
+              </div>
+              {valutazioneAperta.completata ? (
+                <div className={`w-8 h-8 rounded-full text-sm font-medium flex items-center justify-center ${votiEsistenti?.bonus ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-300'}`}>
+                  {votiEsistenti?.bonus ? '★' : '—'}
+                </div>
+              ) : (
+                <button
+                  onClick={() => setBonus(prev => !prev)}
+                  className={`px-4 py-1.5 rounded-lg text-sm font-medium border transition-colors ${bonus ? 'bg-amber-500 text-white border-amber-500' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                  {bonus ? '★ Assegnato' : '☆ Assegna bonus'}
+                </button>
+              )}
+            </div>
           </div>
 
           {valutazioneAperta.completata ? (
@@ -252,20 +336,52 @@ export default function GiuratoPage() {
           {assegnazioni.length === 0
             ? <p className="text-gray-400 text-sm">Nessun racconto assegnato al momento.</p>
             : (
-              <div className="space-y-3">
-                {assegnazioni.map(a => (
-                  <div key={a.assegnazione_id}
-                    className="bg-white rounded-xl border border-gray-200 p-5 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-800">{a.titolo}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">Fase: {a.fase}</p>
+              <div className="space-y-4">
+                {blocchi.map((blocco, i) => {
+                  const isAperto = blocchiAperti[blocco.blocco_id] ?? true
+                  const nCompletate = blocco.assegnazioni.filter(a => a.completata).length
+                  const nTotali = blocco.assegnazioni.length
+                  return (
+                    <div key={blocco.blocco_id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                      <button
+                        onClick={() => setBlocchiAperti(prev => ({ ...prev, [blocco.blocco_id]: !prev[blocco.blocco_id] }))}
+                        className="w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-medium text-gray-700">
+                            Blocco {i + 1}
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            {nTotali} {nTotali === 1 ? 'racconto' : 'racconti'}
+                          </span>
+                          {nCompletate === nTotali && nTotali > 0 && (
+                            <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Completato</span>
+                          )}
+                          {nCompletate > 0 && nCompletate < nTotali && (
+                            <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">{nCompletate}/{nTotali} valutati</span>
+                          )}
+                        </div>
+                        <span className="text-gray-400 text-xs">{isAperto ? '▲' : '▼'}</span>
+                      </button>
+
+                      {isAperto && (
+                        <div className="border-t border-gray-100 divide-y divide-gray-100">
+                          {blocco.assegnazioni.map(a => (
+                            <div key={a.assegnazione_id} className="flex items-center justify-between px-5 py-3">
+                              <div>
+                                <p className="text-sm font-medium text-gray-800">{a.titolo}</p>
+                                <p className="text-xs text-gray-400 mt-0.5">Fase: {a.fase}</p>
+                              </div>
+                              <button onClick={() => apriRacconto(a)}
+                                className={`text-sm px-4 py-1.5 rounded-lg ${a.completata ? 'border border-gray-200 text-gray-600 hover:bg-gray-50' : 'bg-gray-800 text-white hover:bg-gray-700'}`}>
+                                {a.completata ? 'Vedi valutazione' : 'Valuta'}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <button onClick={() => apriRacconto(a)}
-                      className={`text-sm px-4 py-1.5 rounded-lg ${a.completata ? 'border border-gray-200 text-gray-600 hover:bg-gray-50' : 'bg-gray-800 text-white hover:bg-gray-700'}`}>
-                      {a.completata ? 'Vedi valutazione' : 'Valuta'}
-                    </button>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )
           }
