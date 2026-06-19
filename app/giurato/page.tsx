@@ -82,7 +82,7 @@ export default function GiuratoPage() {
       setAssegnazioni(ass)
 
       // Apri di default tutti i blocchi
-      const ids = [...new Set(ass.map((a: any) => a.blocco_id).filter(Boolean))] as string[]
+      const ids = ass.map((a: any) => a.blocco_id).filter(Boolean).filter((id: string, i: number, arr: string[]) => arr.indexOf(id) === i) as string[]
       const open: Record<string, boolean> = {}
       ids.forEach(id => { open[id] = true })
       setBlocchiAperti(open)
