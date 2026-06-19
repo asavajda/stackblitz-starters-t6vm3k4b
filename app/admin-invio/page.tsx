@@ -304,7 +304,7 @@ if (!profilo?.is_admin) { router.push('/login'); return }
               <label className="block text-sm text-gray-600 mb-1">File (PDF, Word, odt)</label>
               <input
                 type="file"
-                accept=".pdf,.doc,.docx,.odt"
+                accept=".pdf,.docx"
                 onChange={e => { setFile(e.target.files?.[0] || null); setCampiErrore(p => p.filter(c => c !== 'file')) }}
                 className={`w-full text-sm ${campiErrore.includes('file') ? 'text-red-500' : 'text-gray-500'}`}
               />
