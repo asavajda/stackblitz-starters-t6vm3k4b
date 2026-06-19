@@ -93,7 +93,7 @@ export default function DashboardPage() {
   const [valutazioni, setValutazioni]                     = useState<any[]>([])
   const [medie, setMedie]                                 = useState<any[]>([])
   const [blocchi, setBlocchi]                             = useState<any[]>([])
-  const [blocchiCompletatiIds, setBlocchiCompletatiIds]   = useState<string[]>([])
+  const [blocchiCompletati, setBlocchiCompletati]         = useState<{blocco_id: string, giurato_id: string}[]>([])
   const [profilo, setProfilo]                             = useState<any>(null)
   const [caricamento, setCaricamento]                     = useState(true)
   const [linkGenerati, setLinkGenerati]                   = useState<Record<string, string>>({})
@@ -151,11 +151,11 @@ export default function DashboardPage() {
       supabase.from('assegnazioni').select('*'),
       supabase.from('valutazioni').select('*, assegnazioni(racconto_id, giurato_id, profiles(nome, cognome))'),
       supabase.from('blocchi').select('*').order('creato_il', { ascending: false }),
-      supabase.from('blocchi_giurato').select('blocco_id').eq('completato', true),
+      supabase.from('blocchi_giurato').select('blocco_id, giurato_id').eq('completato', true),
     ])
     setRacconti(r || []); setGiurati(g || []); setMedie(m || [])
     setAssegnazioniEsistenti(a || []); setValutazioni(v || []); setBlocchi(b || [])
-    setBlocchiCompletatiIds((bg || []).map((x: any) => x.blocco_id))
+    setBlocchiCompletati(bg || [])
     setCaricamento(false)
   }
 
@@ -348,7 +348,7 @@ export default function DashboardPage() {
       if (!racconto) return false
       const assRacconto = assegnazioniEsistenti.filter(a => a.racconto_id === racconto.id)
       const bloccoId = assRacconto[0]?.blocco_id
-      const bloccoCompletato = bloccoId ? blocchiCompletatiIds.includes(bloccoId) : false
+      const bloccoCompletato = bloccoId ? blocchiCompletati.some(bc => bc.blocco_id === bloccoId) : false
       if (!bloccoCompletato && ['ricevuto', 'in_valutazione', 'valutato'].includes(racconto.stato)) return false
       if (racconto.stato === 'vincitore') return false
       const matchTesto = m.titolo?.toLowerCase().includes(risFilter.toLowerCase()) ||
@@ -781,13 +781,13 @@ export default function DashboardPage() {
             {medieFiltered.length === 0
               ? <p className="text-xs text-gray-300">Nessun risultato trovato</p>
               : medieFiltered.map((m, i) => {
-                const assDelRacconto = assegnazioniEsistenti.filter(a => a.racconto_id === m.racconto_id)
-const valRacconto = valutazioni.filter(v => {
-  if (v.assegnazioni?.racconto_id !== m.racconto_id) return false
-  const ass = assDelRacconto.find(a => a.id === v.assegnazioni?.id || a.giurato_id === v.assegnazioni?.giurato_id)
-  const bloccoId = ass?.blocco_id
-  return bloccoId ? blocchiCompletatiIds.includes(bloccoId) : false
-})
+                const valRacconto = valutazioni.filter(v => {
+                  if (v.assegnazioni?.racconto_id !== m.racconto_id) return false
+                  const giuratoId = v.assegnazioni?.giurato_id
+                  const ass = assegnazioniEsistenti.find(a => a.giurato_id === giuratoId && a.racconto_id === m.racconto_id)
+                  const bloccoId = ass?.blocco_id
+                  return blocchiCompletati.some(bc => bc.blocco_id === bloccoId && bc.giurato_id === giuratoId)
+                })
                 const racconto = racconti.find(r => r.id === m.racconto_id)
                 const autore = racconto ? autoreLabel(racconto) : ''
                 return (
