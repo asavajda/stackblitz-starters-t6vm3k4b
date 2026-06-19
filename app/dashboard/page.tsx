@@ -112,6 +112,9 @@ export default function DashboardPage() {
   const [nuovoBloccoRacconti, setNuovoBloccoRacconti] = useState<string[]>([])
   const [creandoBlocco, setCreandoBlocco]             = useState(false)
   const [messaggioBlocco, setMessaggioBlocco]         = useState('')
+  const [raccontiDisponibiliFilter, setRaccontiDisponibiliFilter] = useState('')
+  const [selectedDisponibili, setSelectedDisponibili] = useState<string[]>([])
+  const [selectedScelti, setSelectedScelti]           = useState<string[]>([])
 
   const [raccontiFilter, setRaccontiFilter] = useState('')
   const [raccontiStato, setRaccontiStato]   = useState('')
