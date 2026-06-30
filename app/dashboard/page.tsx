@@ -694,37 +694,37 @@ export default function DashboardPage() {
                             const bloccoId = assegnazioniRacconto[0]?.blocco_id
                             const isChiusa = ['valutato', 'eliminato'].includes(r.stato)
                             return (
-                              <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-5">
-                                <div className="flex items-center justify-between mb-3">
-                                  <div>
-                                    <p className="text-sm font-medium text-gray-800">{r.titolo}</p>
-                                   {bloccoId && (
-  <p className="text-[10px] text-gray-300 mt-0.5">
-    Blocco {blocchi.findIndex(b => b.id === bloccoId) + 1}
-  </p>
-)}
+                              <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-4">
+                                <div className="flex items-center justify-between gap-3 flex-wrap">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <p className="text-sm font-medium text-gray-800 truncate">{r.titolo}</p>
+                                    {bloccoId && (
+                                      <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-semibold shrink-0">
+                                        Blocco {blocchi.findIndex(b => b.id === bloccoId) + 1}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    {assegnazioniRacconto.length === 0
+                                      ? <p className="text-xs text-gray-300">Nessun giurato assegnato</p>
+                                      : assegnazioniRacconto.map(a => {
+                                          const g = giurati.find(x => x.id === a.giurato_id)
+                                          if (!g) return null
+                                          const cfg = TIPO_CONFIG[g.tipo_giurato] || TIPO_CONFIG.lettore
+                                          return (
+                                            <div key={a.id} className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border shrink-0 ${a.completata ? cfg.attivo : 'border-gray-200 text-gray-400'}`}>
+                                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cfg.badge}`}>{cfg.label}</span>
+                                              {g.nome} {g.cognome}
+                                              {a.completata
+                                                ? <span className="text-[10px] opacity-60">· valutato</span>
+                                                : <span className="text-[10px] text-red-400">· non valutato</span>
+                                              }
+                                            </div>
+                                          )
+                                        })
+                                    }
                                   </div>
                                   <span className={`text-xs px-3 py-1 rounded-full shrink-0 font-medium ${STATO_BADGE[r.stato]}`}>{fmt(r.stato)}</span>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                  {assegnazioniRacconto.length === 0
-                                    ? <p className="text-xs text-gray-300">Nessun giurato assegnato</p>
-                                    : assegnazioniRacconto.map(a => {
-                                        const g = giurati.find(x => x.id === a.giurato_id)
-                                        if (!g) return null
-                                        const cfg = TIPO_CONFIG[g.tipo_giurato] || TIPO_CONFIG.lettore
-                                        return (
-                                          <div key={a.id} className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border ${a.completata ? cfg.attivo : 'border-gray-200 text-gray-400'}`}>
-                                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cfg.badge}`}>{cfg.label}</span>
-                                            {g.nome} {g.cognome}
-                                            {a.completata
-                                              ? <span className="text-[10px] opacity-60">· valutato</span>
-                                              : <span className="text-[10px] text-red-400">· non valutato</span>
-                                            }
-                                          </div>
-                                        )
-                                      })
-                                  }
                                 </div>
                               </div>
                             )
