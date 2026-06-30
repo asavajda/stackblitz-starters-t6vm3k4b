@@ -356,17 +356,10 @@ export default function DashboardPage() {
     let list = medie.filter(m => {
       const racconto = racconti.find(r => r.id === m.racconto_id)
       if (!racconto) return false
-      const assRacconto = assegnazioniEsistenti.filter(a => a.racconto_id === racconto.id)
-      const bloccoId = assRacconto[0]?.blocco_id
-      const giuratiDelBlocco = bloccoId
-        ? new Set(assegnazioniEsistenti.filter(a => a.blocco_id === bloccoId).map(a => a.giurato_id))
-        : new Set()
-      const giuratiCheHannoCompletato = bloccoId
-        ? blocchiCompletati.filter(bc => bc.blocco_id === bloccoId).length
-        : 0
-      const bloccoCompletato = bloccoId ? (giuratiDelBlocco.size > 0 && giuratiCheHannoCompletato >= giuratiDelBlocco.size) : false
-      if (!bloccoCompletato && ['ricevuto', 'in_valutazione', 'valutato'].includes(racconto.stato)) return false
-      if (racconto.stato === 'vincitore') return false
+      // "valutato" significa che entrambi i giurati hanno inviato la loro valutazione
+      // per questo racconto (vedi /api/completa-valutazione) — e' il criterio giusto,
+      // non il completamento del blocco (che e' solo la conferma finale del bonus)
+      if (!['valutato', 'finalista', 'eliminato'].includes(racconto.stato)) return false
       const matchTesto = m.titolo?.toLowerCase().includes(risFilter.toLowerCase()) ||
         autoreLabel(racconto).toLowerCase().includes(risFilter.toLowerCase())
       return matchTesto
@@ -792,13 +785,7 @@ export default function DashboardPage() {
             {medieFiltered.length === 0
               ? <p className="text-xs text-gray-300">Nessun risultato trovato</p>
               : medieFiltered.map((m, i) => {
-                const valRacconto = valutazioni.filter(v => {
-                  if (v.assegnazioni?.racconto_id !== m.racconto_id) return false
-                  const giuratoId = v.assegnazioni?.giurato_id
-                  const ass = assegnazioniEsistenti.find(a => a.giurato_id === giuratoId && a.racconto_id === m.racconto_id)
-                  const bloccoId = ass?.blocco_id
-                  return blocchiCompletati.some(bc => bc.blocco_id === bloccoId && bc.giurato_id === giuratoId)
-                })
+                const valRacconto = valutazioni.filter(v => v.assegnazioni?.racconto_id === m.racconto_id)
                 const racconto = racconti.find(r => r.id === m.racconto_id)
                 const autore = racconto ? autoreLabel(racconto) : ''
                 const aperto = risAperti[m.racconto_id] ?? false
