@@ -32,6 +32,9 @@ const CRITERI = [
   { key: 'c', label: 'Climax' },
   { key: 'd', label: 'Scioglimento' },
 ]
+const STATO_ORDER: Record<string, number> = {
+  ricevuto: 0, in_valutazione: 1, valutato: 2, finalista: 3, eliminato: 4, vincitore: 5,
+}
 const SEZIONI = ['racconti', 'assegnazioni', 'finalisti', 'risultati', 'giurati'] as const
 const activeClass: Record<string, string> = {
   finalista: 'bg-purple-50 border-purple-300 text-purple-700',
@@ -50,11 +53,15 @@ function autoreLabel(r: any) {
 
 function sortRacconti(list: any[], key: SortKey, dir: SortDir) {
   return [...list].sort((a, b) => {
+    if (key === 'stato') {
+      const va = STATO_ORDER[a.stato] ?? 99
+      const vb = STATO_ORDER[b.stato] ?? 99
+      return dir === 'asc' ? va - vb : vb - va
+    }
     let va = '', vb = ''
     if (key === 'titolo') { va = a.titolo ?? ''; vb = b.titolo ?? '' }
     if (key === 'autore') { va = autoreLabel(a); vb = autoreLabel(b) }
     if (key === 'data')   { va = a.inviato_il ?? ''; vb = b.inviato_il ?? '' }
-    if (key === 'stato')  { va = a.stato ?? ''; vb = b.stato ?? '' }
     return dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
   })
 }
@@ -119,8 +126,8 @@ export default function DashboardPage() {
 
   const [raccontiFilter, setRaccontiFilter] = useState('')
   const [raccontiStato, setRaccontiStato]   = useState('')
-  const [raccontiSort, setRaccontiSort]     = useState<SortKey>('data')
-  const [raccontiDir, setRaccontiDir]       = useState<SortDir>('desc')
+  const [raccontiSort, setRaccontiSort]     = useState<SortKey>('stato')
+  const [raccontiDir, setRaccontiDir]       = useState<SortDir>('asc')
 
   const [assFilter, setAssFilter] = useState('')
   const [assSort, setAssSort]     = useState<SortKey>('data')
