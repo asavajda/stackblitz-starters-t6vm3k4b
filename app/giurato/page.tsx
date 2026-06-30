@@ -16,6 +16,16 @@ const CRITERI = [
   { key: 'd', label: 'Scioglimento' },
 ]
 
+// Rimuove l'articolo iniziale italiano (con o senza apostrofo) per un ordinamento
+// alfabetico "da catalogo", es. "Il Cerchio" si ordina come "Cerchio"
+function titoloPerOrdinamento(titolo: string): string {
+  return (titolo || '')
+    .trim()
+    .replace(/^(l['’]|gl['’]|un['’]|il|lo|la|gli|le|uno|una|un)\s+/i, '')
+    .replace(/^(l['’]|gl['’]|un['’])/i, '')
+    .trim()
+}
+
 function Header({ profilo }: { profilo: any }) {
   const router = useRouter()
   const isStaging = process.env.NEXT_PUBLIC_ENV === 'staging'
@@ -249,7 +259,7 @@ export default function GiuratoPage() {
         // Ordine stabile per titolo: Postgres non garantisce l'ordine delle righe
         // senza ORDER BY, e una riga aggiornata (es. completata=true) puo
         // "spostarsi" nella scansione — qui fissiamo l'ordine cosi non cambia mai
-        assegnazioni: [...ass].sort((a, b) => a.titolo.localeCompare(b.titolo)),
+        assegnazioni: [...ass].sort((a, b) => titoloPerOrdinamento(a.titolo).localeCompare(titoloPerOrdinamento(b.titolo))),
         nCompletate: ass.filter(a => a.completata).length,
         nTotali: ass.length,
         tutteCompletate: ass.every(a => a.completata),
