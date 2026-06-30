@@ -930,12 +930,11 @@ export default function DashboardPage() {
               <p className="text-sm font-medium text-gray-800 mb-1">Carico di lavoro</p>
               <p className="text-xs text-gray-400 mb-4">Ordinato dal più libero al più occupato.</p>
               {(() => {
-                const barColor: Record<string, string> = { interno: 'bg-purple-400', lettore: 'bg-blue-400' }
                 const righe = (g: any, maxValore: number, inCorso: number) => (
                   <div key={g.id} className="flex items-center gap-3 py-1">
                     <span className="text-xs text-gray-600 truncate shrink-0 w-32" title={`${g.cognome} ${g.nome}`}>{g.cognome} {g.nome}</span>
                     <div className="flex-1 h-2 bg-gray-50 rounded-sm overflow-hidden">
-                      <div className={`h-full rounded-sm ${inCorso > 0 ? barColor[g.tipo_giurato] ?? 'bg-gray-300' : ''}`}
+                      <div className={`h-full rounded-sm ${inCorso > 0 ? 'bg-red-400' : ''}`}
                         style={{ width: `${(inCorso / maxValore) * 100}%` }} />
                     </div>
                     <span className="text-xs text-gray-500 w-4 shrink-0">{inCorso}</span>
