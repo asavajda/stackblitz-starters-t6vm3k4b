@@ -395,6 +395,13 @@ export default function DashboardPage() {
       : a.nome.localeCompare(b.nome)
     )
 
+  function statsGiurato(giuratoId: string) {
+    const ass = assegnazioniEsistenti.filter(a => a.giurato_id === giuratoId)
+    const valutati = ass.filter(a => a.completata).length
+    const inCorso = ass.length - valutati
+    return { valutati, inCorso, totale: ass.length }
+  }
+
   const sezioniAssegnazioni = [
     { label: 'In valutazione', list: raccontiInValutazione },
     { label: 'Valutati', list: raccontiValutati },
@@ -510,7 +517,7 @@ export default function DashboardPage() {
                     {giurati.filter(g => g.tipo_giurato === 'interno' && g.attivo !== false)
                       .sort((a, b) => a.cognome.localeCompare(b.cognome))
                       .map(g => (
-                        <option key={g.id} value={g.id}>{g.cognome} {g.nome}</option>
+                        <option key={g.id} value={g.id}>{g.cognome} {g.nome} — {statsGiurato(g.id).inCorso} in corso</option>
                       ))
                     }
                   </select>
@@ -523,7 +530,7 @@ export default function DashboardPage() {
                     {giurati.filter(g => g.tipo_giurato === 'lettore' && g.attivo !== false)
                       .sort((a, b) => a.cognome.localeCompare(b.cognome))
                       .map(g => (
-                        <option key={g.id} value={g.id}>{g.cognome} {g.nome}</option>
+                        <option key={g.id} value={g.id}>{g.cognome} {g.nome} — {statsGiurato(g.id).inCorso} in corso</option>
                       ))
                     }
                   </select>
@@ -917,6 +924,41 @@ export default function DashboardPage() {
                 className="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-700 disabled:opacity-50">
                 {aggiungendo ? 'Creazione...' : 'Crea giurato'}
               </button>
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <p className="text-xs text-gray-400 mb-3">Carico di lavoro</p>
+              <div className="grid grid-cols-[minmax(0,1.3fr)_70px_70px_70px_minmax(0,1.4fr)] gap-3 px-1 pb-2 border-b border-gray-100">
+                <span className="text-[10px] font-semibold text-gray-400 uppercase">Giurato</span>
+                <span className="text-[10px] font-semibold text-gray-400 uppercase text-center">Valutati</span>
+                <span className="text-[10px] font-semibold text-gray-400 uppercase text-center">In corso</span>
+                <span className="text-[10px] font-semibold text-gray-400 uppercase text-center">Totale</span>
+                <span className="text-[10px] font-semibold text-gray-400 uppercase">Avanzamento</span>
+              </div>
+              {giurati.filter(g => g.attivo !== false).length === 0
+                ? <p className="text-xs text-gray-300 py-3">Nessun giurato attivo</p>
+                : [...giurati].filter(g => g.attivo !== false)
+                    .sort((a, b) => a.cognome.localeCompare(b.cognome))
+                    .map(g => {
+                      const cfg = TIPO_CONFIG[g.tipo_giurato] || TIPO_CONFIG.lettore
+                      const { valutati, inCorso, totale } = statsGiurato(g.id)
+                      const pct = totale > 0 ? Math.round((valutati / totale) * 100) : 0
+                      return (
+                        <div key={g.id} className="grid grid-cols-[minmax(0,1.3fr)_70px_70px_70px_minmax(0,1.4fr)] gap-3 items-center px-1 py-2 border-b border-gray-50 last:border-0">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 ${cfg.badge}`}>{cfg.label}</span>
+                            <span className="text-sm text-gray-700 truncate">{g.cognome} {g.nome}</span>
+                          </div>
+                          <span className="text-sm text-center font-medium text-green-700">{valutati}</span>
+                          <span className={`text-sm text-center font-medium ${inCorso > 2 ? 'text-amber-600' : 'text-gray-500'}`}>{inCorso}</span>
+                          <span className="text-sm text-center text-gray-500">{totale}</span>
+                          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-green-500" style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      )
+                    })
+              }
             </div>
 
             <div className="space-y-3">
