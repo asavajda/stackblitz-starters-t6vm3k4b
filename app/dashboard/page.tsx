@@ -927,33 +927,35 @@ export default function DashboardPage() {
             </div>
 
             <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <p className="text-xs text-gray-400 mb-3">Carico di lavoro · ordinato dal più libero al più occupato</p>
+              <p className="text-sm font-medium text-gray-800 mb-1">Carico di lavoro</p>
+              <p className="text-xs text-gray-400 mb-4">Ordinato dal più libero al più occupato.</p>
               {(() => {
-                const righe = (g: any, maxValore: number, inCorso: number) => {
-                  const cfg = TIPO_CONFIG[g.tipo_giurato] || TIPO_CONFIG.lettore
-                  return (
-                    <div key={g.id} className="flex items-center gap-3 py-1">
-                      <span className="text-xs text-gray-600 truncate shrink-0 w-32" title={`${g.cognome} ${g.nome}`}>{g.cognome} {g.nome}</span>
-                      <div className="flex-1 h-2 bg-gray-50 rounded-sm overflow-hidden">
-                        <div className={`h-full rounded-sm ${inCorso > 2 ? 'bg-amber-400' : inCorso > 0 ? 'bg-blue-300' : ''}`}
-                          style={{ width: `${(inCorso / maxValore) * 100}%` }} />
-                      </div>
-                      <span className="text-xs text-gray-500 w-4 shrink-0">{inCorso}</span>
+                const barColor: Record<string, string> = { interno: 'bg-purple-400', lettore: 'bg-blue-400' }
+                const righe = (g: any, maxValore: number, inCorso: number) => (
+                  <div key={g.id} className="flex items-center gap-3 py-1">
+                    <span className="text-xs text-gray-600 truncate shrink-0 w-32" title={`${g.cognome} ${g.nome}`}>{g.cognome} {g.nome}</span>
+                    <div className="flex-1 h-2 bg-gray-50 rounded-sm overflow-hidden">
+                      <div className={`h-full rounded-sm ${inCorso > 0 ? barColor[g.tipo_giurato] ?? 'bg-gray-300' : ''}`}
+                        style={{ width: `${(inCorso / maxValore) * 100}%` }} />
                     </div>
-                  )
-                }
+                    <span className="text-xs text-gray-500 w-4 shrink-0">{inCorso}</span>
+                  </div>
+                )
                 const colonna = (tipo: string, label: string) => {
+                  const cfg = TIPO_CONFIG[tipo] || TIPO_CONFIG.lettore
                   const lista = giurati.filter(g => g.attivo !== false && g.tipo_giurato === tipo)
                     .map(g => ({ g, ...statsGiurato(g.id) }))
                     .sort((a, b) => a.inCorso - b.inCorso || a.g.cognome.localeCompare(b.g.cognome))
                   const maxValore = Math.max(1, ...lista.map(s => s.inCorso))
                   return (
                     <div>
-                      <p className="text-[10px] font-semibold text-gray-400 uppercase mb-2">{label}</p>
-                      {lista.length === 0
-                        ? <p className="text-xs text-gray-300">Nessuno</p>
-                        : lista.map(({ g, inCorso }) => righe(g, maxValore, inCorso))
-                      }
+                      <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded ${cfg.badge}`}>{label}</span>
+                      <div className="mt-2">
+                        {lista.length === 0
+                          ? <p className="text-xs text-gray-300">Nessuno</p>
+                          : lista.map(({ g, inCorso }) => righe(g, maxValore, inCorso))
+                        }
+                      </div>
                     </div>
                   )
                 }
