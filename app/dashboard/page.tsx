@@ -42,7 +42,7 @@ const activeClass: Record<string, string> = {
   vincitore: 'bg-amber-50 border-amber-300 text-amber-700',
 }
 type Sezione = typeof SEZIONI[number]
-type SortKey = 'titolo' | 'autore' | 'data' | 'stato'
+type SortKey = 'titolo' | 'autore' | 'data' | 'stato' | 'media'
 type SortDir = 'asc' | 'desc'
 
 function fmt(stato: string) { return STATI_LABEL[stato] ?? stato }
@@ -66,9 +66,10 @@ function sortRacconti(list: any[], key: SortKey, dir: SortDir) {
   })
 }
 
-function SortBar({ sortKey, sortDir, onChange }: {
+function SortBar({ sortKey, sortDir, onChange, showMedia }: {
   sortKey: SortKey; sortDir: SortDir
   onChange: (k: SortKey, d: SortDir) => void
+  showMedia?: boolean
 }) {
   function toggle(k: SortKey) {
     if (sortKey === k) onChange(k, sortDir === 'asc' ? 'desc' : 'asc')
@@ -83,6 +84,7 @@ function SortBar({ sortKey, sortDir, onChange }: {
   return (
     <div className="flex items-center gap-1">
       <span className="text-xs text-gray-400 mr-1">Ordina:</span>
+      {showMedia && btn('media', 'Media')}
       {btn('titolo', 'Titolo')}
       {btn('data', 'Data')}
       {btn('stato', 'Stato')}
@@ -137,8 +139,9 @@ export default function DashboardPage() {
   })
 
   const [risFilter, setRisFilter] = useState('')
-  const [risSort, setRisSort]     = useState<SortKey>('titolo')
-  const [risDir, setRisDir]       = useState<SortDir>('asc')
+  const [risSort, setRisSort]     = useState<SortKey>('media')
+  const [risDir, setRisDir]       = useState<SortDir>('desc')
+  const [risAperti, setRisAperti] = useState<Record<string, boolean>>({})
 
   const [giuratiFilter, setGiuratiFilter] = useState('')
   const [giuratiSort, setGiuratiSort]     = useState<'nome' | 'cognome'>('cognome')
@@ -378,6 +381,10 @@ export default function DashboardPage() {
     if (risSort === 'stato') list = [...list].sort((a, b) => {
       const va = a.stato ?? ''; const vb = b.stato ?? ''
       return risDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
+    })
+    if (risSort === 'media') list = [...list].sort((a, b) => {
+      const va = a.media_complessiva ?? -1; const vb = b.media_complessiva ?? -1
+      return risDir === 'asc' ? va - vb : vb - va
     })
     return list
   })()
@@ -790,7 +797,7 @@ export default function DashboardPage() {
               <input type="text" placeholder="Cerca per titolo o autore..."
                 value={risFilter} onChange={e => setRisFilter(e.target.value)}
                 className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
-              <SortBar sortKey={risSort} sortDir={risDir}
+              <SortBar sortKey={risSort} sortDir={risDir} showMedia
                 onChange={(k, d) => { setRisSort(k); setRisDir(d) }} />
             </div>
             {medieFiltered.length === 0
@@ -805,61 +812,84 @@ export default function DashboardPage() {
                 })
                 const racconto = racconti.find(r => r.id === m.racconto_id)
                 const autore = racconto ? autoreLabel(racconto) : ''
+                const aperto = risAperti[m.racconto_id] ?? false
                 return (
-                  <div key={m.racconto_id} className="bg-white rounded-xl border border-gray-200 p-5">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-gray-300 font-medium w-5">{i + 1}</span>
-                        <p className="text-sm font-medium text-gray-800">{m.titolo}</p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className={`text-xs px-3 py-1 rounded-full font-medium ${STATO_BADGE[m.stato]}`}>{fmt(m.stato)}</span>
-                        {m.media_complessiva && <span className="text-lg font-semibold text-gray-800">{m.media_complessiva}</span>}
-                      </div>
-                    </div>
-                    {valRacconto.length > 0 && (
-                      <div className="mb-4">
-                        <p className="text-xs text-gray-500 mb-1">Autore: {autore}</p>
-                        <p className="text-xs text-gray-500 mb-3">Caricato il: {racconto?.inviato_il ? new Date(racconto.inviato_il).toLocaleDateString('it-IT') : '-'}</p>
-                        <div className="space-y-2">
-                          <div className="grid grid-cols-7 gap-2 text-[10px] text-gray-400 uppercase px-2">
-                            <span className="col-span-2">Giurato</span>
-                            {CRITERI.map(c => <span key={c.key} className="text-center">{c.label}</span>)}
-                            <span className="text-center">Bonus</span>
-                            <span className="text-center">Totale</span>
-                          </div>
-                          {valRacconto.map(v => {
-                            const totale = (v.criterio_a ?? 0) + (v.criterio_b ?? 0) + (v.criterio_c ?? 0) + (v.criterio_d ?? 0) + (v.bonus ? 1 : 0)
-                            return (
-                              <div key={v.id} className="grid grid-cols-7 gap-2 bg-gray-50 rounded-lg px-2 py-1.5 text-xs">
-                                <span className="col-span-2 text-gray-600 truncate">
-                                  {v.assegnazioni?.profiles?.nome} {v.assegnazioni?.profiles?.cognome}
-                                </span>
-                                {CRITERI.map(c => (
-                                  <span key={c.key} className="text-center text-gray-700 font-medium">{v[`criterio_${c.key}`]}</span>
-                                ))}
-                                <span className="text-center text-gray-700 font-medium">{v.bonus ? '+1' : '—'}</span>
-                                <span className="text-center text-gray-800 font-semibold">{totale}</span>
-                              </div>
-                            )
-                          })}
+                  <div key={m.racconto_id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    <div className="w-full flex items-center justify-between gap-3 px-5 py-3">
+                      <button
+                        onClick={() => setRisAperti(prev => ({ ...prev, [m.racconto_id]: !prev[m.racconto_id] }))}
+                        className="flex items-center gap-3 min-w-0 flex-1 text-left hover:opacity-70 transition-opacity">
+                        <span className="text-sm text-gray-300 font-medium w-5 shrink-0">{i + 1}</span>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-800 truncate">{m.titolo}</p>
+                          <p className="text-xs text-gray-400 truncate">{autore}</p>
                         </div>
-                      </div>
-                    )}
-                    {m.media_complessiva && (
-                      <div>
-                        <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Medie</p>
-                        <div className="grid grid-cols-4 gap-2">
-                          {CRITERI.map(c => (
-                            <div key={c.key} className="text-center bg-gray-50 rounded-lg py-2">
-                              <p className="text-[10px] text-gray-400 mb-1">{c.label}</p>
-                              <p className="text-sm font-semibold text-gray-700">{m[`media_${c.key}`]}</p>
-                            </div>
+                      </button>
+                      <div className="flex items-center gap-3 shrink-0">
+                        {m.media_complessiva && <span className="text-lg font-semibold text-gray-800">{m.media_complessiva}</span>}
+                        <span className={`text-xs px-3 py-1 rounded-full font-medium ${STATO_BADGE[m.stato]}`}>{fmt(m.stato)}</span>
+                        <div className="flex items-center gap-2">
+                          {(['finalista', 'eliminato'] as const).map(key => (
+                            <button key={key} onClick={() => aggiornaStato(m.racconto_id, key)}
+                              className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                                m.stato === key ? activeClass[key] : 'border-gray-200 text-gray-400 hover:bg-gray-50'
+                              }`}>
+                              {fmt(key)}
+                            </button>
                           ))}
                         </div>
+                        <button onClick={() => setRisAperti(prev => ({ ...prev, [m.racconto_id]: !prev[m.racconto_id] }))}
+                          className="text-gray-400 text-xs px-1 hover:text-gray-600">
+                          {aperto ? '▲' : '▼'}
+                        </button>
+                      </div>
+                    </div>
+                    {aperto && (
+                      <div className="px-5 pb-5 border-t border-gray-100 pt-4">
+                        {valRacconto.length > 0 && (
+                          <div className="mb-4">
+                            <p className="text-xs text-gray-500 mb-3">Caricato il: {racconto?.inviato_il ? new Date(racconto.inviato_il).toLocaleDateString('it-IT') : '-'}</p>
+                            <div className="space-y-2">
+                              <div className="grid grid-cols-7 gap-2 text-[10px] text-gray-400 uppercase px-2">
+                                <span className="col-span-2">Giurato</span>
+                                {CRITERI.map(c => <span key={c.key} className="text-center">{c.label}</span>)}
+                                <span className="text-center">Bonus</span>
+                                <span className="text-center">Totale</span>
+                              </div>
+                              {valRacconto.map(v => {
+                                const totale = (v.criterio_a ?? 0) + (v.criterio_b ?? 0) + (v.criterio_c ?? 0) + (v.criterio_d ?? 0) + (v.bonus ? 1 : 0)
+                                return (
+                                  <div key={v.id} className="grid grid-cols-7 gap-2 bg-gray-50 rounded-lg px-2 py-1.5 text-xs">
+                                    <span className="col-span-2 text-gray-600 truncate">
+                                      {v.assegnazioni?.profiles?.nome} {v.assegnazioni?.profiles?.cognome}
+                                    </span>
+                                    {CRITERI.map(c => (
+                                      <span key={c.key} className="text-center text-gray-700 font-medium">{v[`criterio_${c.key}`]}</span>
+                                    ))}
+                                    <span className="text-center text-gray-700 font-medium">{v.bonus ? '+1' : '—'}</span>
+                                    <span className="text-center text-gray-800 font-semibold">{totale}</span>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+                        {m.media_complessiva && (
+                          <div>
+                            <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Medie</p>
+                            <div className="grid grid-cols-4 gap-2">
+                              {CRITERI.map(c => (
+                                <div key={c.key} className="text-center bg-gray-50 rounded-lg py-2">
+                                  <p className="text-[10px] text-gray-400 mb-1">{c.label}</p>
+                                  <p className="text-sm font-semibold text-gray-700">{m[`media_${c.key}`]}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {!m.media_complessiva && <p className="text-xs text-gray-300">Nessuna valutazione ancora</p>}
                       </div>
                     )}
-                    {!m.media_complessiva && <p className="text-xs text-gray-300">Nessuna valutazione ancora</p>}
                   </div>
                 )
               })
