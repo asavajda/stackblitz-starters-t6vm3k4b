@@ -223,14 +223,26 @@ export default function GiuratoPage() {
       if (!map[key]) map[key] = []
       map[key].push(a)
     })
-    return Object.entries(map).map(([blocco_id, ass]) => ({
-      blocco_id,
-      assegnazioni: ass,
-      nCompletate: ass.filter(a => a.completata).length,
-      nTotali: ass.length,
-      tutteCompletate: ass.every(a => a.completata),
-      bloccoCompletato: blocchiCompletati[blocco_id] ?? false,
-    }))
+    return Object.entries(map)
+      .map(([blocco_id, ass]) => ({
+        blocco_id,
+        assegnazioni: ass,
+        nCompletate: ass.filter(a => a.completata).length,
+        nTotali: ass.length,
+        tutteCompletate: ass.every(a => a.completata),
+        bloccoCompletato: blocchiCompletati[blocco_id] ?? false,
+        creatoIl: ass[0]?.blocco_creato_il ?? null,
+      }))
+      .sort((x, y) => {
+        // Non completati prima, completati dopo
+        if (x.bloccoCompletato !== y.bloccoCompletato) {
+          return x.bloccoCompletato ? 1 : -1
+        }
+        // A parità di stato, più recenti in alto
+        const dx = x.creatoIl ? new Date(x.creatoIl).getTime() : 0
+        const dy = y.creatoIl ? new Date(y.creatoIl).getTime() : 0
+        return dy - dx
+      })
   })()
 
   if (caricamento) return (
