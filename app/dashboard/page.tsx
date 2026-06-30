@@ -84,7 +84,6 @@ function SortBar({ sortKey, sortDir, onChange }: {
     <div className="flex items-center gap-1">
       <span className="text-xs text-gray-400 mr-1">Ordina:</span>
       {btn('titolo', 'Titolo')}
-      {btn('autore', 'Autore')}
       {btn('data', 'Data')}
       {btn('stato', 'Stato')}
     </div>
