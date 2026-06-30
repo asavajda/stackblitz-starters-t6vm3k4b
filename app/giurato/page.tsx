@@ -398,26 +398,31 @@ export default function GiuratoPage() {
                   const isAperto = blocchiAperti[blocco.blocco_id] ?? true
                   const { nCompletate, nTotali, tutteCompletate, bloccoCompletato } = blocco
                   const bonusId = bonusSelezionato[blocco.blocco_id]
+                  const coloreStato = bloccoCompletato
+                    ? 'border-l-green-400'
+                    : tutteCompletate
+                      ? 'border-l-amber-400'
+                      : 'border-l-blue-400'
 
                   return (
-                    <div key={blocco.blocco_id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    <div key={blocco.blocco_id} className={`bg-white rounded-xl border border-gray-200 border-l-4 ${coloreStato} overflow-hidden shadow-sm`}>
                       <button
                         onClick={() => setBlocchiAperti(prev => ({ ...prev, [blocco.blocco_id]: !prev[blocco.blocco_id] }))}
-                        className="w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors">
+                        className="w-full flex items-center justify-between px-5 py-4 bg-gray-50 hover:bg-gray-100 transition-colors">
                         <div className="flex items-center gap-3">
-                          <span className="text-sm font-medium text-gray-700">Blocco {i + 1}</span>
-                          <span className="text-xs text-gray-400">{nTotali} {nTotali === 1 ? 'racconto' : 'racconti'}</span>
+                          <span className="text-base font-bold text-gray-900">Blocco {i + 1}</span>
+                          <span className="text-xs text-gray-500 font-medium">{nTotali} {nTotali === 1 ? 'racconto' : 'racconti'}</span>
                           {bloccoCompletato && (
-                            <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Completato</span>
+                            <span className="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-semibold">✓ Completato</span>
                           )}
                           {!bloccoCompletato && nCompletate > 0 && nCompletate < nTotali && (
-                            <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">{nCompletate}/{nTotali} valutati</span>
+                            <span className="text-xs bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full font-semibold">{nCompletate}/{nTotali} valutati</span>
                           )}
                           {!bloccoCompletato && tutteCompletate && (
-                            <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">Pronto per il completamento</span>
+                            <span className="text-xs bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full font-semibold">Pronto per il completamento</span>
                           )}
                         </div>
-                        <span className="text-gray-400 text-xs">{isAperto ? '▲' : '▼'}</span>
+                        <span className="text-gray-500 text-sm font-bold">{isAperto ? '▲' : '▼'}</span>
                       </button>
 
                       {isAperto && (
