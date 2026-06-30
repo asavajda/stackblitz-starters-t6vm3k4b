@@ -58,6 +58,7 @@ export default function GiuratoPage() {
   const [blocchiAperti, setBlocchiAperti]         = useState<Record<string, boolean>>({})
   const [completandoBlocco, setCompletandoBlocco] = useState<string | null>(null)
   const [mostraConfermaCompletaBlocco, setMostraConfermaCompletaBlocco] = useState<string | null>(null)
+  const [salvandoBonus, setSalvandoBonus]         = useState(false)
 
   async function caricaDati(userId: string) {
     const { data } = await supabase
@@ -187,15 +188,23 @@ export default function GiuratoPage() {
 
     // Aggiorna subito lo stato locale per reattività dell'interfaccia
     setBonusSelezionato(prev => ({ ...prev, [blocco_id]: nuovoBonus }))
+    setSalvandoBonus(true)
 
-    // Persisti immediatamente su DB: se non lo facciamo qui, ricaricando i dati
-    // (es. dopo aver valutato un altro racconto del blocco) la selezione andrebbe persa
+    // Persisti immediatamente su DB con due query rapide invece di N sequenziali,
+    // per minimizzare la finestra in cui un ricaricamento dati potrebbe leggere uno stato intermedio
     const assDelBlocco = assegnazioni.filter(a => a.blocco_id === blocco_id && a.completata)
-    for (const a of assDelBlocco) {
-      await supabase.from('valutazioni')
-        .update({ bonus: a.assegnazione_id === nuovoBonus })
-        .eq('assegnazione_id', a.assegnazione_id)
-    }
+    const altriIds = assDelBlocco.map(a => a.assegnazione_id).filter(id => id !== nuovoBonus)
+
+    await Promise.all([
+      nuovoBonus
+        ? supabase.from('valutazioni').update({ bonus: true }).eq('assegnazione_id', nuovoBonus)
+        : Promise.resolve(),
+      altriIds.length > 0
+        ? supabase.from('valutazioni').update({ bonus: false }).in('assegnazione_id', altriIds)
+        : Promise.resolve(),
+    ])
+
+    setSalvandoBonus(false)
   }
 
   async function completaBlocco(blocco_id: string) {
@@ -460,13 +469,14 @@ export default function GiuratoPage() {
                                   {a.completata && !bloccoCompletato && (
                                     <button
                                       onClick={() => toggleBonus(blocco.blocco_id, a.assegnazione_id)}
+                                      disabled={salvandoBonus}
                                       title={haBonus ? 'Rimuovi bonus' : 'Assegna bonus +1'}
-                                      className={`text-sm px-2 py-1 rounded-lg border transition-colors ${haBonus ? 'bg-amber-500 text-white border-amber-500' : 'border-gray-200 text-gray-400 hover:border-amber-300 hover:text-amber-500'}`}>
+                                      className={`text-sm px-2 py-1 rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${haBonus ? 'bg-amber-500 text-white border-amber-500' : 'border-gray-200 text-gray-400 hover:border-amber-300 hover:text-amber-500'}`}>
                                       ★
                                     </button>
                                   )}
-                                  <button onClick={() => apriRacconto(a)}
-                                    className={`text-sm px-4 py-1.5 rounded-lg ${a.completata ? 'border border-gray-200 text-gray-600 hover:bg-gray-50' : 'bg-gray-800 text-white hover:bg-gray-700'}`}>
+                                  <button onClick={() => apriRacconto(a)} disabled={salvandoBonus}
+                                    className={`text-sm px-4 py-1.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed ${a.completata ? 'border border-gray-200 text-gray-600 hover:bg-gray-50' : 'bg-gray-800 text-white hover:bg-gray-700'}`}>
                                     {a.completata ? 'Vedi' : 'Valuta'}
                                   </button>
                                 </div>
