@@ -104,9 +104,9 @@ export default function GiuratoPage() {
     ;(bgData || []).forEach((bg: any) => { cMap[bg.blocco_id] = bg.completato })
     setBlocchiCompletati(cMap)
 
-    // Apri di default tutti i blocchi
+    // Aperti di default, tranne quelli già completati
     const open: Record<string, boolean> = {}
-    bloccoIds.forEach(id => { open[id] = true })
+    bloccoIds.forEach(id => { open[id] = !cMap[id] })
     setBlocchiAperti(open)
   }
 
@@ -241,6 +241,7 @@ export default function GiuratoPage() {
     }, { onConflict: 'blocco_id,giurato_id' })
 
     setBlocchiCompletati(prev => ({ ...prev, [blocco_id]: true }))
+    setBlocchiAperti(prev => ({ ...prev, [blocco_id]: false }))
     setCompletandoBlocco(null)
     setMostraConfermaCompletaBlocco(null)
   }
