@@ -423,10 +423,20 @@ export default function GiuratoPage() {
                       {isAperto && (
                         <div className="border-t border-gray-100">
                           <div className="divide-y divide-gray-100">
-                            {blocco.assegnazioni.map(a => (
-                              <div key={a.assegnazione_id} className="flex items-center justify-between px-5 py-3">
+                            {blocco.assegnazioni.map(a => {
+                              const haBonus = bonusId === a.assegnazione_id
+                              return (
+                              <div key={a.assegnazione_id}
+                                className={`flex items-center justify-between px-5 py-3 transition-colors ${haBonus ? 'bg-amber-50 border-l-4 border-amber-400 pl-4' : ''}`}>
                                 <div className="flex-1 min-w-0 mr-3">
-                                  <p className="text-sm font-medium text-gray-800 truncate">{a.titolo}</p>
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-sm font-medium text-gray-800 truncate">{a.titolo}</p>
+                                    {haBonus && (
+                                      <span className="shrink-0 text-[10px] bg-amber-500 text-white px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                                        ★ Bonus
+                                      </span>
+                                    )}
+                                  </div>
                                   <p className="text-xs text-gray-400 mt-0.5">Fase: {a.fase}</p>
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0">
@@ -434,14 +444,10 @@ export default function GiuratoPage() {
                                   {a.completata && !bloccoCompletato && (
                                     <button
                                       onClick={() => toggleBonus(blocco.blocco_id, a.assegnazione_id)}
-                                      title={bonusId === a.assegnazione_id ? 'Rimuovi bonus' : 'Assegna bonus +1'}
-                                      className={`text-sm px-2 py-1 rounded-lg border transition-colors ${bonusId === a.assegnazione_id ? 'bg-amber-500 text-white border-amber-500' : 'border-gray-200 text-gray-400 hover:border-amber-300 hover:text-amber-500'}`}>
+                                      title={haBonus ? 'Rimuovi bonus' : 'Assegna bonus +1'}
+                                      className={`text-sm px-2 py-1 rounded-lg border transition-colors ${haBonus ? 'bg-amber-500 text-white border-amber-500' : 'border-gray-200 text-gray-400 hover:border-amber-300 hover:text-amber-500'}`}>
                                       ★
                                     </button>
-                                  )}
-                                  {/* Stella fissa se blocco completato */}
-                                  {bloccoCompletato && bonusId === a.assegnazione_id && (
-                                    <span className="text-amber-500 text-sm">★</span>
                                   )}
                                   <button onClick={() => apriRacconto(a)}
                                     className={`text-sm px-4 py-1.5 rounded-lg ${a.completata ? 'border border-gray-200 text-gray-600 hover:bg-gray-50' : 'bg-gray-800 text-white hover:bg-gray-700'}`}>
@@ -449,7 +455,8 @@ export default function GiuratoPage() {
                                   </button>
                                 </div>
                               </div>
-                            ))}
+                              )
+                            })}
                           </div>
 
                           {/* Bottone completa blocco */}
