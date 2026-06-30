@@ -1038,6 +1038,36 @@ export default function DashboardPage() {
                         </div>
                       )
                     })}
+                    {r.stato === 'valutato' && valRacconto.length > 0 && (() => {
+                      const n = valRacconto.length
+                      const media = (vals: number[]) => Math.round((vals.reduce((s, x) => s + x, 0) / n) * 100) / 100
+                      const mediaA = media(valRacconto.map(v => v.criterio_a ?? 0))
+                      const mediaB = media(valRacconto.map(v => v.criterio_b ?? 0))
+                      const mediaC = media(valRacconto.map(v => v.criterio_c ?? 0))
+                      const mediaD = media(valRacconto.map(v => v.criterio_d ?? 0))
+                      const mediaBonus = media(valRacconto.map(v => v.bonus ? 1 : 0))
+                      const mediaTotale = media(valRacconto.map(v => (v.criterio_a ?? 0) + (v.criterio_b ?? 0) + (v.criterio_c ?? 0) + (v.criterio_d ?? 0) + (v.bonus ? 1 : 0)))
+                      return (
+                        <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-semibold text-blue-700">Media</span>
+                            <span className="text-sm font-semibold text-blue-800">Totale: {mediaTotale}</span>
+                          </div>
+                          <div className="grid grid-cols-5 gap-2 text-xs">
+                            {[mediaA, mediaB, mediaC, mediaD].map((m, idx) => (
+                              <div key={idx} className="text-center">
+                                <p className="text-[10px] text-blue-400 uppercase">{CRITERI[idx].label}</p>
+                                <p className="font-medium text-blue-700">{m}</p>
+                              </div>
+                            ))}
+                            <div className="text-center">
+                              <p className="text-[10px] text-blue-400 uppercase">Bonus</p>
+                              <p className="font-medium text-blue-700">{mediaBonus}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })()}
                   </div>
                 )}
 
