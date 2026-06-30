@@ -935,18 +935,18 @@ export default function DashboardPage() {
                 const maxValore = Math.max(1, ...stats.map(s => s.inCorso))
                 if (giuratiAttivi.length === 0) return <p className="text-xs text-gray-300">Nessun giurato attivo</p>
                 return (
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
+                  <div className="space-y-1">
                     {stats.map(({ g, inCorso }) => {
                       const cfg = TIPO_CONFIG[g.tipo_giurato] || TIPO_CONFIG.lettore
                       return (
-                        <div key={g.id} className="flex items-center gap-2 py-1">
+                        <div key={g.id} className="flex items-center gap-3 py-1">
                           <span className={`text-[9px] font-semibold px-1 py-0.5 rounded shrink-0 ${cfg.badge}`}>{cfg.label}</span>
-                          <span className="text-xs text-gray-600 truncate w-24 shrink-0">{g.cognome} {g.nome}</span>
-                          <div className="flex-1 h-2 bg-gray-50 rounded-sm overflow-hidden">
-                            <div className={`h-full rounded-sm ${inCorso > 2 ? 'bg-amber-400' : inCorso > 0 ? 'bg-blue-300' : 'bg-gray-200'}`}
+                          <span className="text-xs text-gray-600 truncate shrink-0 w-36" title={`${g.cognome} ${g.nome}`}>{g.cognome} {g.nome}</span>
+                          <div className="w-32 h-2 bg-gray-50 rounded-sm overflow-hidden shrink-0">
+                            <div className={`h-full rounded-sm ${inCorso > 2 ? 'bg-amber-400' : inCorso > 0 ? 'bg-blue-300' : ''}`}
                               style={{ width: `${(inCorso / maxValore) * 100}%` }} />
                           </div>
-                          <span className="text-xs text-gray-500 w-4 text-right shrink-0">{inCorso}</span>
+                          <span className="text-xs text-gray-500 w-4 shrink-0">{inCorso}</span>
                         </div>
                       )
                     })}
