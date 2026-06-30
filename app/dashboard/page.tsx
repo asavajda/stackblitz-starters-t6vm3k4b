@@ -688,25 +688,27 @@ export default function DashboardPage() {
                     list.length === 0
                       ? <p className="text-xs text-gray-300 mb-3">Nessun racconto</p>
                       : (
-                        <div className="space-y-3 mb-3">
-                          {list.map(r => {
-                            const assegnazioniRacconto = assegnazioniEsistenti.filter(a => a.racconto_id === r.id)
-                            const bloccoId = assegnazioniRacconto[0]?.blocco_id
-                            const isChiusa = ['valutato', 'eliminato'].includes(r.stato)
-                            return (
-                              <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-4">
-                                <div className="flex items-center justify-between gap-3 flex-wrap">
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <p className="text-sm font-medium text-gray-800 truncate">{r.titolo}</p>
-                                    {bloccoId && (
-                                      <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-semibold shrink-0">
-                                        Blocco {blocchi.findIndex(b => b.id === bloccoId) + 1}
-                                      </span>
-                                    )}
-                                  </div>
+                        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-3">
+                          <div className="grid grid-cols-[minmax(0,1fr)_90px_minmax(0,2fr)_110px] gap-4 px-4 py-2 bg-gray-50 border-b border-gray-100">
+                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Titolo</span>
+                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Blocco</span>
+                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Giurati</span>
+                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Stato</span>
+                          </div>
+                          <div className="divide-y divide-gray-100">
+                            {list.map(r => {
+                              const assegnazioniRacconto = assegnazioniEsistenti.filter(a => a.racconto_id === r.id)
+                              const bloccoId = assegnazioniRacconto[0]?.blocco_id
+                              const isChiusa = ['valutato', 'eliminato'].includes(r.stato)
+                              return (
+                                <div key={r.id} className="grid grid-cols-[minmax(0,1fr)_90px_minmax(0,2fr)_110px] gap-4 px-4 py-3 items-center">
+                                  <p className="text-sm font-medium text-gray-800 truncate">{r.titolo}</p>
+                                  <span className="text-xs text-gray-500">
+                                    {bloccoId ? `Blocco ${blocchi.findIndex(b => b.id === bloccoId) + 1}` : '—'}
+                                  </span>
                                   <div className="flex items-center gap-2 flex-wrap">
                                     {assegnazioniRacconto.length === 0
-                                      ? <p className="text-xs text-gray-300">Nessun giurato assegnato</p>
+                                      ? <span className="text-xs text-gray-300">Nessun giurato</span>
                                       : assegnazioniRacconto.map(a => {
                                           const g = giurati.find(x => x.id === a.giurato_id)
                                           if (!g) return null
@@ -724,11 +726,11 @@ export default function DashboardPage() {
                                         })
                                     }
                                   </div>
-                                  <span className={`text-xs px-3 py-1 rounded-full shrink-0 font-medium ${STATO_BADGE[r.stato]}`}>{fmt(r.stato)}</span>
+                                  <span className={`text-xs px-3 py-1 rounded-full font-medium justify-self-start ${STATO_BADGE[r.stato]}`}>{fmt(r.stato)}</span>
                                 </div>
-                              </div>
-                            )
-                          })}
+                              )
+                            })}
+                          </div>
                         </div>
                       )
                   )}
