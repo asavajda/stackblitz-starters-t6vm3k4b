@@ -698,8 +698,6 @@ export default function DashboardPage() {
                                 <div className="flex items-center justify-between mb-3">
                                   <div>
                                     <p className="text-sm font-medium text-gray-800">{r.titolo}</p>
-                                    <p className="text-xs text-gray-400 mt-0.5">Autore: {autoreLabel(r)}</p>
-                                    <p className="text-xs text-gray-400 mt-0.5">Caricato il: {new Date(r.inviato_il).toLocaleDateString('it-IT')}</p>
                                    {bloccoId && (
   <p className="text-[10px] text-gray-300 mt-0.5">
     Blocco {blocchi.findIndex(b => b.id === bloccoId) + 1}
