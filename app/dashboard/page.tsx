@@ -2,12 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { supabase } from '@/lib/supabase'
 
 const STATI_LABEL: Record<string, string> = {
   ricevuto: 'Ricevuto', in_valutazione: 'In valutazione', valutato: 'Valutato',
@@ -101,7 +96,6 @@ export default function DashboardPage() {
   const [valutazioni, setValutazioni]                     = useState<any[]>([])
   const [medie, setMedie]                                 = useState<any[]>([])
   const [blocchi, setBlocchi]                             = useState<any[]>([])
-  const [blocchiCompletati, setBlocchiCompletati]         = useState<{blocco_id: string, giurato_id: string}[]>([])
   const [profilo, setProfilo]                             = useState<any>(null)
   const [caricamento, setCaricamento]                     = useState(true)
   const [linkGenerati, setLinkGenerati]                   = useState<Record<string, string>>({})
@@ -154,18 +148,16 @@ export default function DashboardPage() {
     const { data: p } = await supabase.from('profiles').select('ruolo, is_admin, nome, cognome').eq('id', user.id).single()
     if (!p?.is_admin) { router.push('/login'); return }
     setProfilo(p)
-    const [{ data: r }, { data: g }, { data: m }, { data: a }, { data: v }, { data: b }, { data: bg }] = await Promise.all([
+    const [{ data: r }, { data: g }, { data: m }, { data: a }, { data: v }, { data: b }] = await Promise.all([
       supabase.from('racconti').select('*, profiles(nome, cognome)').order('inviato_il', { ascending: false }),
       supabase.from('profiles').select('*').eq('ruolo', 'giurato'),
       supabase.from('medie_racconti').select('*').order('media_complessiva', { ascending: false }),
       supabase.from('assegnazioni').select('*'),
       supabase.from('valutazioni').select('*, assegnazioni(racconto_id, giurato_id, profiles(nome, cognome))'),
       supabase.from('blocchi').select('*').order('creato_il', { ascending: false }),
-      supabase.from('blocchi_giurato').select('blocco_id, giurato_id').eq('completato', true),
     ])
     setRacconti(r || []); setGiurati(g || []); setMedie(m || [])
     setAssegnazioniEsistenti(a || []); setValutazioni(v || []); setBlocchi(b || [])
-    setBlocchiCompletati(bg || [])
     setCaricamento(false)
   }
 
@@ -233,12 +225,6 @@ export default function DashboardPage() {
     setCreandoBlocco(false)
   }
 
-  function toggleRaccontoBlocco(id: string) {
-    setNuovoBloccoRacconti(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    )
-  }
-
   async function aggiungiGiurato() {
     setAggiungendo(true); setMessaggioGiurato('')
     const res = await fetch('/api/invite-giurato', {
@@ -284,11 +270,6 @@ export default function DashboardPage() {
     setLinkGenerati(prev => ({ ...prev, [giuratoId]: 'Copiato!' }))
     setTimeout(() => setLinkGenerati(prev => ({ ...prev, [giuratoId]: link })), 2000)
   }
-
-  const giuratiAssegnabili = [
-    ...giurati.filter(g => g.tipo_giurato === 'interno' && g.attivo !== false).sort((a, b) => a.cognome.localeCompare(b.cognome)),
-    ...giurati.filter(g => g.tipo_giurato === 'lettore' && g.attivo !== false).sort((a, b) => a.cognome.localeCompare(b.cognome)),
-  ]
 
   function contaValutazioniCompletate(racconto_id: string) {
     return assegnazioniEsistenti.filter(a => a.racconto_id === racconto_id && !!a.completata).length
@@ -695,7 +676,6 @@ export default function DashboardPage() {
                             {list.map(r => {
                               const assegnazioniRacconto = assegnazioniEsistenti.filter(a => a.racconto_id === r.id)
                               const bloccoId = assegnazioniRacconto[0]?.blocco_id
-                              const isChiusa = ['valutato', 'eliminato'].includes(r.stato)
                               return (
                                 <div key={r.id} className="grid grid-cols-[minmax(0,1fr)_90px_minmax(0,2fr)_110px] gap-4 px-4 py-3 items-center">
                                   <p className="text-sm font-medium text-gray-800 truncate">{r.titolo}</p>
