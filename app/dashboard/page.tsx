@@ -128,6 +128,7 @@ export default function DashboardPage() {
   const [raccontiStato, setRaccontiStato]   = useState('')
   const [raccontiSort, setRaccontiSort]     = useState<SortKey>('stato')
   const [raccontiDir, setRaccontiDir]       = useState<SortDir>('asc')
+  const [raccontoDettaglio, setRaccontoDettaglio] = useState<any>(null)
 
   const [assFilter, setAssFilter] = useState('')
   const [assSort, setAssSort]     = useState<SortKey>('data')
@@ -470,6 +471,12 @@ export default function DashboardPage() {
                         <span className={`text-xs px-3 py-1 rounded-full font-medium ${badgeClass}`}>
                           {badgeLabel}
                         </span>
+                        {nAssegnati > 0 && (
+                          <button onClick={() => setRaccontoDettaglio(r)}
+                            className="text-xs px-3 py-1 rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">
+                            Vedi valutazioni
+                          </button>
+                        )}
                         {puoDecidere && (['finalista', 'eliminato'] as const).map(key => (
                           <button key={key} onClick={() => aggiornaStato(r.id, key)}
                             className={`text-xs px-3 py-1 rounded-full border transition-colors ${
@@ -980,6 +987,77 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
+
+        {/* Modale dettaglio valutazioni */}
+        {raccontoDettaglio && (() => {
+          const r = racconti.find(rr => rr.id === raccontoDettaglio.id) ?? raccontoDettaglio
+          const valRacconto = valutazioni.filter(v => v.assegnazioni?.racconto_id === r.id)
+          const inCorso = ['ricevuto', 'in_valutazione', 'valutato'].includes(r.stato)
+          const puoDecidere = inCorso && valRacconto.length >= 2
+          return (
+            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
+              <div className="bg-white rounded-xl border border-gray-200 p-6 max-w-2xl w-full shadow-lg max-h-[85vh] overflow-y-auto">
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="text-base font-semibold text-gray-800">{r.titolo}</h3>
+                  <button onClick={() => setRaccontoDettaglio(null)}
+                    className="text-gray-400 hover:text-gray-600 text-sm">✕</button>
+                </div>
+                <p className="text-xs text-gray-400 mb-5">{autoreLabel(r)}</p>
+
+                {valRacconto.length === 0 ? (
+                  <p className="text-sm text-gray-400 mb-5">Nessuna valutazione disponibile ancora.</p>
+                ) : (
+                  <div className="space-y-3 mb-5">
+                    {valRacconto.map(v => {
+                      const totale = (v.criterio_a ?? 0) + (v.criterio_b ?? 0) + (v.criterio_c ?? 0) + (v.criterio_d ?? 0) + (v.bonus ? 1 : 0)
+                      return (
+                        <div key={v.id} className="bg-gray-50 rounded-lg p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-700">
+                              {v.assegnazioni?.profiles?.nome} {v.assegnazioni?.profiles?.cognome}
+                            </span>
+                            <span className="text-sm font-semibold text-gray-800">Totale: {totale}</span>
+                          </div>
+                          <div className="grid grid-cols-5 gap-2 text-xs mb-2">
+                            {CRITERI.map(c => (
+                              <div key={c.key} className="text-center">
+                                <p className="text-[10px] text-gray-400 uppercase">{c.label}</p>
+                                <p className="font-medium text-gray-700">{v[`criterio_${c.key}`]}</p>
+                              </div>
+                            ))}
+                            <div className="text-center">
+                              <p className="text-[10px] text-gray-400 uppercase">Bonus</p>
+                              <p className="font-medium text-gray-700">{v.bonus ? '+1 ★' : '—'}</p>
+                            </div>
+                          </div>
+                          {v.note && (
+                            <p className="text-xs text-gray-500 border-t border-gray-200 pt-2 mt-1">
+                              <span className="text-gray-400">Note: </span>{v.note}
+                            </p>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {puoDecidere && (
+                  <div className="flex items-center gap-2 border-t border-gray-100 pt-4">
+                    <p className="text-xs text-gray-400 mr-2">Decisione:</p>
+                    {(['finalista', 'eliminato'] as const).map(key => (
+                      <button key={key} onClick={() => { aggiornaStato(r.id, key); setRaccontoDettaglio(null) }}
+                        className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                          r.stato === key ? activeClass[key] : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                        }`}>
+                        {fmt(key)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })()}
 
       </div>
     </div>
