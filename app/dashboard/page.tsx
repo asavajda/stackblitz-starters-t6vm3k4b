@@ -927,38 +927,47 @@ export default function DashboardPage() {
             </div>
 
             <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <p className="text-xs text-gray-400 mb-4">Carico di lavoro</p>
-              {giurati.filter(g => g.attivo !== false).length === 0
-                ? <p className="text-xs text-gray-300">Nessun giurato attivo</p>
-                : [...giurati].filter(g => g.attivo !== false)
-                    .sort((a, b) => a.cognome.localeCompare(b.cognome))
-                    .map(g => {
-                      const cfg = TIPO_CONFIG[g.tipo_giurato] || TIPO_CONFIG.lettore
-                      const { valutati, inCorso, totale } = statsGiurato(g.id)
-                      const pct = totale > 0 ? Math.round((valutati / totale) * 100) : 0
-                      return (
-                        <div key={g.id} className="flex items-center gap-4 py-3 border-b border-gray-50 last:border-0">
-                          <div className="flex items-center gap-2 w-40 shrink-0 min-w-0">
-                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 ${cfg.badge}`}>{cfg.label}</span>
-                            <span className="text-sm text-gray-700 truncate">{g.cognome} {g.nome}</span>
+              <p className="text-xs text-gray-400 mb-1">Carico di lavoro</p>
+              <div className="flex items-center gap-4 mb-4">
+                <span className="flex items-center gap-1.5 text-[11px] text-gray-500">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-green-500 inline-block" /> Valutati
+                </span>
+                <span className="flex items-center gap-1.5 text-[11px] text-gray-500">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-amber-400 inline-block" /> In corso
+                </span>
+              </div>
+              {(() => {
+                const giuratiAttivi = [...giurati].filter(g => g.attivo !== false)
+                  .sort((a, b) => a.cognome.localeCompare(b.cognome))
+                const stats = giuratiAttivi.map(g => ({ g, ...statsGiurato(g.id) }))
+                const maxValore = Math.max(1, ...stats.map(s => Math.max(s.valutati, s.inCorso)))
+                if (giuratiAttivi.length === 0) return <p className="text-xs text-gray-300">Nessun giurato attivo</p>
+                return stats.map(({ g, valutati, inCorso }) => {
+                  const cfg = TIPO_CONFIG[g.tipo_giurato] || TIPO_CONFIG.lettore
+                  return (
+                    <div key={g.id} className="flex items-center gap-4 py-3 border-b border-gray-50 last:border-0">
+                      <div className="flex items-center gap-2 w-40 shrink-0 min-w-0">
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 ${cfg.badge}`}>{cfg.label}</span>
+                        <span className="text-sm text-gray-700 truncate">{g.cognome} {g.nome}</span>
+                      </div>
+                      <div className="flex-1 min-w-0 space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-3 bg-gray-50 rounded-sm overflow-hidden">
+                            <div className="h-full bg-green-500 rounded-sm" style={{ width: `${(valutati / maxValore) * 100}%` }} />
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-1">
-                              <p className="text-xs text-gray-500">
-                                <span className="text-green-700 font-medium">{valutati} valutati</span>
-                                {' · '}
-                                <span className={`font-medium ${inCorso > 2 ? 'text-amber-600' : 'text-gray-500'}`}>{inCorso} in corso</span>
-                              </p>
-                              <span className="text-xs text-gray-400">{totale > 0 ? `${pct}%` : '—'}</span>
-                            </div>
-                            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                              <div className="h-full bg-green-500" style={{ width: `${pct}%` }} />
-                            </div>
-                          </div>
+                          <span className="text-xs text-gray-500 w-5 text-right shrink-0">{valutati}</span>
                         </div>
-                      )
-                    })
-              }
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-3 bg-gray-50 rounded-sm overflow-hidden">
+                            <div className="h-full bg-amber-400 rounded-sm" style={{ width: `${(inCorso / maxValore) * 100}%` }} />
+                          </div>
+                          <span className="text-xs text-gray-500 w-5 text-right shrink-0">{inCorso}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })
+              })()}
             </div>
 
             <div className="space-y-3">
