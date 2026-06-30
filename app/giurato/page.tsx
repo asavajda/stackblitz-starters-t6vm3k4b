@@ -184,7 +184,18 @@ export default function GiuratoPage() {
   async function toggleBonus(blocco_id: string, assegnazione_id: string) {
     const corrente = bonusSelezionato[blocco_id]
     const nuovoBonus = corrente === assegnazione_id ? null : assegnazione_id
+
+    // Aggiorna subito lo stato locale per reattività dell'interfaccia
     setBonusSelezionato(prev => ({ ...prev, [blocco_id]: nuovoBonus }))
+
+    // Persisti immediatamente su DB: se non lo facciamo qui, ricaricando i dati
+    // (es. dopo aver valutato un altro racconto del blocco) la selezione andrebbe persa
+    const assDelBlocco = assegnazioni.filter(a => a.blocco_id === blocco_id && a.completata)
+    for (const a of assDelBlocco) {
+      await supabase.from('valutazioni')
+        .update({ bonus: a.assegnazione_id === nuovoBonus })
+        .eq('assegnazione_id', a.assegnazione_id)
+    }
   }
 
   async function completaBlocco(blocco_id: string) {
