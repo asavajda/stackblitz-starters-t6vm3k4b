@@ -246,7 +246,10 @@ export default function GiuratoPage() {
     return Object.entries(map)
       .map(([blocco_id, ass]) => ({
         blocco_id,
-        assegnazioni: ass,
+        // Ordine stabile per titolo: Postgres non garantisce l'ordine delle righe
+        // senza ORDER BY, e una riga aggiornata (es. completata=true) puo
+        // "spostarsi" nella scansione — qui fissiamo l'ordine cosi non cambia mai
+        assegnazioni: [...ass].sort((a, b) => a.titolo.localeCompare(b.titolo)),
         nCompletate: ass.filter(a => a.completata).length,
         nTotali: ass.length,
         tutteCompletate: ass.every(a => a.completata),
