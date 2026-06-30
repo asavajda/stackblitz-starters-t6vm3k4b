@@ -1048,21 +1048,21 @@ export default function DashboardPage() {
                       const mediaBonus = media(valRacconto.map(v => v.bonus ? 1 : 0))
                       const mediaTotale = media(valRacconto.map(v => (v.criterio_a ?? 0) + (v.criterio_b ?? 0) + (v.criterio_c ?? 0) + (v.criterio_d ?? 0) + (v.bonus ? 1 : 0)))
                       return (
-                        <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
+                        <div className="bg-green-50 border border-green-100 rounded-lg p-3">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-semibold text-blue-700">Media</span>
-                            <span className="text-sm font-semibold text-blue-800">Totale: {mediaTotale}</span>
+                            <span className="text-sm font-semibold text-green-700">Media</span>
+                            <span className="text-sm font-semibold text-green-800">Totale: {mediaTotale}</span>
                           </div>
                           <div className="grid grid-cols-5 gap-2 text-xs">
                             {[mediaA, mediaB, mediaC, mediaD].map((m, idx) => (
                               <div key={idx} className="text-center">
-                                <p className="text-[10px] text-blue-400 uppercase">{CRITERI[idx].label}</p>
-                                <p className="font-medium text-blue-700">{m}</p>
+                                <p className="text-[10px] text-green-400 uppercase">{CRITERI[idx].label}</p>
+                                <p className="font-medium text-green-700">{m}</p>
                               </div>
                             ))}
                             <div className="text-center">
-                              <p className="text-[10px] text-blue-400 uppercase">Bonus</p>
-                              <p className="font-medium text-blue-700">{mediaBonus}</p>
+                              <p className="text-[10px] text-green-400 uppercase">Bonus</p>
+                              <p className="font-medium text-green-700">{mediaBonus}</p>
                             </div>
                           </div>
                         </div>
