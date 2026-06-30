@@ -358,7 +358,13 @@ export default function DashboardPage() {
       if (!racconto) return false
       const assRacconto = assegnazioniEsistenti.filter(a => a.racconto_id === racconto.id)
       const bloccoId = assRacconto[0]?.blocco_id
-      const bloccoCompletato = bloccoId ? blocchiCompletati.some(bc => bc.blocco_id === bloccoId) : false
+      const giuratiDelBlocco = bloccoId
+        ? new Set(assegnazioniEsistenti.filter(a => a.blocco_id === bloccoId).map(a => a.giurato_id))
+        : new Set()
+      const giuratiCheHannoCompletato = bloccoId
+        ? blocchiCompletati.filter(bc => bc.blocco_id === bloccoId).length
+        : 0
+      const bloccoCompletato = bloccoId ? (giuratiDelBlocco.size > 0 && giuratiCheHannoCompletato >= giuratiDelBlocco.size) : false
       if (!bloccoCompletato && ['ricevuto', 'in_valutazione', 'valutato'].includes(racconto.stato)) return false
       if (racconto.stato === 'vincitore') return false
       const matchTesto = m.titolo?.toLowerCase().includes(risFilter.toLowerCase()) ||
@@ -461,7 +467,6 @@ export default function DashboardPage() {
                   const nValutazioni = contaValutazioniCompletate(r.id)
                   const nAssegnati = assegnazioniEsistenti.filter(a => a.racconto_id === r.id).length
                   const inCorso = ['ricevuto', 'in_valutazione', 'valutato'].includes(r.stato)
-                  const puoDecidere = inCorso && nValutazioni >= 2
                   const badgeLabel = (r.stato === 'valutato' || (r.stato === 'in_valutazione' && nValutazioni >= 2)) ? 'Valutato' : fmt(r.stato)
                   const badgeClass = (r.stato === 'valutato' || (r.stato === 'in_valutazione' && nValutazioni >= 2)) ? STATO_BADGE['valutato'] : STATO_BADGE[r.stato]
                   return (
@@ -483,14 +488,6 @@ export default function DashboardPage() {
                             Vedi valutazioni
                           </button>
                         )}
-                        {puoDecidere && (['finalista', 'eliminato'] as const).map(key => (
-                          <button key={key} onClick={() => aggiornaStato(r.id, key)}
-                            className={`text-xs px-3 py-1 rounded-full border transition-colors ${
-                              r.stato === key ? activeClass[key] : 'border-gray-200 text-gray-400 hover:bg-gray-50'
-                            }`}>
-                            {fmt(key)}
-                          </button>
-                        ))}
                         {r.stato === 'finalista' && (
                           <button onClick={() => aggiornaStato(r.id, 'vincitore')}
                             className={`text-xs px-3 py-1 rounded-full border transition-colors ${
@@ -1021,8 +1018,6 @@ export default function DashboardPage() {
         {raccontoDettaglio && (() => {
           const r = racconti.find(rr => rr.id === raccontoDettaglio.id) ?? raccontoDettaglio
           const valRacconto = valutazioni.filter(v => v.assegnazioni?.racconto_id === r.id)
-          const inCorso = ['ricevuto', 'in_valutazione', 'valutato'].includes(r.stato)
-          const puoDecidere = inCorso && valRacconto.length >= 2
           return (
             <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
               <div className="bg-white rounded-xl border border-gray-200 p-6 max-w-2xl w-full shadow-lg max-h-[85vh] overflow-y-auto">
@@ -1097,20 +1092,6 @@ export default function DashboardPage() {
                         </div>
                       )
                     })()}
-                  </div>
-                )}
-
-                {puoDecidere && (
-                  <div className="flex items-center gap-2 border-t border-gray-100 pt-4">
-                    <p className="text-xs text-gray-400 mr-2">Decisione:</p>
-                    {(['finalista', 'eliminato'] as const).map(key => (
-                      <button key={key} onClick={() => { aggiornaStato(r.id, key); setRaccontoDettaglio(null) }}
-                        className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
-                          r.stato === key ? activeClass[key] : 'border-gray-200 text-gray-500 hover:bg-gray-50'
-                        }`}>
-                        {fmt(key)}
-                      </button>
-                    ))}
                   </div>
                 )}
               </div>
