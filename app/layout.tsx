@@ -5,7 +5,9 @@ import { Inter } from 'next/font/google';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'staging contest racconti - toHorror',
+  title: process.env.NEXT_PUBLIC_ENV === 'staging'
+    ? 'staging contest racconti - toHorror'
+    : 'contest racconti - toHorror',
   icons: {
   icon: [
     { url: '/favicon.ico', type: 'image/x-icon' },
