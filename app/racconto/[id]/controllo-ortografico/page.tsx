@@ -30,6 +30,33 @@ async function estraiTestoDaPdf(arrayBuffer: ArrayBuffer): Promise<string> {
   return paginetesti.join('\n\n')
 }
 
+// Normalizza una stringa per il confronto: minuscolo, senza punteggiatura,
+// spazi multipli ridotti a uno solo
+function normalizza(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[.,;:!?"'«»""'']/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+// Se la prima riga non vuota del testo estratto corrisponde al titolo del
+// racconto (già mostrato come intestazione della pagina), la rimuove per
+// evitare che il titolo compaia due volte
+function rimuoviTitoloDuplicato(testo: string, titolo: string): string {
+  if (!titolo) return testo
+  const righe = testo.split('\n')
+  const indicePrimaRigaNonVuota = righe.findIndex(r => r.trim().length > 0)
+  if (indicePrimaRigaNonVuota === -1) return testo
+
+  const primaRiga = righe[indicePrimaRigaNonVuota]
+  if (normalizza(primaRiga) === normalizza(titolo)) {
+    righe.splice(indicePrimaRigaNonVuota, 1)
+    return righe.join('\n').replace(/^\n+/, '')
+  }
+  return testo
+}
+
 export default function ControlloOrtograficoPage({ params }: { params: { id: string } }) {
   const searchParams = useSearchParams()
   const filePath = searchParams.get('file_path')
@@ -77,11 +104,13 @@ export default function ControlloOrtograficoPage({ params }: { params: { id: str
             throw new Error(`Formato file non supportato per il controllo ortografico: .${estensione}`)
           }
 
-          if (!titoloQuery) {
+          let titoloEffettivo = titoloQuery
+          if (!titoloEffettivo) {
             const fileName = filePath.split('/').pop() || 'Racconto'
-            setTitolo(fileName.replace(/\.[^.]+$/, ''))
+            titoloEffettivo = fileName.replace(/\.[^.]+$/, '')
+            setTitolo(titoloEffettivo)
           }
-          setTesto(testoEstratto)
+          setTesto(rimuoviTitoloDuplicato(testoEstratto, titoloEffettivo))
         } else {
           const { data } = await supabase
             .from('racconti')
@@ -90,8 +119,9 @@ export default function ControlloOrtograficoPage({ params }: { params: { id: str
             .single()
 
           if (!data) throw new Error('Racconto non trovato')
+          const titoloEffettivo = titoloQuery || data.titolo
           if (!titoloQuery) setTitolo(data.titolo)
-          setTesto(data.testo)
+          setTesto(rimuoviTitoloDuplicato(data.testo, titoloEffettivo))
         }
       } catch (error) {
         const msg = error instanceof Error ? error.message : 'Errore sconosciuto'
