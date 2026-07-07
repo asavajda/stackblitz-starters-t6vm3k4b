@@ -23,11 +23,53 @@ async function estraiTestoDaPdf(arrayBuffer: ArrayBuffer): Promise<string> {
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i)
     const content = await page.getTextContent()
-    const testoPagina = content.items.map((item: any) => item.str).join(' ')
+
+    let testoPagina = ''
+    let prevItem: any = null
+
+    for (const item of content.items as any[]) {
+      if (typeof item.str !== 'string') continue
+
+      if (item.str === '') {
+        // pdf.js inserisce item vuoti per segnalare interruzioni di riga
+        if (item.hasEOL) testoPagina += '\n'
+        continue
+      }
+
+      if (prevItem) {
+        // transform[5] = coordinata Y (riga), transform[4] = coordinata X (colonna)
+        const stessaRiga = Math.abs(item.transform[5] - prevItem.transform[5]) < 2
+
+        if (!stessaRiga) {
+          testoPagina += '\n'
+        } else {
+          // Calcolo lo spazio reale tra la fine dell'elemento precedente
+          // e l'inizio di questo, per capire se nel PDF originale c'era
+          // uno spazio (testo giustificato) o se la parola prosegue
+          const finePrecedente = prevItem.transform[4] + (prevItem.width || 0)
+          const iniziaCorrente = item.transform[4]
+          const gap = iniziaCorrente - finePrecedente
+          const soglia = (prevItem.height || 10) * 0.25
+
+          if (gap > soglia) {
+            testoPagina += ' '
+          }
+        }
+      }
+
+      testoPagina += item.str
+      if (item.hasEOL) testoPagina += '\n'
+      prevItem = item
+    }
+
     paginetesti.push(testoPagina)
   }
 
-  return paginetesti.join('\n\n')
+  return paginetesti
+    .join('\n\n')
+    .replace(/[ \t]+\n/g, '\n')   // spazi finali di riga
+    .replace(/\n{3,}/g, '\n\n')   // righe vuote multiple
+    .trim()
 }
 
 // Normalizza una stringa per il confronto: minuscolo, senza punteggiatura,
