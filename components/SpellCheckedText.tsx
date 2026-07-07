@@ -6,123 +6,117 @@ interface SpellCheckedTextProps {
   text: string
 }
 
+interface LTMatch {
+  message: string
+  shortMessage?: string
+  offset: number
+  length: number
+  replacements: { value: string }[]
+  rule: {
+    id: string
+    issueType?: string
+    category: { id: string; name: string }
+  }
+}
+
+// Determina lo stile visivo in base al tipo di problema rilevato da LanguageTool
+function stileErrore(match: LTMatch): string {
+  const categoria = match.rule.category?.id || ''
+  if (categoria === 'TYPOS' || match.rule.issueType === 'misspelling') {
+    // Ortografia: sottolineatura rossa
+    return 'underline decoration-red-500 decoration-wavy text-red-700'
+  }
+  if (categoria === 'STYLE' || categoria === 'REDUNDANCY') {
+    // Stile: sottolineatura blu
+    return 'underline decoration-blue-400 decoration-wavy text-blue-700'
+  }
+  // Grammatica e tutto il resto: sottolineatura ambra
+  return 'underline decoration-amber-500 decoration-wavy text-amber-700'
+}
+
 export function SpellCheckedText({ text }: SpellCheckedTextProps) {
-  const [spellChecker, setSpellChecker] = useState<any>(null)
+  const [matches, setMatches] = useState<LTMatch[] | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [loadingError, setLoadingError] = useState<string | null>(null)
-  const [debugInfo, setDebugInfo] = useState<string>('')
 
   useEffect(() => {
-    const initializeSpellChecker = async () => {
+    let annullato = false
+
+    async function analizza() {
       try {
-        console.log('[SpellCheck] Inizializzazione in corso...')
-        
-        // Carico nspell e il dizionario italiano
-        const nspellModule = await import('nspell')
-        const Nspell = nspellModule.default
-        console.log('[SpellCheck] nspell caricato')
+        const response = await fetch('/api/controllo-ortografico', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text }),
+        })
 
-        // Carico i file del dizionario italiano da un CDN (pacchetto npm: dictionary-it)
-        console.log('[SpellCheck] Carico dizionario da CDN...')
-        const afxResponse = await fetch('https://cdn.jsdelivr.net/npm/dictionary-it@2.0.0/index.aff')
-        const dicResponse = await fetch('https://cdn.jsdelivr.net/npm/dictionary-it@2.0.0/index.dic')
+        const data = await response.json()
 
-        console.log('[SpellCheck] AFX response:', afxResponse.status, dicResponse.status)
-
-        if (!afxResponse.ok || !dicResponse.ok) {
-          const msg = `Impossibile caricare il dizionario italiano (AFX: ${afxResponse.status}, DIC: ${dicResponse.status})`
-          console.warn('[SpellCheck]', msg)
-          setLoadingError(msg)
-          setDebugInfo(msg)
-          setIsLoading(false)
-          return
+        if (!response.ok) {
+          throw new Error(data.error || `Errore HTTP ${response.status}`)
         }
 
-        const afxText = await afxResponse.text()
-        const dicText = await dicResponse.text()
-        console.log('[SpellCheck] Dizionario scaricato - AFX:', afxText.length, 'byte, DIC:', dicText.length, 'byte')
-
-        // Creo l'istanza di nspell con la sintassi corretta per v2.x
-        const checker = new Nspell(afxText, dicText)
-        console.log('[SpellCheck] Nspell istanziato correttamente')
-        
-        // Test: controllo una parola corretta e una errata
-        const testCorrect = checker.correct('ciao')
-        const testWrong = checker.correct('ciaaao')
-        console.log('[SpellCheck] Test - "ciao":', testCorrect, ', "ciaaao":', testWrong)
-        
-        setSpellChecker(checker)
-        setDebugInfo('✓ Spell checker inizializzato')
+        if (!annullato) {
+          setMatches(data.matches || [])
+        }
       } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error)
-        console.error('[SpellCheck] Errore:', errorMsg)
-        setLoadingError(errorMsg)
-        setDebugInfo('✗ Errore: ' + errorMsg)
+        if (!annullato) {
+          const msg = error instanceof Error ? error.message : 'Errore sconosciuto'
+          setLoadingError(msg)
+        }
       } finally {
-        setIsLoading(false)
+        if (!annullato) setIsLoading(false)
       }
     }
 
-    initializeSpellChecker()
-  }, [])
+    if (text && text.trim().length > 0) {
+      analizza()
+    } else {
+      setIsLoading(false)
+    }
 
-  // Funzione per tokenizzare il testo e identificare gli errori
-  const getSpellCheckedContent = () => {
-    if (!spellChecker) {
+    return () => { annullato = true }
+  }, [text])
+
+  const renderTestoEvidenziato = () => {
+    if (!matches || matches.length === 0) {
       return <>{text}</>
     }
 
-    // Splittiamo il testo mantenendo la punteggiatura
-    const tokens = text.match(/\b\w+\b|[^\w\s]/g) || []
+    // Ordino i match per offset e rimuovo eventuali sovrapposizioni
+    const ordinati = [...matches].sort((a, b) => a.offset - b.offset)
     const elements: React.ReactNode[] = []
-    let lastIndex = 0
-    let errorCount = 0
+    let cursore = 0
 
-    tokens.forEach((token) => {
-      const index = text.indexOf(token, lastIndex)
-      
-      // Aggiungo il testo tra il token precedente e questo
-      if (index > lastIndex) {
-        elements.push(text.substring(lastIndex, index))
+    ordinati.forEach((match, i) => {
+      if (match.offset < cursore) return // sovrapposizione, salto
+
+      if (match.offset > cursore) {
+        elements.push(text.slice(cursore, match.offset))
       }
 
-      // Controllo se è una parola (non punteggiatura)
-      if (/\w+/.test(token)) {
-        // Controllo ortografico
-        const isCorrect = spellChecker.correct(token)
-        
-        if (!isCorrect) {
-          errorCount++
-          console.log('[SpellCheck] Errore trovato:', token)
-          // Parola errata: evidenziala in rosso con sottolineatura
-          elements.push(
-            <span
-              key={`error-${index}`}
-              className="underline decoration-red-500 decoration-wavy text-red-600 cursor-help"
-              title={`Errore ortografico: ${token}`}
-            >
-              {token}
-            </span>
-          )
-        } else {
-          // Parola corretta: mostrala normalmente
-          elements.push(token)
-        }
-      } else {
-        // Punteggiatura e spazi
-        elements.push(token)
-      }
+      const porzione = text.slice(match.offset, match.offset + match.length)
+      const suggerimento = match.replacements?.[0]?.value
+      const titolo = suggerimento
+        ? `${match.shortMessage || match.message} → "${suggerimento}"`
+        : (match.shortMessage || match.message)
 
-      lastIndex = index + token.length
+      elements.push(
+        <span
+          key={`err-${i}-${match.offset}`}
+          className={`${stileErrore(match)} cursor-help`}
+          title={titolo}
+        >
+          {porzione}
+        </span>
+      )
+
+      cursore = match.offset + match.length
     })
 
-    // Aggiungo il testo rimanente
-    if (lastIndex < text.length) {
-      elements.push(text.substring(lastIndex))
+    if (cursore < text.length) {
+      elements.push(text.slice(cursore))
     }
-
-    console.log('[SpellCheck] Totale errori trovati:', errorCount)
-    setDebugInfo(`${debugInfo} | ${errorCount} errori trovati`)
 
     return <>{elements}</>
   }
@@ -134,7 +128,7 @@ export function SpellCheckedText({ text }: SpellCheckedTextProps) {
           {text}
         </div>
         <div className="text-xs text-gray-400 mt-2 p-2 bg-gray-100 rounded">
-          ⏳ Caricamento controllo ortografico...
+          ⏳ Analisi ortografica e grammaticale in corso...
         </div>
       </div>
     )
@@ -147,7 +141,7 @@ export function SpellCheckedText({ text }: SpellCheckedTextProps) {
           {text}
         </div>
         <div className="text-xs text-amber-600 mt-2 p-2 bg-amber-50 rounded border border-amber-200">
-          ⚠️ {loadingError}
+          ⚠️ Controllo non disponibile al momento: {loadingError}
         </div>
       </div>
     )
@@ -156,13 +150,22 @@ export function SpellCheckedText({ text }: SpellCheckedTextProps) {
   return (
     <div>
       <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-        {getSpellCheckedContent()}
+        {renderTestoEvidenziato()}
       </div>
-      {debugInfo && (
-        <div className="text-xs text-gray-400 mt-2 p-2 bg-gray-100 rounded">
-          📋 {debugInfo}
-        </div>
-      )}
+      <div className="flex gap-4 mt-4 text-xs text-gray-400 border-t border-gray-100 pt-3">
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-0.5 bg-red-500 inline-block"></span> Ortografia
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-0.5 bg-amber-500 inline-block"></span> Grammatica
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-0.5 bg-blue-400 inline-block"></span> Stile
+        </span>
+        {matches && (
+          <span className="ml-auto">{matches.length} {matches.length === 1 ? 'segnalazione' : 'segnalazioni'}</span>
+        )}
+      </div>
     </div>
   )
 }
