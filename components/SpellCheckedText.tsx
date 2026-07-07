@@ -22,10 +22,10 @@ export function SpellCheckedText({ text }: SpellCheckedTextProps) {
         const Nspell = nspellModule.default
         console.log('[SpellCheck] nspell caricato')
 
-        // Carico i file del dizionario italiano da un CDN (hunspell-dictionary-it)
+        // Carico i file del dizionario italiano da un CDN (pacchetto npm: dictionary-it)
         console.log('[SpellCheck] Carico dizionario da CDN...')
-        const afxResponse = await fetch('https://cdn.jsdelivr.net/npm/hunspell-dictionary-it@7.0.0/it.aff')
-        const dicResponse = await fetch('https://cdn.jsdelivr.net/npm/hunspell-dictionary-it@7.0.0/it.dic')
+        const afxResponse = await fetch('https://cdn.jsdelivr.net/npm/dictionary-it@2.0.0/index.aff')
+        const dicResponse = await fetch('https://cdn.jsdelivr.net/npm/dictionary-it@2.0.0/index.dic')
 
         console.log('[SpellCheck] AFX response:', afxResponse.status, dicResponse.status)
 

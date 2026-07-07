@@ -504,11 +504,6 @@ export default function GiuratoPage() {
                                       ★
                                     </button>
                                   )}
-                                  <button onClick={() => controllaOrtografia(a)} disabled={salvandoBonus}
-                                    title="Controlla ortografia"
-                                    className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                                    ✓ Ortografia
-                                  </button>
                                   <button onClick={() => apriRacconto(a)} disabled={salvandoBonus}
                                     className={`text-sm px-4 py-1.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed ${a.completata ? 'border border-gray-200 text-gray-600 hover:bg-gray-50' : 'bg-gray-800 text-white hover:bg-gray-700'}`}>
                                     {a.completata ? 'Vedi' : 'Valuta'}
