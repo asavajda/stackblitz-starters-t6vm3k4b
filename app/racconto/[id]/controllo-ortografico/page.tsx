@@ -5,6 +5,31 @@ import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { SpellCheckedText } from '@/components/SpellCheckedText'
 
+async function estraiTestoDaDocx(arrayBuffer: ArrayBuffer): Promise<string> {
+  const mammoth = await import('mammoth')
+  const result = await mammoth.extractRawText({ arrayBuffer })
+  return result.value
+}
+
+async function estraiTestoDaPdf(arrayBuffer: ArrayBuffer): Promise<string> {
+  const pdfjsLib = await import('pdfjs-dist')
+  // Worker caricato da CDN, coerente con la versione della libreria
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
+
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+  const paginetesti: string[] = []
+
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i)
+    const content = await page.getTextContent()
+    const testoPagina = content.items.map((item: any) => item.str).join(' ')
+    paginetesti.push(testoPagina)
+  }
+
+  return paginetesti.join('\n\n')
+}
+
 export default function ControlloOrtograficoPage({ params }: { params: { id: string } }) {
   const searchParams = useSearchParams()
   const filePath = searchParams.get('file_path')
@@ -17,55 +42,37 @@ export default function ControlloOrtograficoPage({ params }: { params: { id: str
     async function carica() {
       try {
         if (filePath) {
-          // Estrai il testo dal file DOCX SOLO per l'analisi ortografica.
-          // Il file originale su Storage non viene mai modificato: viene
-          // solo letto e convertito in memoria per il controllo.
-          console.log('[Ortografia] file_path ricevuto:', filePath)
-
+          // Estrai il testo dal file (PDF o DOCX) SOLO per l'analisi
+          // ortografica. Il file originale su Storage non viene mai
+          // modificato: viene solo letto e convertito in memoria.
           const { data: signedUrl, error: urlError } = await supabase.storage
             .from('racconti-files')
             .createSignedUrl(filePath, 3600)
-
-          console.log('[Ortografia] signedUrl:', signedUrl?.signedUrl)
-          console.log('[Ortografia] urlError:', urlError)
 
           if (!signedUrl?.signedUrl) {
             throw new Error('Impossibile ottenere l\'URL del file: ' + (urlError?.message || 'sconosciuto'))
           }
 
           const response = await fetch(signedUrl.signedUrl)
-          console.log('[Ortografia] fetch status:', response.status, response.statusText)
-          console.log('[Ortografia] content-type:', response.headers.get('content-type'))
-          console.log('[Ortografia] content-length:', response.headers.get('content-length'))
-
           if (!response.ok) {
-            const bodyText = await response.text().catch(() => '(non leggibile)')
-            console.log('[Ortografia] corpo risposta errore:', bodyText.slice(0, 500))
             throw new Error(`Errore nel download del file: HTTP ${response.status}`)
           }
 
           const arrayBuffer = await response.arrayBuffer()
-          console.log('[Ortografia] byte scaricati:', arrayBuffer.byteLength)
+          const estensione = filePath.split('.').pop()?.toLowerCase()
 
-          // Controllo che sia effettivamente uno ZIP (i .docx sono file ZIP)
-          // La firma ZIP inizia con i byte 'PK' (0x50 0x4B)
-          const firstBytes = new Uint8Array(arrayBuffer.slice(0, 4))
-          console.log('[Ortografia] primi byte del file:', Array.from(firstBytes).map(b => b.toString(16)).join(' '))
-
-          if (firstBytes[0] !== 0x50 || firstBytes[1] !== 0x4B) {
-            // Non è uno ZIP valido: probabilmente abbiamo scaricato una
-            // pagina di errore HTML/JSON invece del file vero
-            const asText = new TextDecoder().decode(arrayBuffer.slice(0, 300))
-            console.log('[Ortografia] contenuto non-ZIP ricevuto:', asText)
-            throw new Error('Il file scaricato non è un documento .docx valido (probabile URL scaduto o non accessibile).')
+          let testoEstratto: string
+          if (estensione === 'pdf') {
+            testoEstratto = await estraiTestoDaPdf(arrayBuffer)
+          } else if (estensione === 'docx') {
+            testoEstratto = await estraiTestoDaDocx(arrayBuffer)
+          } else {
+            throw new Error(`Formato file non supportato per il controllo ortografico: .${estensione}`)
           }
-
-          const mammoth = await import('mammoth')
-          const result = await mammoth.extractRawText({ arrayBuffer })
 
           const fileName = filePath.split('/').pop() || 'Racconto'
           setTitolo(fileName.replace(/\.[^.]+$/, ''))
-          setTesto(result.value)
+          setTesto(testoEstratto)
         } else {
           const { data } = await supabase
             .from('racconti')
