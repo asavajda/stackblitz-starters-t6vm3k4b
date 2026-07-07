@@ -20,20 +20,46 @@ export default function ControlloOrtograficoPage({ params }: { params: { id: str
           // Estrai il testo dal file DOCX SOLO per l'analisi ortografica.
           // Il file originale su Storage non viene mai modificato: viene
           // solo letto e convertito in memoria per il controllo.
-          const { data: signedUrl } = await supabase.storage
+          console.log('[Ortografia] file_path ricevuto:', filePath)
+
+          const { data: signedUrl, error: urlError } = await supabase.storage
             .from('racconti-files')
             .createSignedUrl(filePath, 3600)
 
+          console.log('[Ortografia] signedUrl:', signedUrl?.signedUrl)
+          console.log('[Ortografia] urlError:', urlError)
+
           if (!signedUrl?.signedUrl) {
-            throw new Error('Impossibile ottenere l\'URL del file')
+            throw new Error('Impossibile ottenere l\'URL del file: ' + (urlError?.message || 'sconosciuto'))
           }
 
           const response = await fetch(signedUrl.signedUrl)
+          console.log('[Ortografia] fetch status:', response.status, response.statusText)
+          console.log('[Ortografia] content-type:', response.headers.get('content-type'))
+          console.log('[Ortografia] content-length:', response.headers.get('content-length'))
+
           if (!response.ok) {
-            throw new Error('Errore nel download del file')
+            const bodyText = await response.text().catch(() => '(non leggibile)')
+            console.log('[Ortografia] corpo risposta errore:', bodyText.slice(0, 500))
+            throw new Error(`Errore nel download del file: HTTP ${response.status}`)
           }
 
           const arrayBuffer = await response.arrayBuffer()
+          console.log('[Ortografia] byte scaricati:', arrayBuffer.byteLength)
+
+          // Controllo che sia effettivamente uno ZIP (i .docx sono file ZIP)
+          // La firma ZIP inizia con i byte 'PK' (0x50 0x4B)
+          const firstBytes = new Uint8Array(arrayBuffer.slice(0, 4))
+          console.log('[Ortografia] primi byte del file:', Array.from(firstBytes).map(b => b.toString(16)).join(' '))
+
+          if (firstBytes[0] !== 0x50 || firstBytes[1] !== 0x4B) {
+            // Non è uno ZIP valido: probabilmente abbiamo scaricato una
+            // pagina di errore HTML/JSON invece del file vero
+            const asText = new TextDecoder().decode(arrayBuffer.slice(0, 300))
+            console.log('[Ortografia] contenuto non-ZIP ricevuto:', asText)
+            throw new Error('Il file scaricato non è un documento .docx valido (probabile URL scaduto o non accessibile).')
+          }
+
           const mammoth = await import('mammoth')
           const result = await mammoth.extractRawText({ arrayBuffer })
 
