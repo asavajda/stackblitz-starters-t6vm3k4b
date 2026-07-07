@@ -20,6 +20,12 @@ export default function RaccontoPage({ params }: { params: { id: string } }) {
     carica()
   }, [params.id])
 
+  // Titolo della scheda del browser: usa il titolo del racconto anziché
+  // il nome generico della piattaforma
+  useEffect(() => {
+    if (racconto?.titolo) document.title = `${racconto.titolo} — Valuta`
+  }, [racconto])
+
   if (caricamento) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <p className="text-gray-400 text-sm">Caricamento...</p>

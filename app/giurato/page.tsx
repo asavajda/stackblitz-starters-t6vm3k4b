@@ -128,29 +128,20 @@ export default function GiuratoPage() {
   }, [])
 
   async function controllaOrtografia(assegnazione: any) {
+    const titolo = encodeURIComponent(assegnazione.titolo || 'Racconto')
     if (assegnazione.tipo_invio === 'file') {
       const filePath = encodeURIComponent(assegnazione.file_path)
-      window.open(`/racconto/${assegnazione.racconto_id}/controllo-ortografico?file_path=${filePath}`, '_blank')
+      window.open(`/racconto/${assegnazione.racconto_id}/controllo-ortografico?file_path=${filePath}&titolo=${titolo}`, '_blank')
     } else if (assegnazione.tipo_invio === 'testo') {
-      window.open(`/racconto/${assegnazione.racconto_id}/controllo-ortografico`, '_blank')
+      window.open(`/racconto/${assegnazione.racconto_id}/controllo-ortografico?titolo=${titolo}`, '_blank')
     }
   }
 
   async function apriRacconto(assegnazione: any) {
     if (assegnazione.tipo_invio === 'file') {
-      const { data } = await supabase.storage
-        .from('racconti-files')
-        .createSignedUrl(assegnazione.file_path, 3600)
-      if (data?.signedUrl) {
-        const estensione = assegnazione.file_path?.split('.').pop()?.toLowerCase()
-        if (estensione === 'pdf') {
-          // I PDF sono visualizzabili nativamente dal browser: nessun viewer esterno necessario
-          window.open(data.signedUrl, '_blank')
-        } else {
-          // I DOCX richiedono un viewer esterno (il browser non li renderizza)
-          window.open(`https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(data.signedUrl)}`, '_blank')
-        }
-      }
+      const filePath = encodeURIComponent(assegnazione.file_path)
+      const titolo = encodeURIComponent(assegnazione.titolo || 'Racconto')
+      window.open(`/racconto/${assegnazione.racconto_id}/visualizza?file_path=${filePath}&titolo=${titolo}`, '_blank')
     } else if (assegnazione.tipo_invio === 'testo') {
       window.open(`/racconto/${assegnazione.racconto_id}`, '_blank')
     }

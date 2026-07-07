@@ -33,10 +33,17 @@ async function estraiTestoDaPdf(arrayBuffer: ArrayBuffer): Promise<string> {
 export default function ControlloOrtograficoPage({ params }: { params: { id: string } }) {
   const searchParams = useSearchParams()
   const filePath = searchParams.get('file_path')
-  const [titolo, setTitolo] = useState<string>('')
+  const titoloQuery = searchParams.get('titolo')
+  const [titolo, setTitolo] = useState<string>(titoloQuery || '')
   const [testo, setTesto] = useState<string>('')
   const [caricamento, setCaricamento] = useState(true)
   const [errore, setErrore] = useState<string | null>(null)
+
+  // Titolo della scheda del browser: usa il titolo del racconto anziché
+  // il nome generico della piattaforma
+  useEffect(() => {
+    if (titolo) document.title = `${titolo} — Ortografia`
+  }, [titolo])
 
   useEffect(() => {
     async function carica() {
@@ -70,8 +77,10 @@ export default function ControlloOrtograficoPage({ params }: { params: { id: str
             throw new Error(`Formato file non supportato per il controllo ortografico: .${estensione}`)
           }
 
-          const fileName = filePath.split('/').pop() || 'Racconto'
-          setTitolo(fileName.replace(/\.[^.]+$/, ''))
+          if (!titoloQuery) {
+            const fileName = filePath.split('/').pop() || 'Racconto'
+            setTitolo(fileName.replace(/\.[^.]+$/, ''))
+          }
           setTesto(testoEstratto)
         } else {
           const { data } = await supabase
@@ -81,7 +90,7 @@ export default function ControlloOrtograficoPage({ params }: { params: { id: str
             .single()
 
           if (!data) throw new Error('Racconto non trovato')
-          setTitolo(data.titolo)
+          if (!titoloQuery) setTitolo(data.titolo)
           setTesto(data.testo)
         }
       } catch (error) {
@@ -92,7 +101,7 @@ export default function ControlloOrtograficoPage({ params }: { params: { id: str
       }
     }
     carica()
-  }, [params.id, filePath])
+  }, [params.id, filePath, titoloQuery])
 
   if (caricamento) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
