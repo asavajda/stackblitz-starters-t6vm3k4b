@@ -142,7 +142,7 @@ export default function GiuratoPage() {
         .from('racconti-files')
         .createSignedUrl(assegnazione.file_path, 3600)
       if (data?.signedUrl) {
-        window.open(`https://docs.google.com/viewer?url=${encodeURIComponent(data.signedUrl)}`, '_blank')
+        window.open(`https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(data.signedUrl)}`, '_blank')
       }
     } else if (assegnazione.tipo_invio === 'testo') {
       window.open(`/racconto/${assegnazione.racconto_id}`, '_blank')
@@ -322,9 +322,13 @@ export default function GiuratoPage() {
           </button>
           <h2 className="text-xl font-semibold text-gray-800 mb-1">{valutazioneAperta.titolo}</h2>
           <p className="text-xs text-gray-400 mb-6">Fase: {valutazioneAperta.fase}</p>
-          <p className="text-sm text-gray-500 mb-6">
+          <p className="text-sm text-gray-500 mb-3">
             {valutazioneAperta.tipo_invio === 'testo' ? 'Il testo si è aperto in una nuova scheda.' : 'Il file si è aperto in una nuova scheda.'}
           </p>
+          <button onClick={() => controllaOrtografia(valutazioneAperta)}
+            className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700 mb-6">
+            ✓ Controlla ortografia
+          </button>
 
           <div className="space-y-4 mb-6">
             {CRITERI.map(c => (
