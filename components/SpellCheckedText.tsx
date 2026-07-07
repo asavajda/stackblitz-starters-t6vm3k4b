@@ -14,8 +14,8 @@ export function SpellCheckedText({ text }: SpellCheckedTextProps) {
     const initializeSpellChecker = async () => {
       try {
         // Carico nspell e il dizionario italiano
-        const nspell = await import('nspell')
-        const Nspell = nspell.default
+        const nspellModule = await import('nspell')
+        const Nspell = nspellModule.default
 
         // Carico i file del dizionario italiano da un CDN (hunspell-dictionary-it)
         const afxResponse = await fetch('https://cdn.jsdelivr.net/npm/hunspell-dictionary-it@7.0.0/it.aff')
@@ -30,7 +30,7 @@ export function SpellCheckedText({ text }: SpellCheckedTextProps) {
         const afxText = await afxResponse.text()
         const dicText = await dicResponse.text()
 
-        // Creo l'istanza di nspell
+        // Creo l'istanza di nspell con la sintassi corretta per v2.x
         const checker = new Nspell(afxText, dicText)
         setSpellChecker(checker)
       } catch (error) {
