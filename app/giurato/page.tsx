@@ -56,7 +56,6 @@ export default function GiuratoPage() {
   const [valutazioneAperta, setValutazioneAperta] = useState<any>(null)
   const [votiEsistenti, setVotiEsistenti]         = useState<any>(null)
   const [voti, setVoti]                           = useState({ a: 3, b: 3, c: 3, d: 3 })
-  const [note, setNote]                           = useState('')
   const [salvando, setSalvando]                   = useState(false)
   const [utenteId, setUtenteId]                   = useState('')
   const [mostraConferma, setMostraConferma]       = useState(false)
@@ -154,7 +153,6 @@ export default function GiuratoPage() {
     } else {
       setVotiEsistenti(null)
       setVoti({ a: 3, b: 3, c: 3, d: 3 })
-      setNote('')
     }
     setValutazioneAperta(assegnazione)
   }
@@ -169,7 +167,6 @@ export default function GiuratoPage() {
       criterio_c: voti.c,
       criterio_d: voti.d,
       bonus: false, // il bonus si imposta dopo dalla lista
-      note,
     })
 
     if (error) {
@@ -359,22 +356,9 @@ export default function GiuratoPage() {
                 <p className="text-sm text-amber-700 font-medium">Valutazione già inviata</p>
                 <p className="text-xs text-amber-600 mt-0.5">Le valutazioni non sono modificabili dopo l'invio.</p>
               </div>
-              {votiEsistenti?.note && (
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Note</p>
-                  <div className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-600 bg-gray-50">
-                    {votiEsistenti.note}
-                  </div>
-                </div>
-              )}
             </>
           ) : (
             <>
-              <div className="mb-6">
-                <label className="block text-sm text-gray-600 mb-1">Note (opzionale)</label>
-                <textarea value={note} onChange={e => setNote(e.target.value)} rows={3}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 resize-none" />
-              </div>
               <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 mb-4">
                 <p className="text-xs text-gray-500">⚠️ Attenzione: una volta inviata, la valutazione non potrà essere modificata.</p>
               </div>
