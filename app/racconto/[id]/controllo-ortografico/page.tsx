@@ -18,18 +18,52 @@ async function estraiTestoDaPdf(arrayBuffer: ArrayBuffer): Promise<string> {
     `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
 
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
-  const paginetesti: string[] = []
+
+  // Primo passaggio: raccolgo gli elementi di testo di ogni pagina e
+  // misuro tutti i salti verticali tra una riga e la successiva. Questo
+  // mi serve per calcolare la spaziatura "normale" tra le righe di
+  // QUESTO specifico documento: alcuni racconti usano interlinea
+  // singola, altri doppia, e una soglia fissa non andrebbe bene per
+  // entrambi i casi.
+  const paginheItems: any[][] = []
+  const saltiRiga: number[] = []
 
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i)
     const content = await page.getTextContent()
+    const items = (content.items as any[]).filter(it => typeof it.str === 'string' && it.str !== '')
+    paginheItems.push(items)
 
+    let prevItem: any = null
+    for (const item of items) {
+      if (prevItem) {
+        const stessaRiga = Math.abs(item.transform[5] - prevItem.transform[5]) < 2
+        if (!stessaRiga) {
+          saltiRiga.push(Math.abs(prevItem.transform[5] - item.transform[5]))
+        }
+      }
+      prevItem = item
+    }
+  }
+
+  // La mediana dei salti di riga rappresenta la spaziatura "normale"
+  // (un semplice a capo dentro lo stesso paragrafo), dato che nella
+  // maggior parte del testo le righe si susseguono così, mentre i veri
+  // cambi di paragrafo sono relativamente rari
+  const saltiOrdinati = [...saltiRiga].sort((a, b) => a - b)
+  const spaziaturaNormale = saltiOrdinati.length > 0
+    ? saltiOrdinati[Math.floor(saltiOrdinati.length / 2)]
+    : 12
+  const sogliaParagrafo = spaziaturaNormale * 1.4
+
+  // Secondo passaggio: ricostruisco il testo usando la soglia calcolata
+  const paginetesti: string[] = []
+
+  for (const items of paginheItems) {
     let testoPagina = ''
     let prevItem: any = null
 
-    for (const item of content.items as any[]) {
-      if (typeof item.str !== 'string' || item.str === '') continue
-
+    for (const item of items) {
       if (prevItem) {
         // transform[5] = coordinata Y (riga), transform[4] = coordinata X (colonna)
         const stessaRiga = Math.abs(item.transform[5] - prevItem.transform[5]) < 2
@@ -44,17 +78,13 @@ async function estraiTestoDaPdf(arrayBuffer: ArrayBuffer): Promise<string> {
           const soglia = (prevItem.height || 10) * 0.25
           if (gap > soglia) testoPagina += ' '
         } else {
-          // Riga diversa: distinguo tra un normale "a capo" (il testo
-          // continua nello stesso paragrafo, come capita spesso con
-          // testo giustificato/centrato che va a capo automaticamente)
-          // e un vero cambio di paragrafo (salto verticale ampio, es.
-          // una riga vuota tra due blocchi). Solo nel secondo caso vado
-          // a capo davvero: altrimenti unisco con uno spazio, così un
-          // correttore grammaticale non scambia ogni riga per l'inizio
-          // di una nuova frase.
+          // Riga diversa: vado a capo come nuovo paragrafo solo se il
+          // salto verticale è marcatamente maggiore della spaziatura
+          // normale di questo documento (riga vuota reale tra due
+          // blocchi); altrimenti è solo un a capo dentro lo stesso
+          // paragrafo e unisco con uno spazio
           const deltaY = Math.abs(prevItem.transform[5] - item.transform[5])
-          const altezzaRiga = prevItem.height || item.height || 10
-          if (deltaY > altezzaRiga * 1.8) {
+          if (deltaY > sogliaParagrafo) {
             testoPagina += '\n\n'
           } else {
             testoPagina += ' '
