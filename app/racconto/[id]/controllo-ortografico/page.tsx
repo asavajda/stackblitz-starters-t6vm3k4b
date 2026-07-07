@@ -28,21 +28,13 @@ async function estraiTestoDaPdf(arrayBuffer: ArrayBuffer): Promise<string> {
     let prevItem: any = null
 
     for (const item of content.items as any[]) {
-      if (typeof item.str !== 'string') continue
-
-      if (item.str === '') {
-        // pdf.js inserisce item vuoti per segnalare interruzioni di riga
-        if (item.hasEOL) testoPagina += '\n'
-        continue
-      }
+      if (typeof item.str !== 'string' || item.str === '') continue
 
       if (prevItem) {
         // transform[5] = coordinata Y (riga), transform[4] = coordinata X (colonna)
         const stessaRiga = Math.abs(item.transform[5] - prevItem.transform[5]) < 2
 
-        if (!stessaRiga) {
-          testoPagina += '\n'
-        } else {
+        if (stessaRiga) {
           // Calcolo lo spazio reale tra la fine dell'elemento precedente
           // e l'inizio di questo, per capire se nel PDF originale c'era
           // uno spazio (testo giustificato) o se la parola prosegue
@@ -50,15 +42,27 @@ async function estraiTestoDaPdf(arrayBuffer: ArrayBuffer): Promise<string> {
           const iniziaCorrente = item.transform[4]
           const gap = iniziaCorrente - finePrecedente
           const soglia = (prevItem.height || 10) * 0.25
-
-          if (gap > soglia) {
+          if (gap > soglia) testoPagina += ' '
+        } else {
+          // Riga diversa: distinguo tra un normale "a capo" (il testo
+          // continua nello stesso paragrafo, come capita spesso con
+          // testo giustificato/centrato che va a capo automaticamente)
+          // e un vero cambio di paragrafo (salto verticale ampio, es.
+          // una riga vuota tra due blocchi). Solo nel secondo caso vado
+          // a capo davvero: altrimenti unisco con uno spazio, così un
+          // correttore grammaticale non scambia ogni riga per l'inizio
+          // di una nuova frase.
+          const deltaY = Math.abs(prevItem.transform[5] - item.transform[5])
+          const altezzaRiga = prevItem.height || item.height || 10
+          if (deltaY > altezzaRiga * 1.8) {
+            testoPagina += '\n\n'
+          } else {
             testoPagina += ' '
           }
         }
       }
 
       testoPagina += item.str
-      if (item.hasEOL) testoPagina += '\n'
       prevItem = item
     }
 
@@ -68,6 +72,7 @@ async function estraiTestoDaPdf(arrayBuffer: ArrayBuffer): Promise<string> {
   return paginetesti
     .join('\n\n')
     .replace(/[ \t]+\n/g, '\n')   // spazi finali di riga
+    .replace(/ {2,}/g, ' ')       // spazi doppi
     .replace(/\n{3,}/g, '\n\n')   // righe vuote multiple
     .trim()
 }
