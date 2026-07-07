@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { SpellCheckedText } from '@/components/SpellCheckedText'
 
 export default function RaccontoPage({ params }: { params: { id: string } }) {
   const [racconto, setRacconto] = useState<any>(null)
@@ -42,7 +43,7 @@ export default function RaccontoPage({ params }: { params: { id: string } }) {
           </p>
         )}
         <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-          {racconto.testo}
+          <SpellCheckedText text={racconto.testo} />
         </div>
       </div>
     </div>
