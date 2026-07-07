@@ -69,8 +69,33 @@ async function estraiTestoDaPdf(arrayBuffer: ArrayBuffer): Promise<string> {
     paginetesti.push(testoPagina)
   }
 
-  return paginetesti
-    .join('\n\n')
+  // Un paragrafo composto solo da un numero è quasi certamente un
+  // numero di pagina (intestazione/piè di pagina), non testo del racconto
+  function rimuoviNumeriPagina(testo: string): string {
+    return testo
+      .split(/\n{2,}/)
+      .filter(paragrafo => !/^\d{1,4}$/.test(paragrafo.trim()))
+      .join('\n\n')
+  }
+
+  const paginePulite = paginetesti.map(rimuoviNumeriPagina)
+
+  // Unisco le pagine: se il testo della pagina precedente non termina
+  // con un segno di punteggiatura di fine frase, la frase prosegue
+  // sulla pagina successiva (interruzione di pagina a metà frase), quindi
+  // unisco con uno spazio invece di andare a capo come nuovo paragrafo
+  let risultato = ''
+  for (const paginaTesto of paginePulite) {
+    if (!paginaTesto.trim()) continue
+    if (!risultato) {
+      risultato = paginaTesto
+      continue
+    }
+    const finisceFrase = /[.!?…»"”')\]]\s*$/.test(risultato.trimEnd())
+    risultato = risultato.trimEnd() + (finisceFrase ? '\n\n' : ' ') + paginaTesto.trimStart()
+  }
+
+  return risultato
     .replace(/[ \t]+\n/g, '\n')   // spazi finali di riga
     .replace(/ {2,}/g, ' ')       // spazi doppi
     .replace(/\n{3,}/g, '\n\n')   // righe vuote multiple
