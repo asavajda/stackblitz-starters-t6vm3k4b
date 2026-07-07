@@ -129,12 +129,9 @@ export default function GiuratoPage() {
 
   async function apriRacconto(assegnazione: any) {
     if (assegnazione.tipo_invio === 'file') {
-      const { data } = await supabase.storage
-        .from('racconti-files')
-        .createSignedUrl(assegnazione.file_path, 3600)
-      if (data?.signedUrl) {
-        window.open(`https://docs.google.com/viewer?url=${encodeURIComponent(data.signedUrl)}`, '_blank')
-      }
+      // Usa il nostro viewer con SpellCheck anziché Google Docs
+      const filePath = encodeURIComponent(assegnazione.file_path)
+      window.open(`/racconto/${assegnazione.racconto_id}?file_path=${filePath}`, '_blank')
     } else if (assegnazione.tipo_invio === 'testo') {
       window.open(`/racconto/${assegnazione.racconto_id}`, '_blank')
     }
