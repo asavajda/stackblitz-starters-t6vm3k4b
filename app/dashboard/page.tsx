@@ -87,6 +87,10 @@ function SortBar({ sortKey, sortDir, onChange, showMedia }: {
       {/* Mobile: un unico menu a tendina invece di 3-4 bottoni separati */}
       <div className="flex sm:hidden items-center gap-2 flex-1 min-w-0">
         <span className="hidden sm:inline text-xs text-gray-400 shrink-0">Ordina:</span>
+        <svg className="shrink-0 text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M8 9l4-4 4 4" />
+          <path d="M16 15l-4 4-4-4" />
+        </svg>
         <select value={sortKey} onChange={e => onChange(e.target.value as SortKey, sortDir)}
           className="flex-1 min-w-0 text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-gray-300">
           {opzioni.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
@@ -465,6 +469,9 @@ export default function DashboardPage() {
               <div className="flex gap-3 sm:contents">
                 <div className="flex-1 sm:flex-initial min-w-0 flex items-center gap-2">
                   <span className="hidden sm:inline text-xs text-gray-400 shrink-0">Filtra per:</span>
+                  <svg className="sm:hidden shrink-0 text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M4 4h16l-6 8v6l-4 2v-8z" />
+                  </svg>
                   <select value={raccontiStato} onChange={e => setRaccontiStato(e.target.value)}
                     className="flex-1 sm:flex-initial min-w-0 border border-gray-200 rounded sm:rounded-lg px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
                     <option value="">Tutti gli stati</option>
