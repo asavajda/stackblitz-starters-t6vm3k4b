@@ -1157,8 +1157,8 @@ export default function DashboardPage() {
                 const disabilitato = g.attivo === false
                 return (
                   <div key={g.id} className={`bg-white rounded-xl border p-4 ${disabilitato ? 'border-gray-100 opacity-50' : 'border-gray-200'}`}>
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <div className="flex items-center gap-3 min-w-0">
                         <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 ${cfg.badge}`}>{cfg.label}</span>
                         <div className="min-w-0">
                           <p className="text-sm font-medium text-gray-800 truncate">{g.nome} {g.cognome}</p>
@@ -1168,7 +1168,7 @@ export default function DashboardPage() {
                           <span className="text-[10px] text-red-400 border border-red-200 px-1.5 py-0.5 rounded shrink-0">disabilitato</span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap shrink-0">
                         {!disabilitato && (
                           <button onClick={() => generaLink(g.id, g.email)} disabled={generando === g.id}
                             className="text-xs px-3 py-1 rounded-lg border border-blue-200 text-blue-500 hover:bg-blue-50 disabled:opacity-50">
