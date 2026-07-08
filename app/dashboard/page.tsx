@@ -810,7 +810,7 @@ export default function DashboardPage() {
                 const risultatoCompleto = numAssegnati > 0 && numValutazioni >= numAssegnati
                 return (
                   <div key={m.racconto_id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    <div className="w-full flex items-center justify-between gap-3 px-5 py-3">
+                    <div className="w-full flex items-center flex-wrap sm:flex-nowrap justify-between gap-3 px-5 py-3">
                       <button
                         onClick={() => setRisAperti(prev => ({ ...prev, [m.racconto_id]: !prev[m.racconto_id] }))}
                         className="flex items-center gap-3 min-w-0 flex-1 text-left hover:opacity-70 transition-opacity">
@@ -820,7 +820,7 @@ export default function DashboardPage() {
                           <p className="text-xs text-gray-400 truncate">{autore}</p>
                         </div>
                       </button>
-                      <div className="flex items-center gap-3 shrink-0">
+                      <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap sm:gap-3 shrink-0 w-full sm:w-auto justify-end">
                         {m.media_complessiva && <span className="text-lg font-semibold text-gray-800">{m.media_complessiva}</span>}
                         <span className={`text-xs px-3 py-1 rounded-full font-medium ${
                           risultatoCompleto ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
