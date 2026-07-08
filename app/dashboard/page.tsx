@@ -401,7 +401,7 @@ export default function DashboardPage() {
       <div className={`border-b px-4 sm:px-8 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-3 ${isStaging ? 'bg-[#4A90A4] border-[#3a7a8e]' : 'bg-white border-gray-200'}`}>
         <img src="/logo_tohorror_dark.png" alt="TOHorror" className="h-10 sm:h-16 shrink-0" />
         <div className="order-3 sm:order-none w-full sm:w-auto">
-          <div className="flex flex-wrap sm:flex-nowrap gap-2">
+          <div className="flex flex-wrap sm:flex-nowrap justify-center sm:justify-start gap-2">
             {SEZIONI.map(s => (
               <button key={s} onClick={() => cambiaSezione(s)}
                 className={`px-4 py-1.5 rounded-lg text-sm capitalize transition-colors whitespace-nowrap ${sezione === s ? (isStaging ? 'bg-white/20 text-white' : 'bg-gray-800 text-white') : (isStaging ? 'text-white/70 hover:bg-white/10' : 'text-gray-500 hover:bg-gray-100')}`}>
