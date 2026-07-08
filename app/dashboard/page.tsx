@@ -810,7 +810,47 @@ export default function DashboardPage() {
                 const risultatoCompleto = numAssegnati > 0 && numValutazioni >= numAssegnati
                 return (
                   <div key={m.racconto_id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    <div className="w-full flex items-center flex-wrap sm:flex-nowrap justify-between gap-3 px-5 py-3">
+                    {/* Card — solo mobile */}
+                    <div className="sm:hidden px-5 py-3">
+                      <button
+                        onClick={() => setRisAperti(prev => ({ ...prev, [m.racconto_id]: !prev[m.racconto_id] }))}
+                        className="w-full flex items-start justify-between gap-3 mb-2 text-left">
+                        <div className="flex items-start gap-2 min-w-0">
+                          <span className="text-sm text-gray-300 font-medium shrink-0">{i + 1}</span>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-800 truncate">{m.titolo}</p>
+                            <p className="text-xs text-gray-400 truncate">{autore}</p>
+                          </div>
+                        </div>
+                        {m.media_complessiva && <span className="text-lg font-semibold text-gray-800 shrink-0">{m.media_complessiva}</span>}
+                      </button>
+                      <div className="flex items-center gap-2 flex-wrap mb-3">
+                        <span className={`text-xs px-3 py-1 rounded-full font-medium ${
+                          risultatoCompleto ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {risultatoCompleto ? `✓ Completo (${numValutazioni}/${numAssegnati})` : `⏳ Parziale (${numValutazioni}/${numAssegnati || '?'})`}
+                        </span>
+                        <span className={`text-xs px-3 py-1 rounded-full font-medium ${STATO_BADGE[m.stato]}`}>{fmt(m.stato)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {(['finalista', 'eliminato'] as const).map(key => (
+                            <button key={key} onClick={() => aggiornaStato(m.racconto_id, key)}
+                              className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                                m.stato === key ? activeClass[key] : 'border-gray-200 text-gray-400 hover:bg-gray-50'
+                              }`}>
+                              {fmt(key)}
+                            </button>
+                          ))}
+                        </div>
+                        <button onClick={() => setRisAperti(prev => ({ ...prev, [m.racconto_id]: !prev[m.racconto_id] }))}
+                          className="text-gray-400 text-xs px-1 hover:text-gray-600">
+                          {aperto ? '▲' : '▼'}
+                        </button>
+                      </div>
+                    </div>
+                    {/* Riga — solo desktop */}
+                    <div className="hidden sm:flex w-full items-center justify-between gap-3 px-5 py-3">
                       <button
                         onClick={() => setRisAperti(prev => ({ ...prev, [m.racconto_id]: !prev[m.racconto_id] }))}
                         className="flex items-center gap-3 min-w-0 flex-1 text-left hover:opacity-70 transition-opacity">
@@ -820,7 +860,7 @@ export default function DashboardPage() {
                           <p className="text-xs text-gray-400 truncate">{autore}</p>
                         </div>
                       </button>
-                      <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap sm:gap-3 shrink-0 w-full sm:w-auto justify-end">
+                      <div className="flex items-center gap-3 shrink-0">
                         {m.media_complessiva && <span className="text-lg font-semibold text-gray-800">{m.media_complessiva}</span>}
                         <span className={`text-xs px-3 py-1 rounded-full font-medium ${
                           risultatoCompleto ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
