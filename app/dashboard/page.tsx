@@ -1223,14 +1223,14 @@ export default function DashboardPage() {
                       const totale = (v.criterio_a ?? 0) + (v.criterio_b ?? 0) + (v.criterio_c ?? 0) + (v.criterio_d ?? 0) + (v.bonus ? 1 : 0)
                       return (
                         <div key={v.id} className="bg-gray-50 rounded-lg p-3">
-                          <div className="flex items-center justify-between mb-2">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-0 mb-2">
                             <span className="text-sm font-medium text-gray-700">
                               {v.assegnazioni?.profiles?.nome} {v.assegnazioni?.profiles?.cognome}
                             </span>
                             <span className="text-sm font-semibold text-gray-800">Totale: {totale}</span>
                           </div>
                           {/* Elenco etichetta:valore — solo mobile */}
-                          <div className="sm:hidden grid grid-cols-2 gap-x-4 gap-y-1 text-xs mb-2">
+                          <div className="sm:hidden space-y-1 text-xs mb-2">
                             {CRITERI.map(c => (
                               <div key={c.key} className="flex justify-between">
                                 <span className="text-gray-400">{c.label}</span>
@@ -1274,12 +1274,12 @@ export default function DashboardPage() {
                       const mediaTotale = media(valRacconto.map(v => (v.criterio_a ?? 0) + (v.criterio_b ?? 0) + (v.criterio_c ?? 0) + (v.criterio_d ?? 0) + (v.bonus ? 1 : 0)))
                       return (
                         <div className="bg-green-50 border border-green-100 rounded-lg p-3">
-                          <div className="flex items-center justify-between mb-2">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-0 mb-2">
                             <span className="text-sm font-semibold text-green-700">Media</span>
                             <span className="text-sm font-semibold text-green-800">Totale: {mediaTotale}</span>
                           </div>
                           {/* Elenco etichetta:valore — solo mobile */}
-                          <div className="sm:hidden grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                          <div className="sm:hidden space-y-1 text-xs">
                             {[mediaA, mediaB, mediaC, mediaD].map((m, idx) => (
                               <div key={idx} className="flex justify-between">
                                 <span className="text-green-500">{CRITERI[idx].label}</span>
