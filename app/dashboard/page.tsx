@@ -826,7 +826,7 @@ export default function DashboardPage() {
                           <div className="mb-4">
                             <p className="text-xs text-gray-500 mb-3">Caricato il: {racconto?.inviato_il ? new Date(racconto.inviato_il).toLocaleDateString('it-IT') : '-'}</p>
                             <div className="space-y-2">
-                              <div className="grid grid-cols-7 gap-2 text-[10px] text-gray-400 uppercase px-2">
+                              <div className="grid grid-cols-8 gap-2 text-[10px] text-gray-400 uppercase px-2">
                                 <span className="col-span-2">Giurato</span>
                                 {CRITERI.map(c => <span key={c.key} className="text-center">{c.label}</span>)}
                                 <span className="text-center">Bonus</span>
@@ -835,7 +835,7 @@ export default function DashboardPage() {
                               {valRacconto.map(v => {
                                 const totale = (v.criterio_a ?? 0) + (v.criterio_b ?? 0) + (v.criterio_c ?? 0) + (v.criterio_d ?? 0) + (v.bonus ? 1 : 0)
                                 return (
-                                  <div key={v.id} className="grid grid-cols-7 gap-2 bg-gray-50 rounded-lg px-2 py-1.5 text-xs">
+                                  <div key={v.id} className="grid grid-cols-8 gap-2 bg-gray-50 rounded-lg px-2 py-1.5 text-xs">
                                     <span className="col-span-2 text-gray-600 truncate">
                                       {v.assegnazioni?.profiles?.nome} {v.assegnazioni?.profiles?.cognome}
                                     </span>
