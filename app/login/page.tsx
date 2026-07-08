@@ -39,7 +39,7 @@ else router.push('/invio')
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 w-full max-w-md">
         <h1 className="text-2xl font-semibold text-gray-800 mb-6">Accedi</h1>
         <div className="space-y-4">

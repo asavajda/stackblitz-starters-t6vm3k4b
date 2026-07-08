@@ -150,8 +150,8 @@ export default function InvioPage() {
 
   if (successo) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white p-8 rounded-xl border border-gray-200 max-w-md w-full text-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="bg-white p-6 sm:p-8 rounded-xl border border-gray-200 max-w-md w-full text-center">
           <div className="text-4xl mb-4">&#10003;</div>
           <h2 className="text-xl font-semibold text-gray-800 mb-2">Racconto inviato</h2>
           <p className="text-gray-500 text-sm">Grazie per la tua partecipazione. Riceverai aggiornamenti via email.</p>
@@ -170,7 +170,7 @@ export default function InvioPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 w-full max-w-2xl mx-auto">
+      <div className="bg-white p-5 sm:p-8 rounded-xl shadow-sm border border-gray-200 w-full max-w-2xl mx-auto">
         <h1 className="text-2xl font-semibold text-gray-800 mb-2">Carica il tuo racconto</h1>
         <p className="text-sm font-medium text-gray-700 mb-2">Contest Letterario "I Racconti del Gatto Nero"</p>
         <p className="text-sm text-gray-500 mb-2">26th ToHorror Fantastic Film Fest</p>
@@ -187,7 +187,7 @@ export default function InvioPage() {
         <div className="space-y-5">
           <div className="bg-gray-50 rounded-lg p-4 space-y-4">
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Dati personali</p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm text-gray-600 mb-1">Nome</label>
                 <input
@@ -207,7 +207,7 @@ export default function InvioPage() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm text-gray-600 mb-1">Email</label>
                 <input
@@ -241,7 +241,7 @@ export default function InvioPage() {
 
           <div>
             <label className="block text-sm text-gray-600 mb-2">Modalità di invio</label>
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-4">
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <input
                   type="radio"

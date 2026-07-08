@@ -25,9 +25,9 @@ function Header({ profilo }: { profilo: any }) {
   const router = useRouter()
   const isStaging = process.env.NEXT_PUBLIC_ENV === 'staging'
   return (
-    <div className={`border-b px-6 py-3 flex items-center justify-between ${isStaging ? 'bg-[#4A90A4] border-[#3a7a8e]' : 'bg-white border-gray-200'}`}>
-      <img src="/logo_tohorror_dark.png" alt="TOHorror" className="h-10" />
-      <div className="flex items-center gap-3">
+    <div className={`border-b px-4 sm:px-6 py-3 flex items-center justify-between gap-2 ${isStaging ? 'bg-[#4A90A4] border-[#3a7a8e]' : 'bg-white border-gray-200'}`}>
+      <img src="/logo_tohorror_dark.png" alt="TOHorror" className="h-8 sm:h-10 shrink-0" />
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         {profilo?.is_admin && (
           <button onClick={() => router.push('/dashboard')}
             className={`text-sm transition-colors ${isStaging ? 'text-white/70 hover:text-white' : 'text-gray-500 hover:text-gray-800'}`}>
@@ -333,7 +333,7 @@ export default function GiuratoPage() {
       )}
 
       <div className="py-12 px-4">
-        <div className="bg-white p-8 rounded-xl border border-gray-200 max-w-xl mx-auto">
+        <div className="bg-white p-5 sm:p-8 rounded-xl border border-gray-200 max-w-xl mx-auto">
           <button onClick={() => setValutazioneAperta(null)}
             className="text-sm text-gray-400 hover:text-gray-600 mb-4 block">
             ← Torna alla lista
@@ -350,8 +350,8 @@ export default function GiuratoPage() {
 
           <div className="space-y-4 mb-6">
             {CRITERI.map(c => (
-              <div key={c.key} className="flex items-center justify-between">
-                <span className="text-sm text-gray-600 w-40">{c.label}</span>
+              <div key={c.key} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <span className="text-sm text-gray-600 sm:w-40">{c.label}</span>
                 <div className="flex gap-2">
                   {[1, 2, 3, 4, 5].map(n => {
                     const attivo = valutazioneAperta.completata
@@ -456,7 +456,7 @@ export default function GiuratoPage() {
                       <button
                         onClick={() => setBlocchiAperti(prev => ({ ...prev, [blocco.blocco_id]: !prev[blocco.blocco_id] }))}
                         className="w-full flex items-center justify-between px-5 py-4 bg-gray-50 hover:bg-gray-100 transition-colors">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 flex-wrap">
                           <span className="text-base font-bold text-gray-900">Blocco {i + 1}</span>
                           <span className="text-xs text-gray-500 font-medium">{nTotali} {nTotali === 1 ? 'racconto' : 'racconti'}</span>
                           {bloccoCompletato && (
