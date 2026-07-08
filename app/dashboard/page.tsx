@@ -673,9 +673,7 @@ export default function DashboardPage() {
                       ? <p className="text-xs text-gray-300 mb-3">Nessun racconto</p>
                       : (
                         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-3">
-                          <div className="overflow-x-auto">
-                          <div className="min-w-[640px]">
-                          <div className="grid grid-cols-[minmax(0,1fr)_90px_minmax(0,2fr)_110px] gap-4 px-4 py-2 bg-gray-50 border-b border-gray-100">
+                          <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_90px_minmax(0,2fr)_110px] gap-4 px-4 py-2 bg-gray-50 border-b border-gray-100">
                             <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Titolo</span>
                             <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Blocco</span>
                             <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Giurati</span>
@@ -693,38 +691,50 @@ export default function DashboardPage() {
                                   return (ordine[ga?.tipo_giurato] ?? 9) - (ordine[gb?.tipo_giurato] ?? 9)
                                 })
                               const bloccoId = assegnazioniRacconto[0]?.blocco_id
+                              const bloccoLabel = bloccoId ? `Blocco ${blocchi.findIndex(b => b.id === bloccoId) + 1}` : '—'
+                              const badgesGiurati = assegnazioniRacconto.length === 0
+                                ? <span className="text-xs text-gray-300">Nessun giurato</span>
+                                : assegnazioniRacconto.map(a => {
+                                    const g = giurati.find(x => x.id === a.giurato_id)
+                                    if (!g) return null
+                                    const cfg = TIPO_CONFIG[g.tipo_giurato] || TIPO_CONFIG.lettore
+                                    return (
+                                      <div key={a.id} className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border shrink-0 ${a.completata ? cfg.attivo : 'border-gray-200 text-gray-400'}`}>
+                                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cfg.badge}`}>{cfg.label}</span>
+                                        {g.nome} {g.cognome}
+                                        {a.completata
+                                          ? <span className="text-[10px] opacity-60">· valutato</span>
+                                          : <span className="text-[10px] text-red-400">· non valutato</span>
+                                        }
+                                      </div>
+                                    )
+                                  })
+                              const statoBadge = <span className={`text-xs px-3 py-1 rounded-full font-medium shrink-0 ${STATO_BADGE[r.stato]}`}>{fmt(r.stato)}</span>
                               return (
-                                <div key={r.id} className="grid grid-cols-[minmax(0,1fr)_90px_minmax(0,2fr)_110px] gap-4 px-4 py-3 items-center">
-                                  <p className="text-sm font-medium text-gray-800 truncate">{r.titolo}</p>
-                                  <span className="text-xs text-gray-500">
-                                    {bloccoId ? `Blocco ${blocchi.findIndex(b => b.id === bloccoId) + 1}` : '—'}
-                                  </span>
-                                  <div className="flex items-center gap-2 flex-wrap min-w-0">
-                                    {assegnazioniRacconto.length === 0
-                                      ? <span className="text-xs text-gray-300">Nessun giurato</span>
-                                      : assegnazioniRacconto.map(a => {
-                                          const g = giurati.find(x => x.id === a.giurato_id)
-                                          if (!g) return null
-                                          const cfg = TIPO_CONFIG[g.tipo_giurato] || TIPO_CONFIG.lettore
-                                          return (
-                                            <div key={a.id} className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border shrink-0 ${a.completata ? cfg.attivo : 'border-gray-200 text-gray-400'}`}>
-                                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cfg.badge}`}>{cfg.label}</span>
-                                              {g.nome} {g.cognome}
-                                              {a.completata
-                                                ? <span className="text-[10px] opacity-60">· valutato</span>
-                                                : <span className="text-[10px] text-red-400">· non valutato</span>
-                                              }
-                                            </div>
-                                          )
-                                        })
-                                    }
+                                <div key={r.id}>
+                                  {/* Card impilata — solo mobile */}
+                                  <div className="sm:hidden px-4 py-3 flex flex-col gap-2">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <p className="text-sm font-medium text-gray-800 truncate">{r.titolo}</p>
+                                      {statoBadge}
+                                    </div>
+                                    <span className="text-xs text-gray-500">{bloccoLabel}</span>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      {badgesGiurati}
+                                    </div>
                                   </div>
-                                  <span className={`text-xs px-3 py-1 rounded-full font-medium justify-self-start ${STATO_BADGE[r.stato]}`}>{fmt(r.stato)}</span>
+                                  {/* Tabella a colonne — solo desktop */}
+                                  <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_90px_minmax(0,2fr)_110px] gap-4 px-4 py-3 items-center">
+                                    <p className="text-sm font-medium text-gray-800 truncate">{r.titolo}</p>
+                                    <span className="text-xs text-gray-500">{bloccoLabel}</span>
+                                    <div className="flex items-center gap-2 flex-wrap min-w-0">
+                                      {badgesGiurati}
+                                    </div>
+                                    <span className="justify-self-start">{statoBadge}</span>
+                                  </div>
                                 </div>
                               )
                             })}
-                          </div>
-                          </div>
                           </div>
                         </div>
                       )
@@ -837,8 +847,54 @@ export default function DashboardPage() {
                     {aperto && (
                       <div className="px-5 pb-5 border-t border-gray-100 pt-4">
                         {valRacconto.length > 0 && (
-                          <div className="mb-4 overflow-x-auto">
-                            <div className="space-y-2 min-w-[520px]">
+                          <div className="mb-4">
+                            {/* Card impilate — solo mobile */}
+                            <div className="sm:hidden space-y-2">
+                              {valRacconto.map(v => {
+                                const totale = (v.criterio_a ?? 0) + (v.criterio_b ?? 0) + (v.criterio_c ?? 0) + (v.criterio_d ?? 0) + (v.bonus ? 1 : 0)
+                                const giuratoInfo = giurati.find(g => g.id === v.assegnazioni?.giurato_id)
+                                const cfg = TIPO_CONFIG[giuratoInfo?.tipo_giurato] || TIPO_CONFIG.lettore
+                                return (
+                                  <div key={v.id} className="bg-gray-50 rounded-lg p-3 text-xs">
+                                    <div className="flex items-center gap-1.5 mb-2">
+                                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cfg.badge}`}>{cfg.label}</span>
+                                      <span className="text-gray-700 font-medium">{v.assegnazioni?.profiles?.nome} {v.assegnazioni?.profiles?.cognome}</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                                      {CRITERI.map(c => (
+                                        <div key={c.key} className="flex justify-between">
+                                          <span className="text-gray-400">{c.label}</span>
+                                          <span className="font-medium text-gray-700">{v[`criterio_${c.key}`]}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <div className="flex justify-between mt-2 pt-2 border-t border-gray-200">
+                                      <span className="text-gray-400">Bonus: {v.bonus ? '+1' : '—'}</span>
+                                      <span className="font-semibold text-gray-800">Totale: {totale}</span>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                              {risultatoCompleto && m.media_complessiva && (
+                                <div className="bg-gray-100 border border-gray-200 rounded-lg p-3 text-xs">
+                                  <p className="text-gray-500 font-medium uppercase text-[10px] tracking-wide mb-2">Media</p>
+                                  <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                                    {CRITERI.map(c => (
+                                      <div key={c.key} className="flex justify-between">
+                                        <span className="text-gray-400">{c.label}</span>
+                                        <span className="font-semibold text-gray-700">{m[`media_${c.key}`]}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <div className="flex justify-between mt-2 pt-2 border-t border-gray-200">
+                                    <span className="text-gray-300">Bonus: —</span>
+                                    <span className="font-bold text-gray-900">Totale: {m.media_complessiva}</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            {/* Tabella a colonne — solo desktop */}
+                            <div className="hidden sm:block space-y-2">
                               <div className="grid grid-cols-8 gap-2 text-[10px] text-gray-400 uppercase px-2">
                                 <span className="col-span-2">Giurato</span>
                                 {CRITERI.map(c => <span key={c.key} className="text-center">{c.label}</span>)}
