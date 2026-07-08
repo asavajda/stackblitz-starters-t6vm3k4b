@@ -13,6 +13,12 @@ export default function LoginPage() {
     setCaricamento(true)
     setErrore('')
 
+    // Ripulisce eventuali sessioni precedenti corrotte/scadute rimaste nel
+    // browser (es. da vecchi test o da un primo accesso via link magico):
+    // senza questo passaggio, un token non più valido può bloccare il
+    // login anche con credenziali corrette, in modo silenzioso.
+    await supabase.auth.signOut().catch(() => {})
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
       setErrore('Email o password non corretti.')
