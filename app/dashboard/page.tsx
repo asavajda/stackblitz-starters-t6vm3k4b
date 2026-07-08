@@ -85,10 +85,10 @@ function SortBar({ sortKey, sortDir, onChange, showMedia }: {
   return (
     <>
       {/* Mobile: un unico menu a tendina invece di 3-4 bottoni separati */}
-      <div className="flex sm:hidden items-center gap-2">
+      <div className="flex sm:hidden items-center gap-2 flex-1 min-w-0">
         <span className="text-xs text-gray-400 shrink-0">Ordina:</span>
         <select value={sortKey} onChange={e => onChange(e.target.value as SortKey, sortDir)}
-          className="text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-gray-300">
+          className="flex-1 min-w-0 text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-gray-300">
           {opzioni.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
         </select>
         <button onClick={() => onChange(sortKey, sortDir === 'asc' ? 'desc' : 'asc')}
@@ -458,20 +458,22 @@ export default function DashboardPage() {
                 + Carica racconto
               </button>
             </div>
-            <div className="flex items-center gap-3 mb-4 flex-wrap">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 sm:flex-wrap">
               <input type="text" placeholder="Cerca per titolo o autore..."
                 value={raccontiFilter} onChange={e => setRaccontiFilter(e.target.value)}
-                className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400 shrink-0">Filtra per:</span>
-                <select value={raccontiStato} onChange={e => setRaccontiStato(e.target.value)}
-                  className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
-                  <option value="">Tutti gli stati</option>
-                  {Object.entries(STATI_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                </select>
+                className="sm:flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
+              <div className="flex gap-3 sm:contents">
+                <div className="flex-1 sm:flex-initial min-w-0 flex items-center gap-2">
+                  <span className="text-xs text-gray-400 shrink-0">Filtra per:</span>
+                  <select value={raccontiStato} onChange={e => setRaccontiStato(e.target.value)}
+                    className="flex-1 sm:flex-initial min-w-0 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
+                    <option value="">Tutti gli stati</option>
+                    {Object.entries(STATI_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                </div>
+                <SortBar sortKey={raccontiSort} sortDir={raccontiDir}
+                  onChange={(k, d) => { setRaccontiSort(k); setRaccontiDir(d) }} />
               </div>
-              <SortBar sortKey={raccontiSort} sortDir={raccontiDir}
-                onChange={(k, d) => { setRaccontiSort(k); setRaccontiDir(d) }} />
             </div>
             {raccontiFiltrati.length === 0
               ? <p className="text-xs text-gray-300">Nessun racconto trovato</p>
