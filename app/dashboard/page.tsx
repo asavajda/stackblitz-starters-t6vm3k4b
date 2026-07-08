@@ -337,10 +337,15 @@ export default function DashboardPage() {
     let list = medie.filter(m => {
       const racconto = racconti.find(r => r.id === m.racconto_id)
       if (!racconto) return false
-      // "valutato" significa che entrambi i giurati hanno inviato la loro valutazione
-      // per questo racconto (vedi /api/completa-valutazione) — e' il criterio giusto,
-      // non il completamento del blocco (che e' solo la conferma finale del bonus)
-      if (!['valutato', 'finalista', 'eliminato'].includes(racconto.stato)) return false
+      // Mostriamo il racconto nei Risultati non appena esiste ALMENO UNA
+      // valutazione (anche parziale, in attesa del secondo giudice),
+      // così da avere visibilità immediata sull'avanzamento. La media
+      // "definitiva" (racconto.stato === 'valutato') si ottiene solo
+      // quando tutti i giudici assegnati hanno completato (vedi
+      // /api/completa-valutazione), e viene segnalata con un badge.
+      const haAlmenoUnaValutazione = (m.num_valutazioni ?? 0) > 0
+      const statoRilevante = ['valutato', 'finalista', 'eliminato'].includes(racconto.stato)
+      if (!haAlmenoUnaValutazione && !statoRilevante) return false
       const matchTesto = m.titolo?.toLowerCase().includes(risFilter.toLowerCase()) ||
         autoreLabel(racconto).toLowerCase().includes(risFilter.toLowerCase())
       return matchTesto
@@ -776,6 +781,9 @@ export default function DashboardPage() {
                 const racconto = racconti.find(r => r.id === m.racconto_id)
                 const autore = racconto ? autoreLabel(racconto) : ''
                 const aperto = risAperti[m.racconto_id] ?? false
+                const numAssegnati = assegnazioniEsistenti.filter(a => a.racconto_id === m.racconto_id).length
+                const numValutazioni = m.num_valutazioni ?? 0
+                const risultatoCompleto = numAssegnati > 0 && numValutazioni >= numAssegnati
                 return (
                   <div key={m.racconto_id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                     <div className="w-full flex items-center justify-between gap-3 px-5 py-3">
@@ -790,6 +798,11 @@ export default function DashboardPage() {
                       </button>
                       <div className="flex items-center gap-3 shrink-0">
                         {m.media_complessiva && <span className="text-lg font-semibold text-gray-800">{m.media_complessiva}</span>}
+                        <span className={`text-xs px-3 py-1 rounded-full font-medium ${
+                          risultatoCompleto ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {risultatoCompleto ? `✓ Completo (${numValutazioni}/${numAssegnati})` : `⏳ Parziale (${numValutazioni}/${numAssegnati || '?'})`}
+                        </span>
                         <span className={`text-xs px-3 py-1 rounded-full font-medium ${STATO_BADGE[m.stato]}`}>{fmt(m.stato)}</span>
                         <div className="flex items-center gap-2">
                           {(['finalista', 'eliminato'] as const).map(key => (
