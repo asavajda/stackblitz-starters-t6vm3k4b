@@ -706,13 +706,15 @@ export default function DashboardPage() {
 
             {/* Lista blocchi esistenti */}
             <div>
-              <div className="flex items-center gap-3 mb-4 flex-wrap">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 sm:flex-wrap">
                 <input type="text" placeholder="Cerca per titolo o autore..."
                   value={assFilter} onChange={e => setAssFilter(e.target.value)}
-                  className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
-                <SortBar sortKey={assSort} sortDir={assDir}
-                  onChange={(k, d) => { setAssSort(k); setAssDir(d) }} />
-                <button onClick={carica} className="text-xs text-gray-400 hover:text-gray-600">Aggiorna</button>
+                  className="sm:flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
+                <div className="flex items-center gap-3 sm:contents">
+                  <SortBar sortKey={assSort} sortDir={assDir}
+                    onChange={(k, d) => { setAssSort(k); setAssDir(d) }} />
+                  <button onClick={carica} className="text-xs text-gray-400 hover:text-gray-600 shrink-0">Aggiorna</button>
+                </div>
               </div>
 
               {sezioniAssegnazioni.map(({ label, list }) => (
@@ -846,10 +848,10 @@ export default function DashboardPage() {
         {/* RISULTATI */}
         {sezione === 'risultati' && (
           <div className="space-y-3">
-            <div className="flex items-center gap-3 mb-4 flex-wrap">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 sm:flex-wrap">
               <input type="text" placeholder="Cerca per titolo o autore..."
                 value={risFilter} onChange={e => setRisFilter(e.target.value)}
-                className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
+                className="sm:flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
               <SortBar sortKey={risSort} sortDir={risDir} showMedia
                 onChange={(k, d) => { setRisSort(k); setRisDir(d) }} />
             </div>
@@ -1128,23 +1130,25 @@ export default function DashboardPage() {
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap">
                 <input type="text" placeholder="Cerca per nome..."
                   value={giuratiFilter} onChange={e => setGiuratiFilter(e.target.value)}
-                  className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
-                <div className="flex items-center gap-1">
-                  <span className="text-xs text-gray-400">Ordina:</span>
-                  {(['cognome', 'nome'] as const).map(k => (
-                    <button key={k} onClick={() => setGiuratiSort(k)}
-                      className={`text-xs px-2 py-1 rounded border transition-colors capitalize ${giuratiSort === k ? 'bg-gray-800 text-white border-gray-800' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
-                      {k}
-                    </button>
-                  ))}
+                  className="sm:flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-gray-400">Ordina:</span>
+                    {(['cognome', 'nome'] as const).map(k => (
+                      <button key={k} onClick={() => setGiuratiSort(k)}
+                        className={`text-xs px-2 py-1 rounded border transition-colors capitalize ${giuratiSort === k ? 'bg-gray-800 text-white border-gray-800' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                        {k}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-400 whitespace-nowrap">
+                    {giurati.filter(g => g.attivo !== false).length} attivi · {giurati.filter(g => g.attivo === false).length} disabilitati
+                  </p>
+                  <button onClick={carica} className="text-xs text-gray-400 hover:text-gray-600 shrink-0">Aggiorna</button>
                 </div>
-                <p className="text-xs text-gray-400 whitespace-nowrap">
-                  {giurati.filter(g => g.attivo !== false).length} attivi · {giurati.filter(g => g.attivo === false).length} disabilitati
-                </p>
-                <button onClick={carica} className="text-xs text-gray-400 hover:text-gray-600">Aggiorna</button>
               </div>
               {giuratiFiltrati.map(g => {
                 const cfg = TIPO_CONFIG[g.tipo_giurato] || TIPO_CONFIG.lettore
