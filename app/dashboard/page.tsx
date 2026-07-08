@@ -86,7 +86,7 @@ function SortBar({ sortKey, sortDir, onChange, showMedia }: {
     <>
       {/* Mobile: un unico menu a tendina invece di 3-4 bottoni separati */}
       <div className="flex sm:hidden items-center gap-2 flex-1 min-w-0">
-        <span className="text-xs text-gray-400 shrink-0">Ordina:</span>
+        <span className="hidden sm:inline text-xs text-gray-400 shrink-0">Ordina:</span>
         <select value={sortKey} onChange={e => onChange(e.target.value as SortKey, sortDir)}
           className="flex-1 min-w-0 text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-gray-300">
           {opzioni.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
@@ -464,7 +464,7 @@ export default function DashboardPage() {
                 className="sm:flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
               <div className="flex gap-3 sm:contents">
                 <div className="flex-1 sm:flex-initial min-w-0 flex items-center gap-2">
-                  <span className="text-xs text-gray-400 shrink-0">Filtra per:</span>
+                  <span className="hidden sm:inline text-xs text-gray-400 shrink-0">Filtra per:</span>
                   <select value={raccontiStato} onChange={e => setRaccontiStato(e.target.value)}
                     className="flex-1 sm:flex-initial min-w-0 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
                     <option value="">Tutti gli stati</option>
