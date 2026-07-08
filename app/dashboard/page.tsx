@@ -679,7 +679,15 @@ export default function DashboardPage() {
                           </div>
                           <div className="divide-y divide-gray-100">
                             {list.map(r => {
-                              const assegnazioniRacconto = assegnazioniEsistenti.filter(a => a.racconto_id === r.id)
+                              const assegnazioniRacconto = assegnazioniEsistenti
+                                .filter(a => a.racconto_id === r.id)
+                                .slice()
+                                .sort((a, b) => {
+                                  const ga = giurati.find(x => x.id === a.giurato_id)
+                                  const gb = giurati.find(x => x.id === b.giurato_id)
+                                  const ordine: Record<string, number> = { interno: 0, lettore: 1, qualita: 2 }
+                                  return (ordine[ga?.tipo_giurato] ?? 9) - (ordine[gb?.tipo_giurato] ?? 9)
+                                })
                               const bloccoId = assegnazioniRacconto[0]?.blocco_id
                               return (
                                 <div key={r.id} className="grid grid-cols-[minmax(0,1fr)_90px_minmax(0,2fr)_110px] gap-4 px-4 py-3 items-center">
