@@ -1134,15 +1134,15 @@ export default function DashboardPage() {
                             </span>
                             <span className="text-sm font-semibold text-gray-800">Totale: {totale}</span>
                           </div>
-                          <div className="grid grid-cols-5 gap-2 text-xs mb-2">
+                          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 text-xs mb-2">
                             {CRITERI.map(c => (
-                              <div key={c.key} className="text-center">
-                                <p className="text-[10px] text-gray-400 uppercase">{c.label}</p>
+                              <div key={c.key} className="text-center min-w-0">
+                                <p className="text-[10px] text-gray-400 uppercase break-words">{c.label}</p>
                                 <p className="font-medium text-gray-700">{v[`criterio_${c.key}`]}</p>
                               </div>
                             ))}
-                            <div className="text-center">
-                              <p className="text-[10px] text-gray-400 uppercase">Bonus</p>
+                            <div className="text-center min-w-0">
+                              <p className="text-[10px] text-gray-400 uppercase break-words">Bonus</p>
                               <p className="font-medium text-gray-700">{v.bonus ? '+1 ★' : '—'}</p>
                             </div>
                           </div>
@@ -1169,15 +1169,15 @@ export default function DashboardPage() {
                             <span className="text-sm font-semibold text-green-700">Media</span>
                             <span className="text-sm font-semibold text-green-800">Totale: {mediaTotale}</span>
                           </div>
-                          <div className="grid grid-cols-5 gap-2 text-xs">
+                          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 text-xs">
                             {[mediaA, mediaB, mediaC, mediaD].map((m, idx) => (
-                              <div key={idx} className="text-center">
-                                <p className="text-[10px] text-green-400 uppercase">{CRITERI[idx].label}</p>
+                              <div key={idx} className="text-center min-w-0">
+                                <p className="text-[10px] text-green-400 uppercase break-words">{CRITERI[idx].label}</p>
                                 <p className="font-medium text-green-700">{m}</p>
                               </div>
                             ))}
-                            <div className="text-center">
-                              <p className="text-[10px] text-green-400 uppercase">Bonus</p>
+                            <div className="text-center min-w-0">
+                              <p className="text-[10px] text-green-400 uppercase break-words">Bonus</p>
                               <p className="font-medium text-green-700">{mediaBonus}</p>
                             </div>
                           </div>
