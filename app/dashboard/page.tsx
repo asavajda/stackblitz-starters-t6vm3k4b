@@ -458,24 +458,46 @@ export default function DashboardPage() {
                   const badgeLabel = (r.stato === 'valutato' || (r.stato === 'in_valutazione' && nValutazioni >= 2)) ? 'Valutato' : fmt(r.stato)
                   const badgeClass = (r.stato === 'valutato' || (r.stato === 'in_valutazione' && nValutazioni >= 2)) ? STATO_BADGE['valutato'] : STATO_BADGE[r.stato]
                   return (
-                    <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between gap-4">
-                      <div>
+                    <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-4">
+                      {/* Card — solo mobile */}
+                      <div className="sm:hidden">
                         <p className="text-sm font-medium text-gray-800">{r.titolo}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">{autoreLabel(r)} · {new Date(r.inviato_il).toLocaleDateString('it-IT')}</p>
+                        <p className="text-xs text-gray-400 mt-0.5 mb-3">{autoreLabel(r)} · {new Date(r.inviato_il).toLocaleDateString('it-IT')}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {inCorso && nAssegnati > 0 && (
+                            <span className="text-xs text-gray-400">{nValutazioni}/{nAssegnati}</span>
+                          )}
+                          <span className={`text-xs px-3 py-1 rounded-full font-medium ${badgeClass}`}>
+                            {badgeLabel}
+                          </span>
+                          {nAssegnati > 0 && (
+                            <button onClick={() => setRaccontoDettaglio(r)}
+                              className="text-xs px-3 py-1 rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">
+                              Vedi valutazioni
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {inCorso && nAssegnati > 0 && (
-                          <span className="text-xs text-gray-400">{nValutazioni}/{nAssegnati}</span>
-                        )}
-                        <span className={`text-xs px-3 py-1 rounded-full font-medium ${badgeClass}`}>
-                          {badgeLabel}
-                        </span>
-                        {nAssegnati > 0 && (
-                          <button onClick={() => setRaccontoDettaglio(r)}
-                            className="text-xs px-3 py-1 rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">
-                            Vedi valutazioni
-                          </button>
-                        )}
+                      {/* Riga — solo desktop */}
+                      <div className="hidden sm:flex items-center justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">{r.titolo}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{autoreLabel(r)} · {new Date(r.inviato_il).toLocaleDateString('it-IT')}</p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {inCorso && nAssegnati > 0 && (
+                            <span className="text-xs text-gray-400">{nValutazioni}/{nAssegnati}</span>
+                          )}
+                          <span className={`text-xs px-3 py-1 rounded-full font-medium ${badgeClass}`}>
+                            {badgeLabel}
+                          </span>
+                          {nAssegnati > 0 && (
+                            <button onClick={() => setRaccontoDettaglio(r)}
+                              className="text-xs px-3 py-1 rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">
+                              Vedi valutazioni
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )
@@ -757,7 +779,7 @@ export default function DashboardPage() {
               ? <p className="text-xs text-gray-300">Nessun racconto finalista ancora</p>
               : raccontiFinalisti.map(r => (
                 <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-5">
-                  <div className="flex items-start justify-between gap-4 mb-4">
+                  <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
                     <div>
                       <p className="text-sm font-medium text-gray-800">{r.titolo}</p>
                       <p className="text-xs text-gray-400 mt-0.5">Autore: {autoreLabel(r)}</p>
@@ -773,7 +795,7 @@ export default function DashboardPage() {
                         )
                     }
                   </div>
-                  <div className="flex items-center gap-2 border-t border-gray-100 pt-3">
+                  <div className="flex items-center gap-2 border-t border-gray-100 pt-3 flex-wrap">
                     <p className="text-xs text-gray-400 mr-2">Stato:</p>
                     {(['vincitore', 'eliminato'] as const).map(key => (
                       <button key={key} onClick={() => aggiornaStato(r.id, key)}
@@ -1098,18 +1120,18 @@ export default function DashboardPage() {
                 const disabilitato = g.attivo === false
                 return (
                   <div key={g.id} className={`bg-white rounded-xl border p-4 ${disabilitato ? 'border-gray-100 opacity-50' : 'border-gray-200'}`}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cfg.badge}`}>{cfg.label}</span>
-                        <div>
-                          <p className="text-sm font-medium text-gray-800">{g.nome} {g.cognome}</p>
-                          <p className="text-xs text-gray-400 mt-0.5">{g.email}</p>
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 ${cfg.badge}`}>{cfg.label}</span>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-800 truncate">{g.nome} {g.cognome}</p>
+                          <p className="text-xs text-gray-400 mt-0.5 truncate">{g.email}</p>
                         </div>
                         {disabilitato && (
-                          <span className="text-[10px] text-red-400 border border-red-200 px-1.5 py-0.5 rounded">disabilitato</span>
+                          <span className="text-[10px] text-red-400 border border-red-200 px-1.5 py-0.5 rounded shrink-0">disabilitato</span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         {!disabilitato && (
                           <button onClick={() => generaLink(g.id, g.email)} disabled={generando === g.id}
                             className="text-xs px-3 py-1 rounded-lg border border-blue-200 text-blue-500 hover:bg-blue-50 disabled:opacity-50">
