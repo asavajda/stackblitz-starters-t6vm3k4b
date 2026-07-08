@@ -239,19 +239,28 @@ export default function GiuratoPage() {
 
     for (const a of assDelBlocco) {
       if (a.completata) {
-        await supabase.from('valutazioni')
+        const { error: bonusError } = await supabase.from('valutazioni')
           .update({ bonus: a.assegnazione_id === bonusAssId })
           .eq('assegnazione_id', a.assegnazione_id)
+        if (bonusError) console.error('[CompletaBlocco] Errore aggiornando bonus:', bonusError)
       }
     }
 
     // Salva completamento blocco per questo giurato
-    await supabase.from('blocchi_giurato').upsert({
+    const { data: bgData, error: bgError } = await supabase.from('blocchi_giurato').upsert({
       blocco_id,
       giurato_id: utenteId,
       completato: true,
       completato_il: new Date().toISOString(),
-    }, { onConflict: 'blocco_id,giurato_id' })
+    }, { onConflict: 'blocco_id,giurato_id' }).select()
+
+    if (bgError) {
+      console.error('[CompletaBlocco] Errore salvando il completamento del blocco:', bgError)
+    } else if (!bgData || bgData.length === 0) {
+      console.error('[CompletaBlocco] ATTENZIONE: 0 righe salvate per il completamento del blocco. Probabile blocco da policy RLS.')
+    } else {
+      console.log('[CompletaBlocco] Completamento salvato correttamente:', bgData)
+    }
 
     setBlocchiCompletati(prev => ({ ...prev, [blocco_id]: true }))
     setBlocchiAperti(prev => ({ ...prev, [blocco_id]: false }))
