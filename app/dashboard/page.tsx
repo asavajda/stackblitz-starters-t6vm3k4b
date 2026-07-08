@@ -400,7 +400,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50">
       <div className={`border-b px-4 sm:px-8 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-3 ${isStaging ? 'bg-[#4A90A4] border-[#3a7a8e]' : 'bg-white border-gray-200'}`}>
         <img src="/logo_tohorror_dark.png" alt="TOHorror" className="h-10 sm:h-16 shrink-0" />
-        <div className="order-3 sm:order-none w-full sm:w-auto">
+        <div className={`order-3 sm:order-none w-full sm:w-auto pt-3 mt-1 border-t sm:border-0 sm:pt-0 sm:mt-0 ${isStaging ? 'border-white/20' : 'border-gray-100'}`}>
           <div className="flex flex-wrap sm:flex-nowrap justify-center sm:justify-start gap-2">
             {SEZIONI.map(s => (
               <button key={s} onClick={() => cambiaSezione(s)}
