@@ -833,10 +833,13 @@ export default function DashboardPage() {
                               </div>
                               {valRacconto.map(v => {
                                 const totale = (v.criterio_a ?? 0) + (v.criterio_b ?? 0) + (v.criterio_c ?? 0) + (v.criterio_d ?? 0) + (v.bonus ? 1 : 0)
+                                const giuratoInfo = giurati.find(g => g.id === v.assegnazioni?.giurato_id)
+                                const cfg = TIPO_CONFIG[giuratoInfo?.tipo_giurato] || TIPO_CONFIG.lettore
                                 return (
-                                  <div key={v.id} className="grid grid-cols-8 gap-2 bg-gray-50 rounded-lg px-2 py-1.5 text-xs">
-                                    <span className="col-span-2 text-gray-600 truncate">
-                                      {v.assegnazioni?.profiles?.nome} {v.assegnazioni?.profiles?.cognome}
+                                  <div key={v.id} className="grid grid-cols-8 gap-2 bg-gray-50 rounded-lg px-2 py-1.5 text-xs items-center">
+                                    <span className="col-span-2 text-gray-600 truncate flex items-center gap-1.5">
+                                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 ${cfg.badge}`}>{cfg.label}</span>
+                                      <span className="truncate">{v.assegnazioni?.profiles?.nome} {v.assegnazioni?.profiles?.cognome}</span>
                                     </span>
                                     {CRITERI.map(c => (
                                       <span key={c.key} className="text-center text-gray-700 font-medium">{v[`criterio_${c.key}`]}</span>
