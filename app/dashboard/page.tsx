@@ -76,14 +76,35 @@ function SortBar({ sortKey, sortDir, onChange, showMedia }: {
       {label} {sortKey === k ? (sortDir === 'asc' ? '↑' : '↓') : ''}
     </button>
   )
+  const opzioni: { key: SortKey; label: string }[] = [
+    ...(showMedia ? [{ key: 'media' as SortKey, label: 'Media' }] : []),
+    { key: 'titolo', label: 'Titolo' },
+    { key: 'data', label: 'Data' },
+    { key: 'stato', label: 'Stato' },
+  ]
   return (
-    <div className="flex items-center gap-1">
-      <span className="text-xs text-gray-400 mr-1">Ordina:</span>
-      {showMedia && btn('media', 'Media')}
-      {btn('titolo', 'Titolo')}
-      {btn('data', 'Data')}
-      {btn('stato', 'Stato')}
-    </div>
+    <>
+      {/* Mobile: un unico menu a tendina invece di 3-4 bottoni separati */}
+      <div className="flex sm:hidden items-center gap-2">
+        <span className="text-xs text-gray-400 shrink-0">Ordina:</span>
+        <select value={sortKey} onChange={e => onChange(e.target.value as SortKey, sortDir)}
+          className="text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-gray-300">
+          {opzioni.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
+        </select>
+        <button onClick={() => onChange(sortKey, sortDir === 'asc' ? 'desc' : 'asc')}
+          className="text-xs px-2 py-1 rounded border border-gray-200 text-gray-500 hover:bg-gray-50 shrink-0">
+          {sortDir === 'asc' ? '↑' : '↓'}
+        </button>
+      </div>
+      {/* Desktop: bottoni originali, invariati */}
+      <div className="hidden sm:flex items-center gap-1">
+        <span className="text-xs text-gray-400 mr-1">Ordina:</span>
+        {showMedia && btn('media', 'Media')}
+        {btn('titolo', 'Titolo')}
+        {btn('data', 'Data')}
+        {btn('stato', 'Stato')}
+      </div>
+    </>
   )
 }
 
