@@ -136,11 +136,34 @@ export default function GiuratoPage() {
     }
   }
 
+  function isMobileDevice() {
+    if (typeof navigator === 'undefined') return false
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+  }
+
   async function apriRacconto(assegnazione: any) {
     if (assegnazione.tipo_invio === 'file') {
-      const filePath = encodeURIComponent(assegnazione.file_path)
-      const titolo = encodeURIComponent(assegnazione.titolo || 'Racconto')
-      window.open(`/racconto/${assegnazione.racconto_id}/visualizza?file_path=${filePath}&titolo=${titolo}`, '_blank')
+      if (isMobileDevice()) {
+        // Su mobile apriamo il file direttamente (fuori dalla nostra pagina
+        // con iframe): il visualizzatore nativo del dispositivo garantisce
+        // uno zoom pienamente funzionante. Si perde il titolo scheda
+        // personalizzato, compromesso accettato per la migliore leggibilità.
+        const { data } = await supabase.storage
+          .from('racconti-files')
+          .createSignedUrl(assegnazione.file_path, 3600)
+        if (data?.signedUrl) {
+          const estensione = assegnazione.file_path?.split('.').pop()?.toLowerCase()
+          if (estensione === 'pdf') {
+            window.open(data.signedUrl, '_blank')
+          } else {
+            window.open(`https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(data.signedUrl)}`, '_blank')
+          }
+        }
+      } else {
+        const filePath = encodeURIComponent(assegnazione.file_path)
+        const titolo = encodeURIComponent(assegnazione.titolo || 'Racconto')
+        window.open(`/racconto/${assegnazione.racconto_id}/visualizza?file_path=${filePath}&titolo=${titolo}`, '_blank')
+      }
     } else if (assegnazione.tipo_invio === 'testo') {
       window.open(`/racconto/${assegnazione.racconto_id}`, '_blank')
     }
