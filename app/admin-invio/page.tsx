@@ -118,17 +118,16 @@ if (!profilo?.is_admin) { router.push('/login'); return }
     let filePath = null
 
     if (tipoInvio === 'file' && file) {
-      const ext = file.name.split('.').pop()
-      const path = `pubblico/${Date.now()}.${ext}`
-      const { error: uploadError } = await supabase.storage
-        .from('racconti-files')
-        .upload(path, file)
-      if (uploadError) {
-        setMessaggiErrore(['Errore nel caricamento del file.'])
+      const uploadForm = new FormData()
+      uploadForm.append('file', file)
+      const res = await fetch('/api/converti-pdf', { method: 'POST', body: uploadForm })
+      const data = await res.json()
+      if (!res.ok) {
+        setMessaggiErrore(['Errore nel caricamento del file: ' + (data.error || 'sconosciuto')])
         setCaricamento(false)
         return
       }
-      filePath = path
+      filePath = data.path
     }
 
     const { data: { user } } = await supabase.auth.getUser()
@@ -296,13 +295,16 @@ if (!profilo?.is_admin) { router.push('/login'); return }
             </div>
           ) : (
             <div>
-              <label className="block text-sm text-gray-600 mb-1">File (PDF, DOCX)</label>
+              <label className="block text-sm text-gray-600 mb-1">File</label>
               <input
                 type="file"
-                accept=".pdf,.docx"
+                accept=".pdf,.doc,.docx,.odt,.rtf,.txt,.jpg,.jpeg,.png"
                 onChange={e => { setFile(e.target.files?.[0] || null); setCampiErrore(p => p.filter(c => c !== 'file')) }}
                 className={`w-full text-sm ${campiErrore.includes('file') ? 'text-red-500' : 'text-gray-500'}`}
               />
+              <p className="text-xs text-gray-400 mt-1">
+                Qualsiasi formato va bene (Word, ODT, RTF, immagini...): verrà convertito automaticamente in PDF.
+              </p>
               <p className="text-xs text-amber-600 mt-1">
                 Il racconto non deve superare 18.000 battute (spazi inclusi).
               </p>
