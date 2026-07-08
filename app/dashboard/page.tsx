@@ -451,10 +451,10 @@ export default function DashboardPage() {
         {/* RACCONTI */}
         {sezione === 'racconti' && (
           <div className="space-y-3">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-2">
               <p className="text-sm text-gray-400">{racconti.length} racconti ricevuti</p>
               <button onClick={() => router.push('/admin-invio')}
-                className="text-sm bg-gray-800 text-white px-5 py-2 rounded-lg hover:bg-gray-700 font-medium">
+                className="w-full sm:w-auto text-sm bg-gray-800 text-white px-5 py-2 rounded-lg hover:bg-gray-700 font-medium">
                 + Carica racconto
               </button>
             </div>
