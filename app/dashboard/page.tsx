@@ -462,11 +462,14 @@ export default function DashboardPage() {
               <input type="text" placeholder="Cerca per titolo o autore..."
                 value={raccontiFilter} onChange={e => setRaccontiFilter(e.target.value)}
                 className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
-              <select value={raccontiStato} onChange={e => setRaccontiStato(e.target.value)}
-                className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
-                <option value="">Tutti gli stati</option>
-                {Object.entries(STATI_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-400 shrink-0">Filtra per:</span>
+                <select value={raccontiStato} onChange={e => setRaccontiStato(e.target.value)}
+                  className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
+                  <option value="">Tutti gli stati</option>
+                  {Object.entries(STATI_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+              </div>
               <SortBar sortKey={raccontiSort} sortDir={raccontiDir}
                 onChange={(k, d) => { setRaccontiSort(k); setRaccontiDir(d) }} />
             </div>
