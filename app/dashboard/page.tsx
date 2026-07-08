@@ -398,22 +398,24 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className={`border-b px-8 py-4 flex items-center justify-between ${isStaging ? 'bg-[#4A90A4] border-[#3a7a8e]' : 'bg-white border-gray-200'}`}>
-        <img src="/logo_tohorror_dark.png" alt="TOHorror" className="h-16" />
-        <div className="flex gap-2">
-          {SEZIONI.map(s => (
-            <button key={s} onClick={() => cambiaSezione(s)}
-              className={`px-4 py-1.5 rounded-lg text-sm capitalize transition-colors ${sezione === s ? (isStaging ? 'bg-white/20 text-white' : 'bg-gray-800 text-white') : (isStaging ? 'text-white/70 hover:bg-white/10' : 'text-gray-500 hover:bg-gray-100')}`}>
-              {s}
-            </button>
-          ))}
+      <div className={`border-b px-4 sm:px-8 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-3 ${isStaging ? 'bg-[#4A90A4] border-[#3a7a8e]' : 'bg-white border-gray-200'}`}>
+        <img src="/logo_tohorror_dark.png" alt="TOHorror" className="h-10 sm:h-16 shrink-0" />
+        <div className="order-3 sm:order-none w-full sm:w-auto overflow-x-auto">
+          <div className="flex gap-2 min-w-max">
+            {SEZIONI.map(s => (
+              <button key={s} onClick={() => cambiaSezione(s)}
+                className={`px-4 py-1.5 rounded-lg text-sm capitalize transition-colors whitespace-nowrap ${sezione === s ? (isStaging ? 'bg-white/20 text-white' : 'bg-gray-800 text-white') : (isStaging ? 'text-white/70 hover:bg-white/10' : 'text-gray-500 hover:bg-gray-100')}`}>
+                {s}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <button onClick={() => router.push('/giurato')}
-            className={`text-sm transition-colors ${isStaging ? 'text-white/70 hover:text-white' : 'text-gray-500 hover:text-gray-800'}`}>
+            className={`text-sm transition-colors whitespace-nowrap ${isStaging ? 'text-white/70 hover:text-white' : 'text-gray-500 hover:text-gray-800'}`}>
             Area giurato
           </button>
-          <div className="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center text-xs font-semibold">
+          <div className="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center text-xs font-semibold shrink-0">
             {profilo?.nome?.[0]?.toUpperCase()}{profilo?.cognome?.[0]?.toUpperCase()}
           </div>
           <button onClick={async () => { await supabase.auth.signOut(); router.push('/login') }}
@@ -423,7 +425,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="px-8 py-8 max-w-5xl mx-auto">
+      <div className="px-4 sm:px-8 py-6 sm:py-8 max-w-5xl mx-auto">
 
         {/* RACCONTI */}
         {sezione === 'racconti' && (
@@ -435,7 +437,7 @@ export default function DashboardPage() {
                 + Carica racconto
               </button>
             </div>
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-3 mb-4 flex-wrap">
               <input type="text" placeholder="Cerca per titolo o autore..."
                 value={raccontiFilter} onChange={e => setRaccontiFilter(e.target.value)}
                 className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
@@ -494,7 +496,7 @@ export default function DashboardPage() {
               </p>
 
               {/* Selezione giurati */}
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">Giurato interno</label>
                   <select value={nuovoBloccoInterno} onChange={e => setNuovoBloccoInterno(e.target.value)}
@@ -534,7 +536,7 @@ export default function DashboardPage() {
                 {raccontiDisponibili.length === 0 && nuovoBloccoRacconti.length === 0
                   ? <p className="text-xs text-gray-300">Nessun racconto disponibile da assegnare</p>
                   : (
-                    <div className="flex gap-2 items-stretch">
+                    <div className="flex flex-col sm:flex-row gap-2 items-stretch">
                       {/* Colonna sinistra — disponibili */}
                       <div className="flex-1 flex flex-col">
                         <span className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">
@@ -574,7 +576,7 @@ export default function DashboardPage() {
                       </div>
 
                       {/* Frecce centrali */}
-                      <div className="flex flex-col justify-center gap-2 pt-10">
+                      <div className="flex flex-row sm:flex-col justify-center gap-2 py-1 sm:pt-10">
                         <button
                           onClick={() => {
                             setNuovoBloccoRacconti(prev => [...prev, ...selectedDisponibili.filter(id => !prev.includes(id))])
@@ -649,7 +651,7 @@ export default function DashboardPage() {
 
             {/* Lista blocchi esistenti */}
             <div>
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center gap-3 mb-4 flex-wrap">
                 <input type="text" placeholder="Cerca per titolo o autore..."
                   value={assFilter} onChange={e => setAssFilter(e.target.value)}
                   className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
@@ -671,6 +673,8 @@ export default function DashboardPage() {
                       ? <p className="text-xs text-gray-300 mb-3">Nessun racconto</p>
                       : (
                         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-3">
+                          <div className="overflow-x-auto">
+                          <div className="min-w-[640px]">
                           <div className="grid grid-cols-[minmax(0,1fr)_90px_minmax(0,2fr)_110px] gap-4 px-4 py-2 bg-gray-50 border-b border-gray-100">
                             <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Titolo</span>
                             <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Blocco</span>
@@ -719,6 +723,8 @@ export default function DashboardPage() {
                                 </div>
                               )
                             })}
+                          </div>
+                          </div>
                           </div>
                         </div>
                       )
@@ -775,7 +781,7 @@ export default function DashboardPage() {
         {/* RISULTATI */}
         {sezione === 'risultati' && (
           <div className="space-y-3">
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-3 mb-4 flex-wrap">
               <input type="text" placeholder="Cerca per titolo o autore..."
                 value={risFilter} onChange={e => setRisFilter(e.target.value)}
                 className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
@@ -831,8 +837,8 @@ export default function DashboardPage() {
                     {aperto && (
                       <div className="px-5 pb-5 border-t border-gray-100 pt-4">
                         {valRacconto.length > 0 && (
-                          <div className="mb-4">
-                            <div className="space-y-2">
+                          <div className="mb-4 overflow-x-auto">
+                            <div className="space-y-2 min-w-[520px]">
                               <div className="grid grid-cols-8 gap-2 text-[10px] text-gray-400 uppercase px-2">
                                 <span className="col-span-2">Giurato</span>
                                 {CRITERI.map(c => <span key={c.key} className="text-center">{c.label}</span>)}
@@ -891,7 +897,7 @@ export default function DashboardPage() {
               <p className="text-xs text-gray-400 mb-4">
                 Crea l'account e genera un link di accesso da inviare al giurato via WhatsApp o email.
               </p>
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 {(['nome', 'cognome'] as const).map(field => (
                   <div key={field}>
                     <label className="block text-xs text-gray-500 mb-1 capitalize">{field}</label>
@@ -962,7 +968,7 @@ export default function DashboardPage() {
                   )
                 }
                 return (
-                  <div className="grid grid-cols-2 gap-x-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
                     {colonna('interno', 'Interni')}
                     {colonna('lettore', 'Lettori')}
                   </div>
@@ -971,7 +977,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <input type="text" placeholder="Cerca per nome..."
                   value={giuratiFilter} onChange={e => setGiuratiFilter(e.target.value)}
                   className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
