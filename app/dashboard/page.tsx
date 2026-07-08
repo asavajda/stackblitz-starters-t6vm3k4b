@@ -1134,15 +1134,29 @@ export default function DashboardPage() {
                             </span>
                             <span className="text-sm font-semibold text-gray-800">Totale: {totale}</span>
                           </div>
-                          <div className="flex flex-wrap justify-center sm:grid sm:grid-cols-5 gap-x-4 gap-y-2 sm:gap-2 text-xs mb-2">
+                          {/* Elenco etichetta:valore — solo mobile */}
+                          <div className="sm:hidden grid grid-cols-2 gap-x-4 gap-y-1 text-xs mb-2">
                             {CRITERI.map(c => (
-                              <div key={c.key} className="text-center min-w-0 basis-[26%] sm:basis-auto">
-                                <p className="text-[10px] text-gray-400 uppercase break-words">{c.label}</p>
+                              <div key={c.key} className="flex justify-between">
+                                <span className="text-gray-400">{c.label}</span>
+                                <span className="font-medium text-gray-700">{v[`criterio_${c.key}`]}</span>
+                              </div>
+                            ))}
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Bonus</span>
+                              <span className="font-medium text-gray-700">{v.bonus ? '+1 ★' : '—'}</span>
+                            </div>
+                          </div>
+                          {/* Griglia a colonne — solo desktop */}
+                          <div className="hidden sm:grid sm:grid-cols-5 gap-2 text-xs mb-2">
+                            {CRITERI.map(c => (
+                              <div key={c.key} className="text-center">
+                                <p className="text-[10px] text-gray-400 uppercase">{c.label}</p>
                                 <p className="font-medium text-gray-700">{v[`criterio_${c.key}`]}</p>
                               </div>
                             ))}
-                            <div className="text-center min-w-0 basis-[26%] sm:basis-auto">
-                              <p className="text-[10px] text-gray-400 uppercase break-words">Bonus</p>
+                            <div className="text-center">
+                              <p className="text-[10px] text-gray-400 uppercase">Bonus</p>
                               <p className="font-medium text-gray-700">{v.bonus ? '+1 ★' : '—'}</p>
                             </div>
                           </div>
@@ -1169,15 +1183,29 @@ export default function DashboardPage() {
                             <span className="text-sm font-semibold text-green-700">Media</span>
                             <span className="text-sm font-semibold text-green-800">Totale: {mediaTotale}</span>
                           </div>
-                          <div className="flex flex-wrap justify-center sm:grid sm:grid-cols-5 gap-x-4 gap-y-2 sm:gap-2 text-xs">
+                          {/* Elenco etichetta:valore — solo mobile */}
+                          <div className="sm:hidden grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                             {[mediaA, mediaB, mediaC, mediaD].map((m, idx) => (
-                              <div key={idx} className="text-center min-w-0 basis-[26%] sm:basis-auto">
-                                <p className="text-[10px] text-green-400 uppercase break-words">{CRITERI[idx].label}</p>
+                              <div key={idx} className="flex justify-between">
+                                <span className="text-green-500">{CRITERI[idx].label}</span>
+                                <span className="font-medium text-green-700">{m}</span>
+                              </div>
+                            ))}
+                            <div className="flex justify-between">
+                              <span className="text-green-500">Bonus</span>
+                              <span className="font-medium text-green-700">{mediaBonus}</span>
+                            </div>
+                          </div>
+                          {/* Griglia a colonne — solo desktop */}
+                          <div className="hidden sm:grid sm:grid-cols-5 gap-2 text-xs">
+                            {[mediaA, mediaB, mediaC, mediaD].map((m, idx) => (
+                              <div key={idx} className="text-center">
+                                <p className="text-[10px] text-green-400 uppercase">{CRITERI[idx].label}</p>
                                 <p className="font-medium text-green-700">{m}</p>
                               </div>
                             ))}
-                            <div className="text-center min-w-0 basis-[26%] sm:basis-auto">
-                              <p className="text-[10px] text-green-400 uppercase break-words">Bonus</p>
+                            <div className="text-center">
+                              <p className="text-[10px] text-green-400 uppercase">Bonus</p>
                               <p className="font-medium text-green-700">{mediaBonus}</p>
                             </div>
                           </div>
