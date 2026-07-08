@@ -204,14 +204,28 @@ export default function GiuratoPage() {
     const assDelBlocco = assegnazioni.filter(a => a.blocco_id === blocco_id && a.completata)
     const altriIds = assDelBlocco.map(a => a.assegnazione_id).filter(id => id !== nuovoBonus)
 
-    await Promise.all([
+    const [risultatoNuovo, risultatoAltri] = await Promise.all([
       nuovoBonus
-        ? supabase.from('valutazioni').update({ bonus: true }).eq('assegnazione_id', nuovoBonus)
-        : Promise.resolve(),
+        ? supabase.from('valutazioni').update({ bonus: true }).eq('assegnazione_id', nuovoBonus).select()
+        : Promise.resolve(null),
       altriIds.length > 0
-        ? supabase.from('valutazioni').update({ bonus: false }).in('assegnazione_id', altriIds)
-        : Promise.resolve(),
+        ? supabase.from('valutazioni').update({ bonus: false }).in('assegnazione_id', altriIds).select()
+        : Promise.resolve(null),
     ])
+
+    // Verifico esplicitamente errori ED effettivo numero di righe modificate:
+    // Supabase con RLS può bloccare un update senza generare un errore,
+    // restituendo semplicemente zero righe aggiornate
+    if (risultatoNuovo?.error) {
+      console.error('[Bonus] Errore aggiornando il racconto con bonus:', risultatoNuovo.error)
+    } else if (nuovoBonus && (risultatoNuovo?.data?.length ?? 0) === 0) {
+      console.error('[Bonus] ATTENZIONE: 0 righe aggiornate per il bonus (assegnazione_id:', nuovoBonus, '). Probabile blocco da policy RLS.')
+    }
+    if (risultatoAltri?.error) {
+      console.error('[Bonus] Errore rimuovendo il bonus dagli altri racconti:', risultatoAltri.error)
+    } else if (altriIds.length > 0 && (risultatoAltri?.data?.length ?? 0) === 0) {
+      console.error('[Bonus] ATTENZIONE: 0 righe aggiornate rimuovendo il bonus dagli altri racconti. Probabile blocco da policy RLS.')
+    }
 
     setSalvandoBonus(false)
   }
