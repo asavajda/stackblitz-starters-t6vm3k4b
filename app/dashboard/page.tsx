@@ -824,7 +824,6 @@ export default function DashboardPage() {
                       <div className="px-5 pb-5 border-t border-gray-100 pt-4">
                         {valRacconto.length > 0 && (
                           <div className="mb-4">
-                            <p className="text-xs text-gray-500 mb-3">Caricato il: {racconto?.inviato_il ? new Date(racconto.inviato_il).toLocaleDateString('it-IT') : '-'}</p>
                             <div className="space-y-2">
                               <div className="grid grid-cols-8 gap-2 text-[10px] text-gray-400 uppercase px-2">
                                 <span className="col-span-2">Giurato</span>
