@@ -144,20 +144,23 @@ export default function GiuratoPage() {
   async function apriRacconto(assegnazione: any) {
     if (assegnazione.tipo_invio === 'file') {
       if (isMobileDevice()) {
-        // Su mobile apriamo il file direttamente (fuori dalla nostra pagina
-        // con iframe): il visualizzatore nativo del dispositivo garantisce
-        // uno zoom pienamente funzionante. Si perde il titolo scheda
-        // personalizzato, compromesso accettato per la migliore leggibilità.
+        // Su mobile i browser bloccano window.open() se non avviene in modo
+        // sincrono rispetto al click dell'utente. Apriamo subito una scheda
+        // vuota (sincrono) e le assegniamo l'URL solo dopo aver ottenuto il
+        // signed URL, così il popup non viene bloccato.
+        const finestra = window.open('', '_blank')
         const { data } = await supabase.storage
           .from('racconti-files')
           .createSignedUrl(assegnazione.file_path, 3600)
         if (data?.signedUrl) {
           const estensione = assegnazione.file_path?.split('.').pop()?.toLowerCase()
-          if (estensione === 'pdf') {
-            window.open(data.signedUrl, '_blank')
-          } else {
-            window.open(`https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(data.signedUrl)}`, '_blank')
-          }
+          const url = estensione === 'pdf'
+            ? data.signedUrl
+            : `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(data.signedUrl)}`
+          if (finestra) finestra.location.href = url
+          else window.open(url, '_blank') // fallback nel caso la scheda iniziale non si sia aperta
+        } else if (finestra) {
+          finestra.close()
         }
       } else {
         const filePath = encodeURIComponent(assegnazione.file_path)
