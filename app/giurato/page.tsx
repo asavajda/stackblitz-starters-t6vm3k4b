@@ -37,7 +37,7 @@ function Header({ profilo }: { profilo: any }) {
         <div className="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center text-xs font-semibold">
           {profilo?.nome?.[0]?.toUpperCase()}{profilo?.cognome?.[0]?.toUpperCase()}
         </div>
-        <button onClick={async () => { await supabase.auth.signOut(); router.push('/login') }}
+        <button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/login' }}
           className={`text-sm transition-colors ${isStaging ? 'text-white/70 hover:text-white' : 'text-gray-500 hover:text-gray-800'}`}>
           Logout
         </button>

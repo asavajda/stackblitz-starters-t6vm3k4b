@@ -1,11 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
 export default function LoginPage() {
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [errore, setErrore] = useState('')
@@ -29,13 +27,13 @@ export default function LoginPage() {
       .single()
 
     if (profilo?.must_change_password) {
-      router.push('/set-password?required=1')
+      window.location.href = '/set-password?required=1'
       return
     }
 
-if (profilo?.is_admin) router.push('/dashboard')
-else if (profilo?.ruolo === 'giurato') router.push('/giurato')
-else router.push('/invio')
+    if (profilo?.is_admin) window.location.href = '/dashboard'
+    else if (profilo?.ruolo === 'giurato') window.location.href = '/giurato'
+    else window.location.href = '/invio'
   }
 
   return (
