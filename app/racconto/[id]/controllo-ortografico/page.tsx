@@ -250,17 +250,38 @@ export default function ControlloOrtograficoPage({ params }: { params: { id: str
     </div>
   )
 
+  const LIMITE_CARATTERI = 10000
+  const TOLLERANZA = 300
+  const numeroCaratteri = testo.length
+  const entroLimite = numeroCaratteri <= LIMITE_CARATTERI
+  const entroTolleranza = numeroCaratteri <= LIMITE_CARATTERI + TOLLERANZA
+
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">
       <div className="max-w-2xl mx-auto bg-white rounded-xl border border-gray-200 p-8">
         <div className="flex items-center gap-2 mb-2">
           <h1 className="text-2xl font-semibold text-gray-800">{titolo}</h1>
         </div>
-        <p className="text-xs text-gray-400 mb-8 bg-gray-50 border border-gray-200 rounded p-2">
+        <p className="text-xs text-gray-400 mb-4 bg-gray-50 border border-gray-200 rounded p-2">
           Questa è una vista solo per il controllo ortografico: il testo qui mostrato è
           un'estrazione automatica usata unicamente per l'analisi. Il file originale
           inviato dall'autore non viene modificato.
         </p>
+        <div className={`text-xs rounded p-2 mb-8 border ${
+          entroLimite
+            ? 'bg-green-50 border-green-200 text-green-700'
+            : entroTolleranza
+              ? 'bg-amber-50 border-amber-200 text-amber-700'
+              : 'bg-red-50 border-red-200 text-red-700'
+        }`}>
+          {numeroCaratteri.toLocaleString('it-IT')} caratteri (spazi inclusi) su {LIMITE_CARATTERI.toLocaleString('it-IT')} consentiti
+          {' '}(tolleranza +{TOLLERANZA})
+          {entroLimite && ' ✓ entro il limite'}
+          {!entroLimite && entroTolleranza && ' ⚠ oltre il limite, ma entro la tolleranza'}
+          {!entroTolleranza && ' ✗ supera anche la tolleranza consentita'}
+          <br />
+          <span className="opacity-70">Nota: il conteggio è calcolato sul testo estratto automaticamente e potrebbe differire leggermente dall'originale.</span>
+        </div>
         <SpellCheckedText text={testo} />
       </div>
     </div>
