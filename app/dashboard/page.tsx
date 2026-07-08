@@ -849,19 +849,19 @@ export default function DashboardPage() {
                                   </div>
                                 )
                               })}
-                            </div>
-                          </div>
-                        )}
-                        {m.media_complessiva && (
-                          <div>
-                            <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Medie</p>
-                            <div className="grid grid-cols-4 gap-2">
-                              {CRITERI.map(c => (
-                                <div key={c.key} className="text-center bg-gray-50 rounded-lg py-2">
-                                  <p className="text-[10px] text-gray-400 mb-1">{c.label}</p>
-                                  <p className="text-sm font-semibold text-gray-700">{m[`media_${c.key}`]}</p>
+                              {/* Media: solo quando entrambi i giudici hanno valutato, allineata
+                                  alle stesse colonne della tabella sopra. Il bonus viene escluso
+                                  di proposito (non ha senso farne una media). */}
+                              {risultatoCompleto && m.media_complessiva && (
+                                <div className="grid grid-cols-8 gap-2 bg-gray-100 border border-gray-200 rounded-lg px-2 py-1.5 text-xs items-center">
+                                  <span className="col-span-2 text-gray-500 font-medium uppercase text-[10px] tracking-wide">Media</span>
+                                  {CRITERI.map(c => (
+                                    <span key={c.key} className="text-center text-gray-700 font-semibold">{m[`media_${c.key}`]}</span>
+                                  ))}
+                                  <span className="text-center text-gray-300">—</span>
+                                  <span className="text-center text-gray-900 font-bold">{m.media_complessiva}</span>
                                 </div>
-                              ))}
+                              )}
                             </div>
                           </div>
                         )}
