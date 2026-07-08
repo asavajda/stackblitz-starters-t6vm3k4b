@@ -699,7 +699,7 @@ export default function DashboardPage() {
                                   <span className="text-xs text-gray-500">
                                     {bloccoId ? `Blocco ${blocchi.findIndex(b => b.id === bloccoId) + 1}` : '—'}
                                   </span>
-                                  <div className="flex items-center gap-2 flex-wrap">
+                                  <div className="flex items-center gap-2 flex-wrap min-w-0">
                                     {assegnazioniRacconto.length === 0
                                       ? <span className="text-xs text-gray-300">Nessun giurato</span>
                                       : assegnazioniRacconto.map(a => {
