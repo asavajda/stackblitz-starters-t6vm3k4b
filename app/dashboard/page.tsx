@@ -466,7 +466,7 @@ export default function DashboardPage() {
                 <div className="flex-1 sm:flex-initial min-w-0 flex items-center gap-2">
                   <span className="hidden sm:inline text-xs text-gray-400 shrink-0">Filtra per:</span>
                   <select value={raccontiStato} onChange={e => setRaccontiStato(e.target.value)}
-                    className="flex-1 sm:flex-initial min-w-0 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
+                    className="flex-1 sm:flex-initial min-w-0 border border-gray-200 rounded sm:rounded-lg px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
                     <option value="">Tutti gli stati</option>
                     {Object.entries(STATI_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
