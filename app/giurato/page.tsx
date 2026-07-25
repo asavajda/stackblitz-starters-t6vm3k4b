@@ -146,10 +146,12 @@ export default function GiuratoPage() {
 
     if (assegnazione.tipo_invio === 'file') {
       if (isMobileDevice()) {
-        // Su mobile il PDF va aperto nativamente dal browser: dentro l'iframe
-        // di /visualizza iOS Safari lo rende male (scroll rotto / pagina
-        // singola). Il prezzo e' che la scheda mostra l'hostname dello storage
-        // invece del titolo, perche' e' un PDF grezzo su dominio esterno.
+        // Su mobile il PDF va aperto col visualizzatore nativo del browser:
+        // dentro l'iframe di /visualizza iOS Safari lo rende male (scroll
+        // rotto / pagina singola). Per avere anche il titolo e la favicon
+        // corretti nella scheda, il file non viene servito dal signed URL di
+        // Supabase ma dalla nostra route /api/racconto-file, che lo rigira
+        // uguale aggiungendo il nome del racconto negli header.
         // Apriamo la scheda vuota in modo sincrono rispetto al click, cosi' il
         // popup non viene bloccato, e le assegniamo l'URL dopo il signed URL.
         const finestra = window.open('', '_blank')
@@ -159,7 +161,7 @@ export default function GiuratoPage() {
         if (data?.signedUrl) {
           const estensione = assegnazione.file_path?.split('.').pop()?.toLowerCase()
           const url = estensione === 'pdf'
-            ? data.signedUrl
+            ? `/api/racconto-file?src=${encodeURIComponent(data.signedUrl)}&titolo=${titolo}`
             : `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(data.signedUrl)}`
           if (finestra) finestra.location.href = url
           else window.open(url, '_blank') // fallback nel caso la scheda iniziale non si sia aperta
