@@ -67,14 +67,10 @@ export default function GiuratoPage() {
   async function caricaDati(userId: string) {
     const { data } = await supabase
       .from('assegnazioni_giurato')
-      .select('*, racconti(titolo)')
+      .select('*')
       .eq('giurato_id', userId)
 
-    // Flattena il titolo dal join
-    const ass = (data || []).map((a: any) => ({
-      ...a,
-      titolo: a.racconti?.titolo || a.titolo || 'Racconto'
-    }))
+    const ass = data || []
     setAssegnazioni(ass)
 
     // Carica bonus esistenti dalle valutazioni
@@ -146,9 +142,6 @@ export default function GiuratoPage() {
   }
 
   async function apriRacconto(assegnazione: any) {
-    const titolo = assegnazione.titolo || 'Racconto'
-    const titoloCodificato = encodeURIComponent(titolo)
-
     if (assegnazione.tipo_invio === 'file') {
       if (isMobileDevice()) {
         // Su mobile i browser bloccano window.open() se non avviene in modo
@@ -164,18 +157,37 @@ export default function GiuratoPage() {
           const url = estensione === 'pdf'
             ? data.signedUrl
             : `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(data.signedUrl)}`
-          if (finestra) {
-            finestra.location.href = url
-            finestra.document.title = `${titolo} — Valuta`
-          } else window.open(url, '_blank')
+          if (finestra) finestra.location.href = url
+          else window.open(url, '_blank') // fallback nel caso la scheda iniziale non si sia aperta
         } else if (finestra) {
           finestra.close()
         }
       } else {
+        let titolo = assegnazione.titolo || 'Racconto'
+        if (!assegnazione.titolo) {
+          const { data } = await supabase
+            .from('racconti')
+            .select('titolo')
+            .eq('id', assegnazione.racconto_id)
+            .single()
+          if (data?.titolo) titolo = data.titolo
+        }
         const filePath = encodeURIComponent(assegnazione.file_path)
+        const titoloCodificato = encodeURIComponent(titolo)
         window.open(`/racconto/${assegnazione.racconto_id}/visualizza?file_path=${filePath}&titolo=${titoloCodificato}`, '_blank')
       }
     } else if (assegnazione.tipo_invio === 'testo') {
+      let titolo = assegnazione.titolo || 'Racconto'
+      // Se titolo non è disponibile, caricalo dal database
+      if (!assegnazione.titolo) {
+        const { data } = await supabase
+          .from('racconti')
+          .select('titolo')
+          .eq('id', assegnazione.racconto_id)
+          .single()
+        if (data?.titolo) titolo = data.titolo
+      }
+      const titoloCodificato = encodeURIComponent(titolo)
       window.open(`/racconto/${assegnazione.racconto_id}?titolo=${titoloCodificato}`, '_blank')
     }
 
