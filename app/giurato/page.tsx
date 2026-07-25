@@ -168,7 +168,8 @@ export default function GiuratoPage() {
         window.open(`/racconto/${assegnazione.racconto_id}/visualizza?file_path=${filePath}&titolo=${titolo}`, '_blank')
       }
     } else if (assegnazione.tipo_invio === 'testo') {
-      window.open(`/racconto/${assegnazione.racconto_id}`, '_blank')
+      const titolo = encodeURIComponent(assegnazione.titolo || 'Racconto')
+      window.open(`/racconto/${assegnazione.racconto_id}?titolo=${titolo}`, '_blank')
     }
 
     if (assegnazione.completata) {

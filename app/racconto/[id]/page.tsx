@@ -1,11 +1,19 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
 export default function RaccontoPage({ params }: { params: { id: string } }) {
+  const searchParams = useSearchParams()
   const [racconto, setRacconto] = useState<any>(null)
   const [caricamento, setCaricamento] = useState(true)
+
+  // Imposta il titolo della scheda subito se disponibile dalla query string
+  useEffect(() => {
+    const titolo = searchParams.get('titolo') || 'Racconto'
+    document.title = `${decodeURIComponent(titolo)} — Valuta`
+  }, [searchParams])
 
   useEffect(() => {
     async function carica() {
@@ -19,12 +27,6 @@ export default function RaccontoPage({ params }: { params: { id: string } }) {
     }
     carica()
   }, [params.id])
-
-  // Titolo della scheda del browser: usa il titolo del racconto anziché
-  // il nome generico della piattaforma
-  useEffect(() => {
-    if (racconto?.titolo) document.title = `${racconto.titolo} — Valuta`
-  }, [racconto])
 
   if (caricamento) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
