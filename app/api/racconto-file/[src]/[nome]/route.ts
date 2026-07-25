@@ -9,12 +9,19 @@ export const dynamic = 'force-dynamic'
  * come nome della scheda l'hostname del progetto (xxxx.supabase.co) e una
  * favicon generica, perche' e' un file grezzo su un dominio esterno.
  *
- * Il nome del racconto sta nel PERCORSO e non in un parametro, perche' Safari
- * per i PDF inline ignora l'header Content-Disposition e usa l'ultimo segmento
- * dell'URL come titolo della scheda. Quindi la chiamata e':
- *   /api/racconto-file/Fame.pdf?src=<signed url>
- * Il segmento [nome] e' puramente decorativo: il file effettivamente servito
- * dipende solo da "src", che viene validato sotto.
+ * Forma dell'URL:
+ *   /api/racconto-file/<signed url in base64url>/<Nome del racconto>.pdf
+ *
+ * Il signed URL sta nel percorso e non in una query string, e il nome del
+ * racconto e' l'ultimo segmento, perche' Safari per i PDF inline ignora
+ * l'header Content-Disposition. Tentativi precedenti, entrambi falliti su iOS:
+ *   1. Content-Disposition con filename           -> mostrava l'hostname
+ *   2. nome nel percorso ma con ?src=... in coda  -> mostrava l'hostname
+ * Questa versione elimina la query string: e' l'ultima ipotesi rimasta, cioe'
+ * che fosse la coda ?src=... a impedire a Safari di leggere il nome file.
+ *
+ * Il segmento [nome] e' puramente decorativo: il file servito dipende solo da
+ * [src], che viene validato sotto.
  *
  * Autenticazione: la route non ha una sessione propria (il client Supabase
  * tiene il token in localStorage, non nei cookie). La credenziale e' il signed
@@ -24,8 +31,8 @@ export const dynamic = 'force-dynamic'
 
 function nomeFileSicuro(nome: string): string {
   // Rimuove i caratteri che romperebbero l'header HTTP o il filesystem.
-  // Nota: params.nome arriva gia' decodificato da Next, non va decodificato
-  // di nuovo (un titolo tipo "100% puro" farebbe fallire decodeURIComponent).
+  // Nota: params arriva gia' decodificato da Next, non va decodificato di nuovo
+  // (un titolo tipo "100% puro" farebbe fallire decodeURIComponent).
   const pulito = nome
     .replace(/[\r\n"\\/\u0000-\u001f]/g, ' ')
     .replace(/\s+/g, ' ')
@@ -34,21 +41,31 @@ function nomeFileSicuro(nome: string): string {
   return (base.toLowerCase().endsWith('.pdf') ? base : `${base}.pdf`).slice(0, 100)
 }
 
+function decodificaSrc(segmento: string): string | null {
+  try {
+    const base64 = segmento.replace(/-/g, '+').replace(/_/g, '/')
+    const decodificato = Buffer.from(base64, 'base64').toString('utf8')
+    return decodificato || null
+  } catch {
+    return null
+  }
+}
+
 export async function GET(
   req: NextRequest,
-  { params }: { params: { nome: string } }
+  { params }: { params: { src: string; nome: string } }
 ) {
-  const src = req.nextUrl.searchParams.get('src')
+  const src = decodificaSrc(params.src || '')
 
   if (!src) {
-    return new Response('Parametro src mancante', { status: 400 })
+    return new Response('Percorso file non valido', { status: 400 })
   }
 
   let target: URL
   try {
     target = new URL(src)
   } catch {
-    return new Response('src non valido', { status: 400 })
+    return new Response('Percorso file non valido', { status: 400 })
   }
 
   // Whitelist obbligatoria: senza questo controllo la route diventerebbe un
@@ -63,7 +80,7 @@ export async function GET(
     target.pathname.startsWith('/storage/v1/object/sign/racconti-files/')
 
   if (!consentito) {
-    return new Response('src non consentito', { status: 403 })
+    return new Response('Percorso file non consentito', { status: 403 })
   }
 
   // I visualizzatori PDF chiedono spesso porzioni del file invece di scaricarlo

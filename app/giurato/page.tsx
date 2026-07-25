@@ -148,12 +148,12 @@ export default function GiuratoPage() {
       if (isMobileDevice()) {
         // Su mobile il PDF va aperto col visualizzatore nativo del browser:
         // dentro l'iframe di /visualizza iOS Safari lo rende male (scroll
-        // rotto / pagina singola). Per avere anche il titolo e la favicon
-        // corretti nella scheda, il file non viene servito dal signed URL di
-        // Supabase ma dalla nostra route /api/racconto-file, che lo rigira
-        // uguale mettendo il titolo del racconto nel percorso: Safari per i
-        // PDF inline ignora Content-Disposition e usa l'ultimo segmento
-        // dell'URL come nome della scheda.
+        // rotto / pagina singola). Per avere anche titolo e favicon corretti
+        // nella scheda, il file passa dalla nostra route /api/racconto-file,
+        // costruita come .../<signed url in base64url>/<Titolo>.pdf
+        // Il nome e' l'ultimo segmento e non c'e' query string, perche' Safari
+        // per i PDF inline ignora Content-Disposition e sembra ricadere
+        // sull'hostname se l'URL non termina con un nome file pulito.
         // Apriamo la scheda vuota in modo sincrono rispetto al click, cosi' il
         // popup non viene bloccato, e le assegniamo l'URL dopo il signed URL.
         const finestra = window.open('', '_blank')
@@ -167,8 +167,12 @@ export default function GiuratoPage() {
           const nomeFile = encodeURIComponent(
             `${(assegnazione.titolo || 'Racconto').replace(/[\\/:*?"<>|]/g, ' ').replace(/\s+/g, ' ').trim()}.pdf`
           )
+          const srcCodificato = btoa(data.signedUrl)
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=+$/, '')
           const url = estensione === 'pdf'
-            ? `/api/racconto-file/${nomeFile}?src=${encodeURIComponent(data.signedUrl)}`
+            ? `/api/racconto-file/${srcCodificato}/${nomeFile}`
             : `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(data.signedUrl)}`
           if (finestra) finestra.location.href = url
           else window.open(url, '_blank') // fallback nel caso la scheda iniziale non si sia aperta
