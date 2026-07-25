@@ -621,10 +621,10 @@ export default function DashboardPage() {
                               <button
                                 key={r.id}
                                 onClick={() => setNuovoBloccoRacconti(prev => [...prev, r.id])}
-                                className="text-xs p-3 rounded border border-gray-200 text-left hover:bg-blue-50 hover:border-blue-300 transition-colors text-gray-700"
+                                className="p-4 rounded border border-gray-200 text-left hover:bg-blue-50 hover:border-blue-300 transition-colors"
                               >
-                                <span className="font-medium">{r.titolo}</span>
-                                <span className="text-gray-400"> — {autoreLabel(r)}</span>
+                                <div className="font-semibold text-sm text-gray-900 mb-1">{r.titolo}</div>
+                                <div className="text-xs text-gray-500">{autoreLabel(r)}</div>
                               </button>
                             ))
                           }
@@ -700,10 +700,10 @@ export default function DashboardPage() {
                               <button
                                 key={r!.id}
                                 onClick={() => setNuovoBloccoRacconti(prev => prev.filter(id => id !== r!.id))}
-                                className="text-xs p-3 rounded border border-blue-300 bg-blue-50 text-left hover:bg-blue-100 transition-colors text-gray-700"
+                                className="p-4 rounded border border-blue-300 bg-blue-50 text-left hover:bg-blue-100 transition-colors"
                               >
-                                <span className="font-medium">{r!.titolo}</span>
-                                <span className="text-gray-400"> — {autoreLabel(r!)}</span>
+                                <div className="font-semibold text-sm text-gray-900 mb-1">{r!.titolo}</div>
+                                <div className="text-xs text-gray-500">{autoreLabel(r!)}</div>
                               </button>
                             ))
                           }
