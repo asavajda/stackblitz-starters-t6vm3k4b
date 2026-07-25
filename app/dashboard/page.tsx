@@ -165,28 +165,7 @@ export default function DashboardPage() {
   const [giuratiFilter, setGiuratiFilter] = useState('')
   const [giuratiSort, setGiuratiSort]     = useState<'nome' | 'cognome'>('cognome')
 
-  const [fixandoRacconti, setFixandoRacconti] = useState(false)
-  const [messaggioFix, setMessaggioFix] = useState('')
-
   function cambiaSezione(s: Sezione) { setSezione(s); window.location.hash = s }
-
-  async function fixRaccontiStato() {
-    setFixandoRacconti(true)
-    setMessaggioFix('')
-    try {
-      const res = await fetch('/api/fix-racconti-stato', { method: 'POST' })
-      const data = await res.json()
-      if (data.success) {
-        setMessaggioFix('✓ Racconti fixati! Ricaricando...')
-        setTimeout(() => carica(), 1000)
-      } else {
-        setMessaggioFix(`Errore: ${data.error}`)
-      }
-    } catch (err: any) {
-      setMessaggioFix(`Errore: ${err.message}`)
-    }
-    setFixandoRacconti(false)
-  }
 
   async function carica() {
     const { data: { user } } = await supabase.auth.getUser()
@@ -564,23 +543,6 @@ export default function DashboardPage() {
         {sezione === 'assegnazioni' && (
           <div className="space-y-6">
 
-            {/* Bottone fix sempre visibile in alto */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p className="text-xs text-blue-700 flex-1">
-                Se hai caricato racconti ma non appaiono, prova a fixare gli stati:
-              </p>
-              <button
-                onClick={fixRaccontiStato}
-                disabled={fixandoRacconti}
-                className="text-xs px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap flex-shrink-0"
-              >
-                {fixandoRacconti ? 'Fixando...' : 'Fixare gli stati'}
-              </button>
-              {messaggioFix && (
-                <p className="text-xs text-blue-700 w-full">{messaggioFix}</p>
-              )}
-            </div>
-
             {/* Pannello crea blocco */}
             <div className="bg-white rounded-xl border border-gray-200 p-5">
               <p className="text-sm font-medium text-gray-800 mb-1">Crea nuovo blocco</p>
@@ -646,11 +608,33 @@ export default function DashboardPage() {
                           onChange={e => setRaccontiDisponibiliFilter(e.target.value)}
                           className="border border-gray-200 rounded-lg px-2 py-1 text-xs mb-1 focus:outline-none focus:ring-1 focus:ring-gray-300"
                         />
+                        {/* Mobile: lista di button */}
+                        <div className="sm:hidden flex flex-col gap-2 flex-1 overflow-y-auto">
+                          {raccontiDisponibili
+                            .filter(r =>
+                              !nuovoBloccoRacconti.includes(r.id) &&
+                              (r.titolo?.toLowerCase().includes(raccontiDisponibiliFilter.toLowerCase()) ||
+                              autoreLabel(r).toLowerCase().includes(raccontiDisponibiliFilter.toLowerCase()))
+                            )
+                            .sort((a, b) => (a.titolo ?? '').localeCompare(b.titolo ?? ''))
+                            .map(r => (
+                              <button
+                                key={r.id}
+                                onClick={() => setNuovoBloccoRacconti(prev => [...prev, r.id])}
+                                className="text-xs p-3 rounded border border-gray-200 text-left hover:bg-blue-50 hover:border-blue-300 transition-colors text-gray-700"
+                              >
+                                <span className="font-medium">{r.titolo}</span>
+                                <span className="text-gray-400"> — {autoreLabel(r)}</span>
+                              </button>
+                            ))
+                          }
+                        </div>
+                        {/* Desktop: select */}
                         <select
                           multiple
                           value={selectedDisponibili}
                           onChange={e => setSelectedDisponibili(Array.from(e.target.selectedOptions, o => o.value))}
-                          className="flex-1 border border-gray-200 rounded-lg text-xs min-h-[160px] focus:outline-none focus:ring-1 focus:ring-gray-300"
+                          className="hidden sm:block flex-1 border border-gray-200 rounded-lg text-xs min-h-[160px] focus:outline-none focus:ring-1 focus:ring-gray-300"
                         >
                           {raccontiDisponibili
                             .filter(r =>
@@ -706,11 +690,30 @@ export default function DashboardPage() {
                           Selezionati ({nuovoBloccoRacconti.length})
                         </span>
                         <div className="mb-1 h-[26px]" />
+                        {/* Mobile: lista di button */}
+                        <div className="sm:hidden flex flex-col gap-2 flex-1 overflow-y-auto">
+                          {nuovoBloccoRacconti
+                            .map(id => raccontiDisponibili.find(r => r.id === id))
+                            .filter(Boolean)
+                            .sort((a, b) => (a!.titolo ?? '').localeCompare(b!.titolo ?? ''))
+                            .map(r => (
+                              <button
+                                key={r!.id}
+                                onClick={() => setNuovoBloccoRacconti(prev => prev.filter(id => id !== r!.id))}
+                                className="text-xs p-3 rounded border border-blue-300 bg-blue-50 text-left hover:bg-blue-100 transition-colors text-gray-700"
+                              >
+                                <span className="font-medium">{r!.titolo}</span>
+                                <span className="text-gray-400"> — {autoreLabel(r!)}</span>
+                              </button>
+                            ))
+                          }
+                        </div>
+                        {/* Desktop: select */}
                         <select
                           multiple
                           value={selectedScelti}
                           onChange={e => setSelectedScelti(Array.from(e.target.selectedOptions, o => o.value))}
-                          className="flex-1 border border-gray-200 rounded-lg text-xs min-h-[160px] focus:outline-none focus:ring-1 focus:ring-gray-300"
+                          className="hidden sm:block flex-1 border border-gray-200 rounded-lg text-xs min-h-[160px] focus:outline-none focus:ring-1 focus:ring-gray-300"
                         >
                           {nuovoBloccoRacconti
                             .map(id => raccontiDisponibili.find(r => r.id === id))
@@ -718,7 +721,7 @@ export default function DashboardPage() {
                             .sort((a, b) => (a!.titolo ?? '').localeCompare(b!.titolo ?? ''))
                             .map(r => (
                               <option key={r!.id} value={r!.id}>
-                                {r!.titolo} — {autoreLabel(r)}
+                                {r!.titolo} — {autoreLabel(r!)}
                               </option>
                             ))
                           }
