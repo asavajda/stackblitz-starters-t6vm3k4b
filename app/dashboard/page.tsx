@@ -564,27 +564,22 @@ export default function DashboardPage() {
         {sezione === 'assegnazioni' && (
           <div className="space-y-6">
 
-            {/* Alert: nessun racconto disponibile */}
-            {raccontiDisponibili.length === 0 && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                <p className="text-sm text-amber-800 mb-2">
-                  <span className="font-semibold">ℹ️ Nessun racconto disponibile</span>
-                </p>
-                <p className="text-xs text-amber-700 mb-3">
-                  Se hai appena caricato dei racconti, potrebbe essere che i loro stati non siano stati impostati correttamente. Clicca il bottone qui sotto per fixarli automaticamente.
-                </p>
-                <button
-                  onClick={fixRaccontiStato}
-                  disabled={fixandoRacconti}
-                  className="text-xs px-4 py-2 rounded-lg bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {fixandoRacconti ? 'Fixando...' : 'Fixare gli stati dei racconti'}
-                </button>
-                {messaggioFix && (
-                  <p className="text-xs text-amber-700 mt-2">{messaggioFix}</p>
-                )}
-              </div>
-            )}
+            {/* Bottone fix sempre visibile in alto */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-xs text-blue-700 flex-1">
+                Se hai caricato racconti ma non appaiono, prova a fixare gli stati:
+              </p>
+              <button
+                onClick={fixRaccontiStato}
+                disabled={fixandoRacconti}
+                className="text-xs px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap flex-shrink-0"
+              >
+                {fixandoRacconti ? 'Fixando...' : 'Fixare gli stati'}
+              </button>
+              {messaggioFix && (
+                <p className="text-xs text-blue-700 w-full">{messaggioFix}</p>
+              )}
+            </div>
 
             {/* Pannello crea blocco */}
             <div className="bg-white rounded-xl border border-gray-200 p-5">
