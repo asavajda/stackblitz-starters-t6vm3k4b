@@ -185,7 +185,7 @@ export default function DashboardPage() {
       supabase.from('profiles').select('*').eq('ruolo', 'giurato'),
       supabase.from('medie_racconti').select('*').order('media_complessiva', { ascending: false }),
       supabase.from('assegnazioni').select('*'),
-      supabase.from('valutazioni').select('*, assegnazioni(racconto_id, giurato_id, profiles(nome, cognome))'),
+      supabase.from('valutazioni').select('*, assegnazioni(racconto_id, giurato_id, fase, profiles(nome, cognome))'),
       supabase.from('blocchi').select('*').order('creato_il', { ascending: false }),
     ])
     setRacconti(r || []); setGiurati(g || []); setMedie(m || [])
@@ -372,18 +372,45 @@ export default function DashboardPage() {
   // Con due giurati la somma e' il doppio della media, quindi l'ordine in
   // classifica non cambia; cambia quando le valutazioni non sono ancora tutte
   // arrivate (totale parziale, segnalato dal badge "Parziale n/n").
-  const punteggiPerRacconto: Record<string, { totale: number; n: number }> = {}
+  //
+  // Le due fasi hanno classifiche SEPARATE e non si sommano tra loro:
+  // - preliminare: coppia interno + lettore, alimenta la sezione Risultati
+  // - finale: giurati di qualita' sui finalisti, alimenta la sezione Finalisti
+  // La distinzione si basa su assegnazioni.fase; per prudenza tutto cio' che
+  // non e' esplicitamente 'finale' viene contato come preliminare, cosi' le
+  // righe storiche senza fase valorizzata restano dov'erano.
+  const punteggiPreliminare: Record<string, { totale: number; n: number }> = {}
+  const punteggiFinale: Record<string, { totale: number; n: number }> = {}
   for (const v of valutazioni) {
     const rid = v.assegnazioni?.racconto_id
     if (!rid) continue
-    if (!punteggiPerRacconto[rid]) punteggiPerRacconto[rid] = { totale: 0, n: 0 }
-    punteggiPerRacconto[rid].totale += totaleGiurato(v)
-    punteggiPerRacconto[rid].n += 1
+    const mappa = v.assegnazioni?.fase === 'finale' ? punteggiFinale : punteggiPreliminare
+    if (!mappa[rid]) mappa[rid] = { totale: 0, n: 0 }
+    mappa[rid].totale += totaleGiurato(v)
+    mappa[rid].n += 1
   }
   const punteggioDi = (racconto_id: string): number | null => {
-    const p = punteggiPerRacconto[racconto_id]
+    const p = punteggiPreliminare[racconto_id]
     return p && p.n > 0 ? p.totale : null
   }
+  const punteggioFinaleDi = (racconto_id: string): number | null => {
+    const p = punteggiFinale[racconto_id]
+    return p && p.n > 0 ? p.totale : null
+  }
+  const nValutazioniPreliminare = (racconto_id: string): number =>
+    punteggiPreliminare[racconto_id]?.n ?? 0
+  const nAssegnatiPreliminare = (racconto_id: string): number =>
+    assegnazioniEsistenti.filter(a => a.racconto_id === racconto_id && a.fase !== 'finale').length
+  const nValutazioniFinale = (racconto_id: string): number =>
+    punteggiFinale[racconto_id]?.n ?? 0
+  const nAssegnatiFinale = (racconto_id: string): number =>
+    assegnazioniEsistenti.filter(a => a.racconto_id === racconto_id && a.fase === 'finale').length
+
+  // Classifica della fase finale: ordinata sul punteggio dei giurati di qualita',
+  // indipendente dal punteggio preliminare.
+  const finalistiOrdinati = [...raccontiFinalisti].sort((a, b) =>
+    (punteggioFinaleDi(b.id) ?? -1) - (punteggioFinaleDi(a.id) ?? -1)
+  )
 
   const medieFiltered = (() => {
     let list = medie.filter(m => {
@@ -395,7 +422,7 @@ export default function DashboardPage() {
       // "definitiva" (racconto.stato === 'valutato') si ottiene solo
       // quando tutti i giudici assegnati hanno completato (vedi
       // /api/completa-valutazione), e viene segnalata con un badge.
-      const haAlmenoUnaValutazione = (m.num_valutazioni ?? 0) > 0
+      const haAlmenoUnaValutazione = nValutazioniPreliminare(m.racconto_id) > 0
       const statoRilevante = ['valutato', 'finalista', 'eliminato'].includes(racconto.stato)
       if (!haAlmenoUnaValutazione && !statoRilevante) return false
       const matchTesto = m.titolo?.toLowerCase().includes(risFilter.toLowerCase()) ||
@@ -880,15 +907,46 @@ export default function DashboardPage() {
             </div>
             {raccontiFinalisti.length === 0
               ? <p className="text-xs text-gray-300">Nessun racconto finalista ancora</p>
-              : raccontiFinalisti.map(r => (
+              : finalistiOrdinati.map((r, i) => {
+                // Le due fasi non si sommano: qui conta solo il punteggio dato
+                // dai giurati di qualita'. Quello preliminare resta visibile
+                // come riferimento, ma non entra in questa classifica.
+                const punteggioFinale = punteggioFinaleDi(r.id)
+                const punteggioPrelim = punteggioDi(r.id)
+                const nValFinale = nValutazioniFinale(r.id)
+                const nAssFinale = nAssegnatiFinale(r.id)
+                const finaleCompleto = nAssFinale > 0 && nValFinale >= nAssFinale
+                return (
                 <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-5">
                   <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
-                    <div>
-                      <p className="text-sm font-medium text-gray-800">{r.titolo}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">Autore: {autoreLabel(r)}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">Caricato il: {new Date(r.inviato_il).toLocaleDateString('it-IT')}</p>
+                    <div className="flex items-start gap-2 min-w-0">
+                      <span className="text-sm text-gray-300 font-medium shrink-0">{i + 1}</span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-800">{r.titolo}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">Autore: {autoreLabel(r)}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">Caricato il: {new Date(r.inviato_il).toLocaleDateString('it-IT')}</p>
+                      </div>
                     </div>
-                    <span className="text-xs px-3 py-1 rounded-full bg-purple-100 text-purple-700 font-medium shrink-0">Finalista</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {punteggioFinale !== null && (
+                        <span className="text-lg font-semibold text-gray-800">{punteggioFinale}</span>
+                      )}
+                      <span className="text-xs px-3 py-1 rounded-full bg-purple-100 text-purple-700 font-medium">Finalista</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap mb-4">
+                    <span className="text-[10px] text-gray-400 uppercase tracking-wide">Fase finale</span>
+                    {punteggioFinale === null
+                      ? <span className="text-xs text-gray-300">Nessuna valutazione di qualità</span>
+                      : <span className={`text-xs px-3 py-1 rounded-full font-medium ${
+                          finaleCompleto ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {finaleCompleto ? `✓ Completo (${nValFinale}/${nAssFinale})` : `⏳ Parziale (${nValFinale}/${nAssFinale || '?'})`}
+                        </span>
+                    }
+                    {punteggioPrelim !== null && (
+                      <span className="text-xs text-gray-400">· preliminare: {punteggioPrelim}</span>
+                    )}
                   </div>
                   <div className="flex flex-wrap gap-2 mb-4">
                     {giurati.filter(g => g.tipo_giurato === 'qualita' && g.attivo !== false).length === 0
@@ -908,7 +966,8 @@ export default function DashboardPage() {
                     ))}
                   </div>
                 </div>
-              ))
+                )
+              })
             }
           </div>
         )}
@@ -926,13 +985,14 @@ export default function DashboardPage() {
             {medieFiltered.length === 0
               ? <p className="text-xs text-gray-300">Nessun risultato trovato</p>
               : medieFiltered.map((m, i) => {
-                const valRacconto = valutazioni.filter(v => v.assegnazioni?.racconto_id === m.racconto_id)
+                const valRacconto = valutazioni.filter(v =>
+                  v.assegnazioni?.racconto_id === m.racconto_id && v.assegnazioni?.fase !== 'finale')
                 const punteggio = punteggioDi(m.racconto_id)
                 const racconto = racconti.find(r => r.id === m.racconto_id)
                 const autore = racconto ? autoreLabel(racconto) : ''
                 const aperto = risAperti[m.racconto_id] ?? false
-                const numAssegnati = assegnazioniEsistenti.filter(a => a.racconto_id === m.racconto_id).length
-                const numValutazioni = m.num_valutazioni ?? 0
+                const numAssegnati = nAssegnatiPreliminare(m.racconto_id)
+                const numValutazioni = nValutazioniPreliminare(m.racconto_id)
                 const risultatoCompleto = numAssegnati > 0 && numValutazioni >= numAssegnati
                 return (
                   <div key={m.racconto_id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
