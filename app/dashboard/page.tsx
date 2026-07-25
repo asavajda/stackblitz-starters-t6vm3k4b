@@ -37,7 +37,14 @@ const activeClass: Record<string, string> = {
   vincitore: 'bg-amber-50 border-amber-300 text-amber-700',
 }
 type Sezione = typeof SEZIONI[number]
-type SortKey = 'titolo' | 'autore' | 'data' | 'stato' | 'media'
+type SortKey = 'titolo' | 'autore' | 'data' | 'stato' | 'punteggio'
+
+/**
+ * Totale assegnato da un singolo giurato: somma dei 4 criteri piu' il bonus.
+ */
+function totaleGiurato(v: any): number {
+  return (v.criterio_a ?? 0) + (v.criterio_b ?? 0) + (v.criterio_c ?? 0) + (v.criterio_d ?? 0) + (v.bonus ? 1 : 0)
+}
 type SortDir = 'asc' | 'desc'
 
 function fmt(stato: string) { return STATI_LABEL[stato] ?? stato }
@@ -61,10 +68,10 @@ function sortRacconti(list: any[], key: SortKey, dir: SortDir) {
   })
 }
 
-function SortBar({ sortKey, sortDir, onChange, showMedia }: {
+function SortBar({ sortKey, sortDir, onChange, showPunteggio }: {
   sortKey: SortKey; sortDir: SortDir
   onChange: (k: SortKey, d: SortDir) => void
-  showMedia?: boolean
+  showPunteggio?: boolean
 }) {
   function toggle(k: SortKey) {
     if (sortKey === k) onChange(k, sortDir === 'asc' ? 'desc' : 'asc')
@@ -77,7 +84,7 @@ function SortBar({ sortKey, sortDir, onChange, showMedia }: {
     </button>
   )
   const opzioni: { key: SortKey; label: string }[] = [
-    ...(showMedia ? [{ key: 'media' as SortKey, label: 'Media' }] : []),
+    ...(showPunteggio ? [{ key: 'punteggio' as SortKey, label: 'Punteggio' }] : []),
     { key: 'titolo', label: 'Titolo' },
     { key: 'data', label: 'Data' },
     { key: 'stato', label: 'Stato' },
@@ -103,7 +110,7 @@ function SortBar({ sortKey, sortDir, onChange, showMedia }: {
       {/* Desktop: bottoni originali, invariati */}
       <div className="hidden sm:flex items-center gap-1">
         <span className="text-xs text-gray-400 mr-1">Ordina:</span>
-        {showMedia && btn('media', 'Media')}
+        {showPunteggio && btn('punteggio', 'Punteggio')}
         {btn('titolo', 'Titolo')}
         {btn('data', 'Data')}
         {btn('stato', 'Stato')}
@@ -158,7 +165,7 @@ export default function DashboardPage() {
   })
 
   const [risFilter, setRisFilter] = useState('')
-  const [risSort, setRisSort]     = useState<SortKey>('media')
+  const [risSort, setRisSort]     = useState<SortKey>('punteggio')
   const [risDir, setRisDir]       = useState<SortDir>('desc')
   const [risAperti, setRisAperti] = useState<Record<string, boolean>>({})
 
@@ -358,6 +365,26 @@ export default function DashboardPage() {
   // Racconti disponibili per nuovo blocco (solo ricevuti e non già in un blocco)
   const raccontiDisponibili = racconti.filter(r => r.stato === 'ricevuto')
 
+  // Punteggio di un racconto = SOMMA dei totali di ogni giurato, non la media.
+  // La view medie_racconti espone ancora media_complessiva (media dei totali)
+  // e vive solo dentro Supabase, non nel repo: per non dipendere da una
+  // modifica SQL il punteggio viene ricalcolato qui dalle valutazioni grezze.
+  // Con due giurati la somma e' il doppio della media, quindi l'ordine in
+  // classifica non cambia; cambia quando le valutazioni non sono ancora tutte
+  // arrivate (totale parziale, segnalato dal badge "Parziale n/n").
+  const punteggiPerRacconto: Record<string, { totale: number; n: number }> = {}
+  for (const v of valutazioni) {
+    const rid = v.assegnazioni?.racconto_id
+    if (!rid) continue
+    if (!punteggiPerRacconto[rid]) punteggiPerRacconto[rid] = { totale: 0, n: 0 }
+    punteggiPerRacconto[rid].totale += totaleGiurato(v)
+    punteggiPerRacconto[rid].n += 1
+  }
+  const punteggioDi = (racconto_id: string): number | null => {
+    const p = punteggiPerRacconto[racconto_id]
+    return p && p.n > 0 ? p.totale : null
+  }
+
   const medieFiltered = (() => {
     let list = medie.filter(m => {
       const racconto = racconti.find(r => r.id === m.racconto_id)
@@ -392,8 +419,8 @@ export default function DashboardPage() {
       const va = a.stato ?? ''; const vb = b.stato ?? ''
       return risDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
     })
-    if (risSort === 'media') list = [...list].sort((a, b) => {
-      const va = a.media_complessiva ?? -1; const vb = b.media_complessiva ?? -1
+    if (risSort === 'punteggio') list = [...list].sort((a, b) => {
+      const va = punteggioDi(a.racconto_id) ?? -1; const vb = punteggioDi(b.racconto_id) ?? -1
       return risDir === 'asc' ? va - vb : vb - va
     })
     return list
@@ -893,13 +920,14 @@ export default function DashboardPage() {
               <input type="text" placeholder="Cerca per titolo o autore..."
                 value={risFilter} onChange={e => setRisFilter(e.target.value)}
                 className="sm:flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
-              <SortBar sortKey={risSort} sortDir={risDir} showMedia
+              <SortBar sortKey={risSort} sortDir={risDir} showPunteggio
                 onChange={(k, d) => { setRisSort(k); setRisDir(d) }} />
             </div>
             {medieFiltered.length === 0
               ? <p className="text-xs text-gray-300">Nessun risultato trovato</p>
               : medieFiltered.map((m, i) => {
                 const valRacconto = valutazioni.filter(v => v.assegnazioni?.racconto_id === m.racconto_id)
+                const punteggio = punteggioDi(m.racconto_id)
                 const racconto = racconti.find(r => r.id === m.racconto_id)
                 const autore = racconto ? autoreLabel(racconto) : ''
                 const aperto = risAperti[m.racconto_id] ?? false
@@ -920,7 +948,7 @@ export default function DashboardPage() {
                             <p className="text-xs text-gray-400 truncate">{autore}</p>
                           </div>
                         </div>
-                        {m.media_complessiva && <span className="text-lg font-semibold text-gray-800 shrink-0">{m.media_complessiva}</span>}
+                        {punteggio !== null && <span className="text-lg font-semibold text-gray-800 shrink-0">{punteggio}</span>}
                       </button>
                       <div className="flex items-center gap-2 flex-wrap mb-3">
                         <span className={`text-xs px-3 py-1 rounded-full font-medium ${
@@ -959,7 +987,7 @@ export default function DashboardPage() {
                         </div>
                       </button>
                       <div className="flex items-center gap-3 shrink-0">
-                        {m.media_complessiva && <span className="text-lg font-semibold text-gray-800">{m.media_complessiva}</span>}
+                        {punteggio !== null && <span className="text-lg font-semibold text-gray-800">{punteggio}</span>}
                         <span className={`text-xs px-3 py-1 rounded-full font-medium ${
                           risultatoCompleto ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
                         }`}>
@@ -1013,9 +1041,9 @@ export default function DashboardPage() {
                                   </div>
                                 )
                               })}
-                              {risultatoCompleto && m.media_complessiva && (
+                              {risultatoCompleto && punteggio !== null && (
                                 <div className="bg-gray-100 border border-gray-200 rounded-lg p-3 text-xs">
-                                  <p className="text-gray-500 font-medium uppercase text-[10px] tracking-wide mb-2">Media</p>
+                                  <p className="text-gray-500 font-medium uppercase text-[10px] tracking-wide mb-2">Punteggio</p>
                                   <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                                     {CRITERI.map(c => (
                                       <div key={c.key} className="flex justify-between">
@@ -1026,7 +1054,7 @@ export default function DashboardPage() {
                                   </div>
                                   <div className="flex justify-between mt-2 pt-2 border-t border-gray-200">
                                     <span className="text-gray-300">Bonus: —</span>
-                                    <span className="font-bold text-gray-900">Totale: {m.media_complessiva}</span>
+                                    <span className="font-bold text-gray-900">Totale: {punteggio}</span>
                                   </div>
                                 </div>
                               )}
@@ -1057,23 +1085,23 @@ export default function DashboardPage() {
                                   </div>
                                 )
                               })}
-                              {/* Media: solo quando entrambi i giudici hanno valutato, allineata
+                              {/* Punteggio: solo quando entrambi i giudici hanno valutato, allineata
                                   alle stesse colonne della tabella sopra. Il bonus viene escluso
                                   di proposito (non ha senso farne una media). */}
-                              {risultatoCompleto && m.media_complessiva && (
+                              {risultatoCompleto && punteggio !== null && (
                                 <div className="grid grid-cols-8 gap-2 bg-gray-100 border border-gray-200 rounded-lg px-2 py-1.5 text-xs items-center">
-                                  <span className="col-span-2 text-gray-500 font-medium uppercase text-[10px] tracking-wide">Media</span>
+                                  <span className="col-span-2 text-gray-500 font-medium uppercase text-[10px] tracking-wide">Punteggio</span>
                                   {CRITERI.map(c => (
                                     <span key={c.key} className="text-center text-gray-700 font-semibold">{m[`media_${c.key}`]}</span>
                                   ))}
                                   <span className="text-center text-gray-300">—</span>
-                                  <span className="text-center text-gray-900 font-bold">{m.media_complessiva}</span>
+                                  <span className="text-center text-gray-900 font-bold">{punteggio}</span>
                                 </div>
                               )}
                             </div>
                           </div>
                         )}
-                        {!m.media_complessiva && <p className="text-xs text-gray-300">Nessuna valutazione ancora</p>}
+                        {punteggio === null && <p className="text-xs text-gray-300">Nessuna valutazione ancora</p>}
                       </div>
                     )}
                   </div>
@@ -1309,23 +1337,24 @@ export default function DashboardPage() {
                       )
                     })}
                     {r.stato === 'valutato' && valRacconto.length > 0 && (() => {
-                      const n = valRacconto.length
-                      const media = (vals: number[]) => Math.round((vals.reduce((s, x) => s + x, 0) / n) * 100) / 100
-                      const mediaA = media(valRacconto.map(v => v.criterio_a ?? 0))
-                      const mediaB = media(valRacconto.map(v => v.criterio_b ?? 0))
-                      const mediaC = media(valRacconto.map(v => v.criterio_c ?? 0))
-                      const mediaD = media(valRacconto.map(v => v.criterio_d ?? 0))
-                      const mediaBonus = media(valRacconto.map(v => v.bonus ? 1 : 0))
-                      const mediaTotale = media(valRacconto.map(v => (v.criterio_a ?? 0) + (v.criterio_b ?? 0) + (v.criterio_c ?? 0) + (v.criterio_d ?? 0) + (v.bonus ? 1 : 0)))
+                      // Somma e non media: per ogni criterio si sommano i voti
+                      // dei giurati, e il totale e' la somma dei loro totali.
+                      const somma = (vals: number[]) => vals.reduce((s, x) => s + x, 0)
+                      const sommaA = somma(valRacconto.map(v => v.criterio_a ?? 0))
+                      const sommaB = somma(valRacconto.map(v => v.criterio_b ?? 0))
+                      const sommaC = somma(valRacconto.map(v => v.criterio_c ?? 0))
+                      const sommaD = somma(valRacconto.map(v => v.criterio_d ?? 0))
+                      const sommaBonus = somma(valRacconto.map(v => v.bonus ? 1 : 0))
+                      const sommaTotale = somma(valRacconto.map(totaleGiurato))
                       return (
                         <div className="bg-green-50 border border-green-100 rounded-lg p-3">
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-0 mb-2">
-                            <span className="text-sm font-semibold text-green-700">Media</span>
-                            <span className="text-sm font-semibold text-green-800">Totale: {mediaTotale}</span>
+                            <span className="text-sm font-semibold text-green-700">Punteggio</span>
+                            <span className="text-sm font-semibold text-green-800">Totale: {sommaTotale}</span>
                           </div>
                           {/* Elenco etichetta:valore — solo mobile */}
                           <div className="sm:hidden space-y-1 text-xs">
-                            {[mediaA, mediaB, mediaC, mediaD].map((m, idx) => (
+                            {[sommaA, sommaB, sommaC, sommaD].map((m, idx) => (
                               <div key={idx} className="flex justify-between">
                                 <span className="text-green-500">{CRITERI[idx].label}</span>
                                 <span className="font-medium text-green-700">{m}</span>
@@ -1333,12 +1362,12 @@ export default function DashboardPage() {
                             ))}
                             <div className="flex justify-between">
                               <span className="text-green-500">Bonus</span>
-                              <span className="font-medium text-green-700">{mediaBonus}</span>
+                              <span className="font-medium text-green-700">{sommaBonus}</span>
                             </div>
                           </div>
                           {/* Griglia a colonne — solo desktop */}
                           <div className="hidden sm:grid sm:grid-cols-5 gap-2 text-xs">
-                            {[mediaA, mediaB, mediaC, mediaD].map((m, idx) => (
+                            {[sommaA, sommaB, sommaC, sommaD].map((m, idx) => (
                               <div key={idx} className="text-center">
                                 <p className="text-[10px] text-green-400 uppercase">{CRITERI[idx].label}</p>
                                 <p className="font-medium text-green-700">{m}</p>
@@ -1346,7 +1375,7 @@ export default function DashboardPage() {
                             ))}
                             <div className="text-center">
                               <p className="text-[10px] text-green-400 uppercase">Bonus</p>
-                              <p className="font-medium text-green-700">{mediaBonus}</p>
+                              <p className="font-medium text-green-700">{sommaBonus}</p>
                             </div>
                           </div>
                         </div>
