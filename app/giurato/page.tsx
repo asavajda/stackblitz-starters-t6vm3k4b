@@ -136,59 +136,19 @@ export default function GiuratoPage() {
     }
   }
 
-  function isMobileDevice() {
-    if (typeof navigator === 'undefined') return false
-    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
-  }
-
   async function apriRacconto(assegnazione: any) {
+    // La scheda punta sempre a una pagina del nostro dominio, mai direttamente
+    // all'URL firmato di Supabase: così il browser mostra la favicon del gatto
+    // e il titolo del racconto invece dell'hostname dello storage.
+    // Il signed URL viene creato dentro /visualizza, quindi l'apertura resta
+    // sincrona rispetto al click e il popup non viene bloccato su mobile.
+    const titolo = encodeURIComponent(assegnazione.titolo || 'Racconto')
+
     if (assegnazione.tipo_invio === 'file') {
-      if (isMobileDevice()) {
-        // Su mobile i browser bloccano window.open() se non avviene in modo
-        // sincrono rispetto al click dell'utente. Apriamo subito una scheda
-        // vuota (sincrono) e le assegniamo l'URL solo dopo aver ottenuto il
-        // signed URL, così il popup non viene bloccato.
-        const finestra = window.open('', '_blank')
-        const { data } = await supabase.storage
-          .from('racconti-files')
-          .createSignedUrl(assegnazione.file_path, 3600)
-        if (data?.signedUrl) {
-          const estensione = assegnazione.file_path?.split('.').pop()?.toLowerCase()
-          const url = estensione === 'pdf'
-            ? data.signedUrl
-            : `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(data.signedUrl)}`
-          if (finestra) finestra.location.href = url
-          else window.open(url, '_blank') // fallback nel caso la scheda iniziale non si sia aperta
-        } else if (finestra) {
-          finestra.close()
-        }
-      } else {
-        let titolo = assegnazione.titolo || 'Racconto'
-        if (!assegnazione.titolo) {
-          const { data } = await supabase
-            .from('racconti')
-            .select('titolo')
-            .eq('id', assegnazione.racconto_id)
-            .single()
-          if (data?.titolo) titolo = data.titolo
-        }
-        const filePath = encodeURIComponent(assegnazione.file_path)
-        const titoloCodificato = encodeURIComponent(titolo)
-        window.open(`/racconto/${assegnazione.racconto_id}/visualizza?file_path=${filePath}&titolo=${titoloCodificato}`, '_blank')
-      }
+      const filePath = encodeURIComponent(assegnazione.file_path)
+      window.open(`/racconto/${assegnazione.racconto_id}/visualizza?file_path=${filePath}&titolo=${titolo}`, '_blank')
     } else if (assegnazione.tipo_invio === 'testo') {
-      let titolo = assegnazione.titolo || 'Racconto'
-      // Se titolo non è disponibile, caricalo dal database
-      if (!assegnazione.titolo) {
-        const { data } = await supabase
-          .from('racconti')
-          .select('titolo')
-          .eq('id', assegnazione.racconto_id)
-          .single()
-        if (data?.titolo) titolo = data.titolo
-      }
-      const titoloCodificato = encodeURIComponent(titolo)
-      window.open(`/racconto/${assegnazione.racconto_id}?titolo=${titoloCodificato}`, '_blank')
+      window.open(`/racconto/${assegnazione.racconto_id}?titolo=${titolo}`, '_blank')
     }
 
     if (assegnazione.completata) {
