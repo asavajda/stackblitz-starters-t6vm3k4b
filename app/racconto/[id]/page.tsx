@@ -1,19 +1,37 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
 export default function RaccontoPage({ params }: { params: { id: string } }) {
-  const searchParams = useSearchParams()
   const [racconto, setRacconto] = useState<any>(null)
   const [caricamento, setCaricamento] = useState(true)
 
-  // Imposta il titolo della scheda subito se disponibile dalla query string
+  // Imposta il titolo della scheda:
+  // 1. Prova dai query parameters via window.location
+  // 2. Se non disponibile, legge dal database
   useEffect(() => {
-    const titolo = searchParams.get('titolo') || 'Racconto'
-    document.title = `${decodeURIComponent(titolo)} — Valuta`
-  }, [searchParams])
+    const searchParams = new URLSearchParams(window.location.search)
+    const titoloDaQuery = searchParams.get('titolo')
+    
+    if (titoloDaQuery) {
+      document.title = `${decodeURIComponent(titoloDaQuery)} — Valuta`
+      return
+    }
+
+    // Se non in query string, leggi dal database
+    async function caricaTitolo() {
+      const { data } = await supabase
+        .from('racconti')
+        .select('titolo')
+        .eq('id', params.id)
+        .single()
+      if (data?.titolo) {
+        document.title = `${data.titolo} — Valuta`
+      }
+    }
+    caricaTitolo()
+  }, [params.id])
 
   useEffect(() => {
     async function carica() {

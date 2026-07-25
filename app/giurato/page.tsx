@@ -163,13 +163,32 @@ export default function GiuratoPage() {
           finestra.close()
         }
       } else {
+        let titolo = assegnazione.titolo || 'Racconto'
+        if (!assegnazione.titolo) {
+          const { data } = await supabase
+            .from('racconti')
+            .select('titolo')
+            .eq('id', assegnazione.racconto_id)
+            .single()
+          if (data?.titolo) titolo = data.titolo
+        }
         const filePath = encodeURIComponent(assegnazione.file_path)
-        const titolo = encodeURIComponent(assegnazione.titolo || 'Racconto')
-        window.open(`/racconto/${assegnazione.racconto_id}/visualizza?file_path=${filePath}&titolo=${titolo}`, '_blank')
+        const titoloCodificato = encodeURIComponent(titolo)
+        window.open(`/racconto/${assegnazione.racconto_id}/visualizza?file_path=${filePath}&titolo=${titoloCodificato}`, '_blank')
       }
     } else if (assegnazione.tipo_invio === 'testo') {
-      const titolo = encodeURIComponent(assegnazione.titolo || 'Racconto')
-      window.open(`/racconto/${assegnazione.racconto_id}?titolo=${titolo}`, '_blank')
+      let titolo = assegnazione.titolo || 'Racconto'
+      // Se titolo non è disponibile, caricalo dal database
+      if (!assegnazione.titolo) {
+        const { data } = await supabase
+          .from('racconti')
+          .select('titolo')
+          .eq('id', assegnazione.racconto_id)
+          .single()
+        if (data?.titolo) titolo = data.titolo
+      }
+      const titoloCodificato = encodeURIComponent(titolo)
+      window.open(`/racconto/${assegnazione.racconto_id}?titolo=${titoloCodificato}`, '_blank')
     }
 
     if (assegnazione.completata) {
