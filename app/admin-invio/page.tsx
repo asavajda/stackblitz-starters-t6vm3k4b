@@ -143,6 +143,7 @@ if (!profilo?.is_admin) { router.push('/login'); return }
       autore_cognome: cognome,
       autore_email: email,
       autore_telefono: telefono,
+      stato: 'ricevuto',
     })
 
     if (error) {
