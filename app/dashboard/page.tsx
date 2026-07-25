@@ -165,7 +165,28 @@ export default function DashboardPage() {
   const [giuratiFilter, setGiuratiFilter] = useState('')
   const [giuratiSort, setGiuratiSort]     = useState<'nome' | 'cognome'>('cognome')
 
+  const [fixandoRacconti, setFixandoRacconti] = useState(false)
+  const [messaggioFix, setMessaggioFix] = useState('')
+
   function cambiaSezione(s: Sezione) { setSezione(s); window.location.hash = s }
+
+  async function fixRaccontiStato() {
+    setFixandoRacconti(true)
+    setMessaggioFix('')
+    try {
+      const res = await fetch('/api/fix-racconti-stato', { method: 'POST' })
+      const data = await res.json()
+      if (data.success) {
+        setMessaggioFix('✓ Racconti fixati! Ricaricando...')
+        setTimeout(() => carica(), 1000)
+      } else {
+        setMessaggioFix(`Errore: ${data.error}`)
+      }
+    } catch (err: any) {
+      setMessaggioFix(`Errore: ${err.message}`)
+    }
+    setFixandoRacconti(false)
+  }
 
   async function carica() {
     const { data: { user } } = await supabase.auth.getUser()
@@ -542,6 +563,28 @@ export default function DashboardPage() {
         {/* ASSEGNAZIONI */}
         {sezione === 'assegnazioni' && (
           <div className="space-y-6">
+
+            {/* Alert: nessun racconto disponibile */}
+            {raccontiDisponibili.length === 0 && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <p className="text-sm text-amber-800 mb-2">
+                  <span className="font-semibold">ℹ️ Nessun racconto disponibile</span>
+                </p>
+                <p className="text-xs text-amber-700 mb-3">
+                  Se hai appena caricato dei racconti, potrebbe essere che i loro stati non siano stati impostati correttamente. Clicca il bottone qui sotto per fixarli automaticamente.
+                </p>
+                <button
+                  onClick={fixRaccontiStato}
+                  disabled={fixandoRacconti}
+                  className="text-xs px-4 py-2 rounded-lg bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {fixandoRacconti ? 'Fixando...' : 'Fixare gli stati dei racconti'}
+                </button>
+                {messaggioFix && (
+                  <p className="text-xs text-amber-700 mt-2">{messaggioFix}</p>
+                )}
+              </div>
+            )}
 
             {/* Pannello crea blocco */}
             <div className="bg-white rounded-xl border border-gray-200 p-5">
