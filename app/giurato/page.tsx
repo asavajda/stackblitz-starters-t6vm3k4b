@@ -151,7 +151,9 @@ export default function GiuratoPage() {
         // rotto / pagina singola). Per avere anche il titolo e la favicon
         // corretti nella scheda, il file non viene servito dal signed URL di
         // Supabase ma dalla nostra route /api/racconto-file, che lo rigira
-        // uguale aggiungendo il nome del racconto negli header.
+        // uguale mettendo il titolo del racconto nel percorso: Safari per i
+        // PDF inline ignora Content-Disposition e usa l'ultimo segmento
+        // dell'URL come nome della scheda.
         // Apriamo la scheda vuota in modo sincrono rispetto al click, cosi' il
         // popup non viene bloccato, e le assegniamo l'URL dopo il signed URL.
         const finestra = window.open('', '_blank')
@@ -160,8 +162,13 @@ export default function GiuratoPage() {
           .createSignedUrl(assegnazione.file_path, 3600)
         if (data?.signedUrl) {
           const estensione = assegnazione.file_path?.split('.').pop()?.toLowerCase()
+          // I caratteri non validi in un nome file vengono togliti prima della
+          // codifica, cosi' il percorso resta un singolo segmento pulito.
+          const nomeFile = encodeURIComponent(
+            `${(assegnazione.titolo || 'Racconto').replace(/[\\/:*?"<>|]/g, ' ').replace(/\s+/g, ' ').trim()}.pdf`
+          )
           const url = estensione === 'pdf'
-            ? `/api/racconto-file?src=${encodeURIComponent(data.signedUrl)}&titolo=${titolo}`
+            ? `/api/racconto-file/${nomeFile}?src=${encodeURIComponent(data.signedUrl)}`
             : `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(data.signedUrl)}`
           if (finestra) finestra.location.href = url
           else window.open(url, '_blank') // fallback nel caso la scheda iniziale non si sia aperta

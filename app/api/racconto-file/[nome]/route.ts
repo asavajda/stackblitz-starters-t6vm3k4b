@@ -8,10 +8,13 @@ export const dynamic = 'force-dynamic'
  * Motivo: aprendo il signed URL di Supabase direttamente, il browser mostra
  * come nome della scheda l'hostname del progetto (xxxx.supabase.co) e una
  * favicon generica, perche' e' un file grezzo su un dominio esterno.
- * Passando da qui il file arriva da raccontitohorror.vercel.app con header
- * Content-Disposition che ne fissa il nome, quindi la scheda prende il titolo
- * del racconto e la favicon del sito, senza rinunciare al visualizzatore PDF
- * nativo (l'iframe di /visualizza su iOS Safari rende male).
+ *
+ * Il nome del racconto sta nel PERCORSO e non in un parametro, perche' Safari
+ * per i PDF inline ignora l'header Content-Disposition e usa l'ultimo segmento
+ * dell'URL come titolo della scheda. Quindi la chiamata e':
+ *   /api/racconto-file/Fame.pdf?src=<signed url>
+ * Il segmento [nome] e' puramente decorativo: il file effettivamente servito
+ * dipende solo da "src", che viene validato sotto.
  *
  * Autenticazione: la route non ha una sessione propria (il client Supabase
  * tiene il token in localStorage, non nei cookie). La credenziale e' il signed
@@ -19,18 +22,23 @@ export const dynamic = 'force-dynamic'
  * puo' gia' leggere il file direttamente, quindi il proxy non amplia l'accesso.
  */
 
-function nomeFileSicuro(titolo: string): string {
-  // Rimuove i caratteri che romperebbero l'header o il filesystem
-  const pulito = titolo
+function nomeFileSicuro(nome: string): string {
+  // Rimuove i caratteri che romperebbero l'header HTTP o il filesystem.
+  // Nota: params.nome arriva gia' decodificato da Next, non va decodificato
+  // di nuovo (un titolo tipo "100% puro" farebbe fallire decodeURIComponent).
+  const pulito = nome
     .replace(/[\r\n"\\/\u0000-\u001f]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
-  return (pulito || 'Racconto').slice(0, 100)
+  const base = pulito || 'Racconto.pdf'
+  return (base.toLowerCase().endsWith('.pdf') ? base : `${base}.pdf`).slice(0, 100)
 }
 
-export async function GET(req: NextRequest) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { nome: string } }
+) {
   const src = req.nextUrl.searchParams.get('src')
-  const titolo = req.nextUrl.searchParams.get('titolo') || 'Racconto'
 
   if (!src) {
     return new Response('Parametro src mancante', { status: 400 })
@@ -75,7 +83,7 @@ export async function GET(req: NextRequest) {
     return new Response('File non disponibile', { status: upstream.status })
   }
 
-  const nome = `${nomeFileSicuro(titolo)}.pdf`
+  const nome = nomeFileSicuro(params.nome || 'Racconto.pdf')
   const headers = new Headers()
   headers.set('Content-Type', 'application/pdf')
   headers.set(
