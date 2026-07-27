@@ -54,11 +54,10 @@ export default function GiuratoPage() {
   const [caricamento, setCaricamento]             = useState(true)
   const [profilo, setProfilo]                     = useState<any>(null)
   const [valutazioneAperta, setValutazioneAperta] = useState<any>(null)
-  const [votiEsistenti, setVotiEsistenti]         = useState<any>(null)
+  const [valutazioneId, setValutazioneId]         = useState<string | null>(null) // id della riga valutazioni, se già esiste
   const [voti, setVoti]                           = useState({ a: 3, b: 3, c: 3, d: 3 })
   const [salvando, setSalvando]                   = useState(false)
   const [utenteId, setUtenteId]                   = useState('')
-  const [mostraConferma, setMostraConferma]       = useState(false)
   const [blocchiAperti, setBlocchiAperti]         = useState<Record<string, boolean>>({})
   const [completandoBlocco, setCompletandoBlocco] = useState<string | null>(null)
   const [mostraConfermaCompletaBlocco, setMostraConfermaCompletaBlocco] = useState<string | null>(null)
@@ -187,13 +186,22 @@ export default function GiuratoPage() {
       window.open(`/racconto/${assegnazione.racconto_id}?titolo=${titolo}`, '_blank')
     }
 
+    // La valutazione resta modificabile finche' il giurato non completa il blocco:
+    // se esiste gia', il form si apre precompilato con i voti salvati e li puo'
+    // riscrivere. Diventa sola lettura solo dopo il completamento del blocco.
     if (assegnazione.completata) {
       const { data: valEsistente } = await supabase
         .from('valutazioni').select('*')
         .eq('assegnazione_id', assegnazione.assegnazione_id).single()
-      setVotiEsistenti(valEsistente)
+      setValutazioneId(valEsistente?.id ?? null)
+      setVoti({
+        a: valEsistente?.criterio_a ?? 3,
+        b: valEsistente?.criterio_b ?? 3,
+        c: valEsistente?.criterio_c ?? 3,
+        d: valEsistente?.criterio_d ?? 3,
+      })
     } else {
-      setVotiEsistenti(null)
+      setValutazioneId(null)
       setVoti({ a: 3, b: 3, c: 3, d: 3 })
     }
     setValutazioneAperta(assegnazione)
@@ -202,19 +210,36 @@ export default function GiuratoPage() {
   async function salvaValutazione() {
     setSalvando(true)
 
-    const { error } = await supabase.from('valutazioni').insert({
-      assegnazione_id: valutazioneAperta.assegnazione_id,
+    // Update se la riga esiste gia' (modifica consentita a blocco aperto), insert
+    // la prima volta. Non usiamo upsert per non dipendere da un vincolo UNIQUE su
+    // assegnazione_id, che non e' garantito identico su staging e produzione.
+    // Il campo bonus non viene mai toccato qui: e' gestito solo da toggleBonus.
+    const criteri = {
       criterio_a: voti.a,
       criterio_b: voti.b,
       criterio_c: voti.c,
       criterio_d: voti.d,
-      bonus: false, // il bonus si imposta dopo dalla lista
-    })
+    }
+
+    const { data, error } = valutazioneId
+      ? await supabase.from('valutazioni').update(criteri).eq('id', valutazioneId).select()
+      : await supabase.from('valutazioni').insert({
+          assegnazione_id: valutazioneAperta.assegnazione_id,
+          ...criteri,
+          bonus: false, // il bonus si imposta dopo dalla lista
+        }).select()
 
     if (error) {
-      alert(error.code === '23505'
-        ? 'Hai già valutato questo racconto. La valutazione non è modificabile.'
-        : `Errore durante il salvataggio: ${error.message}`)
+      alert(`Errore durante il salvataggio: ${error.message}`)
+      setSalvando(false)
+      return
+    }
+
+    // Con RLS un update bloccato non genera errore: restituisce zero righe.
+    // Senza questo controllo la modifica sembrerebbe riuscita.
+    if ((data?.length ?? 0) === 0) {
+      console.error('[SalvaValutazione] 0 righe scritte. Probabile blocco da policy RLS.')
+      alert('La valutazione non è stata salvata. Se hai già completato il blocco non è più modificabile.')
       setSalvando(false)
       return
     }
@@ -343,6 +368,12 @@ export default function GiuratoPage() {
       })
   })()
 
+  // Una valutazione e' immodificabile solo se il giurato ha completato il blocco
+  // a cui appartiene: fino a quel momento criteri e bonus restano riscrivibili.
+  const soloLettura = valutazioneAperta
+    ? (blocchiCompletati[valutazioneAperta.blocco_id] ?? false)
+    : false
+
   if (caricamento) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <p className="text-gray-400 text-sm">Caricamento...</p>
@@ -352,27 +383,6 @@ export default function GiuratoPage() {
   if (valutazioneAperta) return (
     <div className="min-h-screen bg-gray-50">
       <Header profilo={profilo} />
-
-      {mostraConferma && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-xl border border-gray-200 p-6 max-w-sm w-full shadow-lg">
-            <h3 className="text-sm font-semibold text-gray-800 mb-2">Conferma invio valutazione</h3>
-            <p className="text-sm text-gray-500 mb-6">
-              Una volta inviata, la valutazione non potrà essere modificata. Sei sicuro di voler procedere?
-            </p>
-            <div className="flex gap-3">
-              <button onClick={() => setMostraConferma(false)}
-                className="flex-1 border border-gray-200 text-gray-600 rounded-lg py-2 text-sm hover:bg-gray-50">
-                Annulla
-              </button>
-              <button onClick={() => { setMostraConferma(false); salvaValutazione() }} disabled={salvando}
-                className="flex-1 bg-gray-800 text-white rounded-lg py-2 text-sm font-medium hover:bg-gray-700 disabled:opacity-50">
-                Conferma
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="py-12 px-4">
         <div className="bg-white p-5 sm:p-8 rounded-xl border border-gray-200 max-w-xl mx-auto">
@@ -396,10 +406,8 @@ export default function GiuratoPage() {
                 <span className="text-sm text-gray-600 sm:w-40">{c.label}</span>
                 <div className="flex gap-2">
                   {[1, 2, 3, 4, 5].map(n => {
-                    const attivo = valutazioneAperta.completata
-                      ? votiEsistenti?.[`criterio_${c.key}`] === n
-                      : voti[c.key as keyof typeof voti] === n
-                    return valutazioneAperta.completata ? (
+                    const attivo = voti[c.key as keyof typeof voti] === n
+                    return soloLettura ? (
                       <div key={n} className={`w-8 h-8 rounded-full text-sm font-medium flex items-center justify-center ${attivo ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-300'}`}>
                         {n}
                       </div>
@@ -415,21 +423,23 @@ export default function GiuratoPage() {
             ))}
           </div>
 
-          {valutazioneAperta.completata ? (
-            <>
-              <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-6">
-                <p className="text-sm text-amber-700 font-medium">Valutazione già inviata</p>
-                <p className="text-xs text-amber-600 mt-0.5">Le valutazioni non sono modificabili dopo l'invio.</p>
-              </div>
-            </>
+          {soloLettura ? (
+            <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3 mb-6">
+              <p className="text-sm text-green-700 font-medium">Blocco completato</p>
+              <p className="text-xs text-green-600 mt-0.5">La valutazione non è più modificabile.</p>
+            </div>
           ) : (
             <>
               <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 mb-4">
-                <p className="text-xs text-gray-500">⚠️ Attenzione: una volta inviata, la valutazione non potrà essere modificata.</p>
+                <p className="text-xs text-gray-500">
+                  Potrai modificare questa valutazione e il bonus ★ fino a quando non completi il blocco.
+                </p>
               </div>
-              <button onClick={() => setMostraConferma(true)} disabled={salvando}
+              <button onClick={salvaValutazione} disabled={salvando}
                 className="w-full bg-gray-800 text-white rounded-lg py-2 text-sm font-medium hover:bg-gray-700 disabled:opacity-50">
-                {salvando ? 'Salvataggio...' : 'Salva valutazione'}
+                {salvando
+                  ? 'Salvataggio...'
+                  : valutazioneAperta.completata ? 'Aggiorna valutazione' : 'Salva valutazione'}
               </button>
             </>
           )}
@@ -459,7 +469,9 @@ export default function GiuratoPage() {
             ) : (
               <p className="text-sm text-gray-400 mb-4">Nessun bonus assegnato in questo blocco.</p>
             )}
-            <p className="text-xs text-gray-400 mb-6">Una volta completato, il bonus non potrà essere modificato.</p>
+            <p className="text-xs text-gray-400 mb-6">
+              Una volta completato il blocco, né le valutazioni né il bonus potranno più essere modificati.
+            </p>
             <div className="flex gap-3">
               <button onClick={() => setMostraConfermaCompletaBlocco(null)}
                 className="flex-1 border border-gray-200 text-gray-600 rounded-lg py-2 text-sm hover:bg-gray-50">
@@ -546,7 +558,7 @@ export default function GiuratoPage() {
                                   )}
                                   <button onClick={() => apriRacconto(a)} disabled={salvandoBonus}
                                     className={`text-sm px-4 py-1.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed ${a.completata ? 'border border-gray-200 text-gray-600 hover:bg-gray-50' : 'bg-gray-800 text-white hover:bg-gray-700'}`}>
-                                    {a.completata ? 'Vedi' : 'Valuta'}
+                                    {!a.completata ? 'Valuta' : bloccoCompletato ? 'Vedi' : 'Modifica'}
                                   </button>
                                 </div>
                               </div>
@@ -558,7 +570,7 @@ export default function GiuratoPage() {
                           {tutteCompletate && !bloccoCompletato && (
                             <div className="px-5 py-4 border-t border-gray-100 bg-gray-50">
                               <p className="text-xs text-gray-500 mb-3">
-                                Hai valutato tutti i racconti del blocco.
+                                Hai valutato tutti i racconti del blocco: puoi ancora modificare le valutazioni finché non lo completi.
                                 {bonusId
                                   ? <> Il bonus ★ è assegnato a <span className="font-medium text-amber-600">{assegnazioni.find(a => a.assegnazione_id === bonusId)?.titolo}</span>.</>
                                   : <> Nessun bonus assegnato.</>
