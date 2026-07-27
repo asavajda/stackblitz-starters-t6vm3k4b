@@ -21,6 +21,11 @@ function titoloPerOrdinamento(titolo: string): string {
     .trim()
 }
 
+function dataAssegnazione(iso: string | null): string {
+  if (!iso) return ''
+  return new Date(iso).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
 function Header({ profilo }: { profilo: any }) {
   const router = useRouter()
   const isStaging = process.env.NEXT_PUBLIC_ENV === 'staging'
@@ -525,6 +530,9 @@ export default function GiuratoPage() {
                         <div className="flex items-center gap-3 flex-wrap">
                           <span className="text-base font-bold text-gray-900">Blocco {i + 1}</span>
                           <span className="text-xs text-gray-500 font-medium">{nTotali} {nTotali === 1 ? 'racconto' : 'racconti'}</span>
+                          {blocco.creatoIl && (
+                            <span className="text-xs text-gray-400">Assegnato il {dataAssegnazione(blocco.creatoIl)}</span>
+                          )}
                           {bloccoCompletato && (
                             <span className="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-semibold">✓ Completato</span>
                           )}
