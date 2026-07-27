@@ -372,6 +372,10 @@ export default function GiuratoPage() {
         tutteCompletate: ass.every(a => a.completata),
         bloccoCompletato: blocchiCompletati[blocco_id] ?? false,
         creatoIl: ass[0]?.blocco_creato_il ?? null,
+        // Numero progressivo assegnato dal DB alla creazione del blocco: e' stabile
+        // e identico per tutti i giurati e per il dashboard. Non usiamo l'indice
+        // nella lista, che cambia ogni volta che un blocco viene completato.
+        numero: ass[0]?.blocco_numero ?? null,
       }))
       .sort((x, y) => {
         // Non completati prima, completati dopo
@@ -528,7 +532,7 @@ export default function GiuratoPage() {
                         onClick={() => setBlocchiAperti(prev => ({ ...prev, [blocco.blocco_id]: !prev[blocco.blocco_id] }))}
                         className="w-full flex items-center justify-between px-5 py-4 bg-gray-50 hover:bg-gray-100 transition-colors">
                         <div className="flex items-center gap-3 flex-wrap">
-                          <span className="text-base font-bold text-gray-900">Blocco {i + 1}</span>
+                          <span className="text-base font-bold text-gray-900">Blocco {blocco.numero ?? i + 1}</span>
                           <span className="text-xs text-gray-500 font-medium">{nTotali} {nTotali === 1 ? 'racconto' : 'racconti'}</span>
                           {blocco.creatoIl && (
                             <span className="text-xs text-gray-400">Assegnato il {dataAssegnazione(blocco.creatoIl)}</span>

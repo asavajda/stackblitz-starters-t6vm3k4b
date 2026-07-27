@@ -269,7 +269,7 @@ export default function DashboardPage() {
     setNuovoBloccoInterno('')
     setNuovoBloccoLettore('')
     setNuovoBloccoRacconti([])
-    setMessaggioBlocco(`Blocco creato con ${nuovoBloccoRacconti.length} racconti.`)
+    setMessaggioBlocco(`Blocco ${blocco.numero ?? ''} creato con ${nuovoBloccoRacconti.length} racconti.`)
     setCreandoBlocco(false)
   }
 
@@ -859,7 +859,10 @@ export default function DashboardPage() {
                                   return (ordine[ga?.tipo_giurato] ?? 9) - (ordine[gb?.tipo_giurato] ?? 9)
                                 })
                               const bloccoId = assegnazioniRacconto[0]?.blocco_id
-                              const bloccoLabel = bloccoId ? `Blocco ${blocchi.findIndex(b => b.id === bloccoId) + 1}` : '—'
+                              // Numero progressivo dal DB, non la posizione nella lista:
+                              // cosi' l'etichetta coincide con quella vista dai giurati
+                              const numeroBlocco = blocchi.find(b => b.id === bloccoId)?.numero
+                              const bloccoLabel = bloccoId ? `Blocco ${numeroBlocco ?? '—'}` : '—'
                               const badgesGiurati = assegnazioniRacconto.length === 0
                                 ? <span className="text-xs text-gray-300">Nessun giurato</span>
                                 : assegnazioniRacconto.map(a => {
