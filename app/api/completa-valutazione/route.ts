@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { aggiornaStatoRacconti } from '@/lib/statoRacconti'
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
@@ -10,22 +11,10 @@ export async function POST(req: NextRequest) {
     .update({ completata: true })
     .eq('id', assegnazione_id)
 
-  await new Promise(resolve => setTimeout(resolve, 500))
-
-  const { data: tutteAssegnazioni } = await supabaseAdmin
-    .from('assegnazioni')
-    .select('id, completata')
-    .eq('racconto_id', racconto_id)
-
-  const totale = tutteAssegnazioni?.length ?? 0
-  const completate = tutteAssegnazioni?.filter(a => a.completata === true).length ?? 0
-
-  if (totale >= 2 && completate === totale) {
-    await supabaseAdmin
-      .from('racconti')
-      .update({ stato: 'valutato' })
-      .eq('id', racconto_id)
-  }
+  // Il passaggio a 'valutato' non dipende piu' dal salvataggio della valutazione
+  // ma dalla conferma dei blocchi (vedi lib/statoRacconti). Qui la chiamata resta
+  // perche' con assegnazioni storiche senza blocco vale ancora il vecchio criterio.
+  await aggiornaStatoRacconti([racconto_id])
 
   return NextResponse.json({ success: true })
 }

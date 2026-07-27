@@ -329,6 +329,18 @@ export default function GiuratoPage() {
       console.log('[CompletaBlocco] Completamento salvato correttamente:', bgData)
     }
 
+    // La conferma del blocco e' il momento in cui il punteggio diventa definitivo:
+    // avvisiamo il server perche' ricalcoli lo stato dei racconti coinvolti.
+    try {
+      await fetch('/api/completa-blocco', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ blocco_id }),
+      })
+    } catch (e) {
+      console.error('[CompletaBlocco] Errore aggiornando lo stato dei racconti:', e)
+    }
+
     setBlocchiCompletati(prev => ({ ...prev, [blocco_id]: true }))
     setBlocchiAperti(prev => ({ ...prev, [blocco_id]: false }))
     setCompletandoBlocco(null)

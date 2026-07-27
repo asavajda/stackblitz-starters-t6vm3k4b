@@ -180,16 +180,32 @@ export default function DashboardPage() {
     const { data: p } = await supabase.from('profiles').select('ruolo, is_admin, nome, cognome').eq('id', user.id).single()
     if (!p?.is_admin) { router.push('/login'); return }
     setProfilo(p)
-    const [{ data: r }, { data: g }, { data: m }, { data: a }, { data: v }, { data: b }] = await Promise.all([
+    const [{ data: r }, { data: g }, { data: m }, { data: a }, { data: v }, { data: b }, { data: bg }] = await Promise.all([
       supabase.from('racconti').select('*, profiles(nome, cognome)').order('inviato_il', { ascending: false }),
       supabase.from('profiles').select('*').eq('ruolo', 'giurato'),
       supabase.from('medie_racconti').select('*').order('media_complessiva', { ascending: false }),
       supabase.from('assegnazioni').select('*'),
-      supabase.from('valutazioni').select('*, assegnazioni(racconto_id, giurato_id, fase, profiles(nome, cognome))'),
+      supabase.from('valutazioni').select('*, assegnazioni(racconto_id, giurato_id, fase, blocco_id, profiles(nome, cognome))'),
       supabase.from('blocchi').select('*').order('creato_il', { ascending: false }),
+      supabase.from('blocchi_giurato').select('blocco_id, giurato_id').eq('completato', true),
     ])
+
+    // Una valutazione entra nei risultati solo quando il giurato ha CONFERMATO il
+    // blocco: fino a quel momento criteri e bonus restano modificabili, quindi
+    // mostrarli darebbe punteggi provvisori destinati a cambiare.
+    // Il filtro e' per coppia (blocco, giurato) perche' i due giurati confermano
+    // in modo indipendente: uno confermato su due da' il badge "Parziale 1/2".
+    // Le righe senza blocco_id (storiche, precedenti al sistema a blocchi)
+    // restano visibili, altrimenti sparirebbero per sempre.
+    const confermati = new Set((bg || []).map((x: any) => `${x.blocco_id}|${x.giurato_id}`))
+    const valutazioniConfermate = (v || []).filter((val: any) => {
+      const ass = val.assegnazioni
+      if (!ass?.blocco_id) return true
+      return confermati.has(`${ass.blocco_id}|${ass.giurato_id}`)
+    })
+
     setRacconti(r || []); setGiurati(g || []); setMedie(m || [])
-    setAssegnazioniEsistenti(a || []); setValutazioni(v || []); setBlocchi(b || [])
+    setAssegnazioniEsistenti(a || []); setValutazioni(valutazioniConfermate); setBlocchi(b || [])
     setCaricamento(false)
   }
 
