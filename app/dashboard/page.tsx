@@ -319,8 +319,12 @@ export default function DashboardPage() {
     setTimeout(() => setLinkGenerati(prev => ({ ...prev, [giuratoId]: link })), 2000)
   }
 
+  // Conta solo le valutazioni DEFINITIVE, cioe' quelle il cui blocco e' stato
+  // confermato dal giurato (lo stato valutazioni e' gia' filtrato in carica()).
+  // Non usare assegnazioni.completata: quel flag scatta al salvataggio della
+  // singola valutazione, quando criteri e bonus sono ancora modificabili.
   function contaValutazioniCompletate(racconto_id: string) {
-    return assegnazioniEsistenti.filter(a => a.racconto_id === racconto_id && !!a.completata).length
+    return valutazioni.filter(v => v.assegnazioni?.racconto_id === racconto_id).length
   }
 
   function BtnGiurato({ g, racconto, tipo }: { g: any; racconto: any; tipo: 'interno' | 'lettore' | 'qualita' }) {
@@ -558,8 +562,11 @@ export default function DashboardPage() {
                   const nValutazioni = contaValutazioniCompletate(r.id)
                   const nAssegnati = assegnazioniEsistenti.filter(a => a.racconto_id === r.id).length
                   const inCorso = ['ricevuto', 'in_valutazione', 'valutato'].includes(r.stato)
-                  const badgeLabel = (r.stato === 'valutato' || (r.stato === 'in_valutazione' && nValutazioni >= 2)) ? 'Valutato' : fmt(r.stato)
-                  const badgeClass = (r.stato === 'valutato' || (r.stato === 'in_valutazione' && nValutazioni >= 2)) ? STATO_BADGE['valutato'] : STATO_BADGE[r.stato]
+                  // Nessun ricalcolo qui: r.stato passa a 'valutato' lato server
+                  // (lib/statoRacconti) solo quando TUTTI i giurati hanno confermato
+                  // il blocco. Ricalcolarlo nel client anticipava il badge.
+                  const badgeLabel = fmt(r.stato)
+                  const badgeClass = STATO_BADGE[r.stato]
                   return (
                     <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-4">
                       {/* Card — solo mobile */}
@@ -1030,11 +1037,13 @@ export default function DashboardPage() {
                         {punteggio !== null && <span className="text-lg font-semibold text-gray-800 shrink-0">{punteggio}</span>}
                       </button>
                       <div className="flex items-center gap-2 flex-wrap mb-3">
-                        <span className={`text-xs px-3 py-1 rounded-full font-medium ${
-                          risultatoCompleto ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                        }`}>
-                          {risultatoCompleto ? `✓ Completo (${numValutazioni}/${numAssegnati})` : `⏳ Parziale (${numValutazioni}/${numAssegnati || '?'})`}
-                        </span>
+                        {/* A valutazione chiusa "Completo" ripeterebbe lo stato accanto:
+                            la pill compare solo quando manca ancora un giurato. */}
+                        {!risultatoCompleto && (
+                          <span className="text-xs px-3 py-1 rounded-full font-medium bg-amber-100 text-amber-700">
+                            ⏳ Parziale ({numValutazioni}/{numAssegnati || '?'})
+                          </span>
+                        )}
                         <span className={`text-xs px-3 py-1 rounded-full font-medium ${STATO_BADGE[m.stato]}`}>{fmt(m.stato)}</span>
                       </div>
                       <div className="flex items-center justify-between">
@@ -1066,13 +1075,20 @@ export default function DashboardPage() {
                         </div>
                       </button>
                       <div className="flex items-center gap-3 shrink-0">
-                        {punteggio !== null && <span className="text-lg font-semibold text-gray-800">{punteggio}</span>}
-                        <span className={`text-xs px-3 py-1 rounded-full font-medium ${
-                          risultatoCompleto ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                        }`}>
-                          {risultatoCompleto ? `✓ Completo (${numValutazioni}/${numAssegnati})` : `⏳ Parziale (${numValutazioni}/${numAssegnati || '?'})`}
+                        {/* Larghezze fisse e cifre a passo costante: senza queste il
+                            punteggio (26 vs 9) sposta tutte le pill a destra e le righe
+                            non risultano incolonnate. */}
+                        <span className="w-10 text-right text-lg font-semibold text-gray-800 tabular-nums">
+                          {punteggio !== null ? punteggio : ''}
                         </span>
-                        <span className={`text-xs px-3 py-1 rounded-full font-medium ${STATO_BADGE[m.stato]}`}>{fmt(m.stato)}</span>
+                        <span className="w-32 text-center">
+                          {!risultatoCompleto && (
+                            <span className="text-xs px-3 py-1 rounded-full font-medium bg-amber-100 text-amber-700">
+                              ⏳ Parziale ({numValutazioni}/{numAssegnati || '?'})
+                            </span>
+                          )}
+                        </span>
+                        <span className={`w-28 text-center text-xs px-3 py-1 rounded-full font-medium ${STATO_BADGE[m.stato]}`}>{fmt(m.stato)}</span>
                         <div className="flex items-center gap-2">
                           {(['finalista', 'eliminato'] as const).map(key => (
                             <button key={key} onClick={() => aggiornaStato(m.racconto_id, key)}
