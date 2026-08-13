@@ -168,6 +168,8 @@ export default function DashboardPage() {
   const [risSort, setRisSort]     = useState<SortKey>('punteggio')
   const [risDir, setRisDir]       = useState<SortDir>('desc')
   const [risAperti, setRisAperti] = useState<Record<string, boolean>>({})
+  // Coppie "blocco_id|giurato_id" per cui il giurato ha CONFERMATO il blocco.
+  const [blocchiConfermati, setBlocchiConfermati] = useState<Record<string, boolean>>({})
 
   const [giuratiFilter, setGiuratiFilter] = useState('')
   const [giuratiSort, setGiuratiSort]     = useState<'nome' | 'cognome'>('cognome')
@@ -197,15 +199,17 @@ export default function DashboardPage() {
     // in modo indipendente: uno confermato su due da' il badge "Parziale 1/2".
     // Le righe senza blocco_id (storiche, precedenti al sistema a blocchi)
     // restano visibili, altrimenti sparirebbero per sempre.
-    const confermati = new Set((bg || []).map((x: any) => `${x.blocco_id}|${x.giurato_id}`))
+    const confermati: Record<string, boolean> = {}
+    ;(bg || []).forEach((x: any) => { confermati[`${x.blocco_id}|${x.giurato_id}`] = true })
     const valutazioniConfermate = (v || []).filter((val: any) => {
       const ass = val.assegnazioni
       if (!ass?.blocco_id) return true
-      return confermati.has(`${ass.blocco_id}|${ass.giurato_id}`)
+      return !!confermati[`${ass.blocco_id}|${ass.giurato_id}`]
     })
 
     setRacconti(r || []); setGiurati(g || []); setMedie(m || [])
     setAssegnazioniEsistenti(a || []); setValutazioni(valutazioniConfermate); setBlocchi(b || [])
+    setBlocchiConfermati(confermati)
     setCaricamento(false)
   }
 
@@ -876,11 +880,17 @@ export default function DashboardPage() {
                                     const g = giurati.find(x => x.id === a.giurato_id)
                                     if (!g) return null
                                     const cfg = TIPO_CONFIG[g.tipo_giurato] || TIPO_CONFIG.lettore
+                                    // 'valutato' solo a blocco confermato: fino a quel momento
+                                    // criteri e bonus restano modificabili. Le assegnazioni
+                                    // storiche senza blocco mantengono il vecchio criterio.
+                                    const confermato = a.blocco_id
+                                      ? !!blocchiConfermati[`${a.blocco_id}|${a.giurato_id}`]
+                                      : !!a.completata
                                     return (
-                                      <div key={a.id} className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border shrink-0 ${a.completata ? cfg.attivo : 'border-gray-200 text-gray-400'}`}>
+                                      <div key={a.id} className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border shrink-0 ${confermato ? cfg.attivo : 'border-gray-200 text-gray-400'}`}>
                                         <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cfg.badge}`}>{cfg.label}</span>
                                         {g.nome} {g.cognome}
-                                        {a.completata
+                                        {confermato
                                           ? <span className="text-[10px] opacity-60">· valutato</span>
                                           : <span className="text-[10px] text-red-400">· non valutato</span>
                                         }
