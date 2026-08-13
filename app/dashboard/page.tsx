@@ -172,7 +172,6 @@ export default function DashboardPage() {
   const [blocchiConfermati, setBlocchiConfermati] = useState<Record<string, boolean>>({})
 
   const [giuratiFilter, setGiuratiFilter] = useState('')
-  const [giuratiSort, setGiuratiSort]     = useState<'nome' | 'cognome'>('cognome')
 
   function cambiaSezione(s: Sezione) { setSezione(s); window.location.hash = s }
 
@@ -479,9 +478,9 @@ export default function DashboardPage() {
 
   const giuratiFiltrati = [...giurati]
     .filter(g => `${g.nome} ${g.cognome}`.toLowerCase().includes(giuratiFilter.toLowerCase()))
-    .sort((a, b) => giuratiSort === 'cognome'
-      ? a.cognome.localeCompare(b.cognome)
-      : a.nome.localeCompare(b.nome)
+    // Ordine unico per cognome; il nome discrimina i casi di omonimia.
+    .sort((a, b) =>
+      a.cognome.localeCompare(b.cognome) || a.nome.localeCompare(b.nome)
     )
 
   function statsGiurato(giuratoId: string) {
@@ -1315,21 +1314,7 @@ export default function DashboardPage() {
                 <input type="text" placeholder="Cerca per nome..."
                   value={giuratiFilter} onChange={e => setGiuratiFilter(e.target.value)}
                   className="sm:flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
-                <div className="flex items-center gap-3 flex-wrap">
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs text-gray-400">Ordina:</span>
-                    {(['cognome', 'nome'] as const).map(k => (
-                      <button key={k} onClick={() => setGiuratiSort(k)}
-                        className={`text-xs px-2 py-1 rounded border transition-colors capitalize ${giuratiSort === k ? 'bg-gray-800 text-white border-gray-800' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
-                        {k}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-xs text-gray-400 whitespace-nowrap">
-                    {giurati.filter(g => g.attivo !== false).length} attivi · {giurati.filter(g => g.attivo === false).length} disabilitati
-                  </p>
-                  <button onClick={carica} className="text-xs text-gray-400 hover:text-gray-600 shrink-0">Aggiorna</button>
-                </div>
+                <button onClick={carica} className="text-xs text-gray-400 hover:text-gray-600 shrink-0 self-start sm:self-auto">Aggiorna</button>
               </div>
               {giuratiFiltrati.map(g => {
                 const cfg = TIPO_CONFIG[g.tipo_giurato] || TIPO_CONFIG.lettore
