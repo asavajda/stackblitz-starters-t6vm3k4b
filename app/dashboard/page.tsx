@@ -172,6 +172,7 @@ export default function DashboardPage() {
   const [blocchiConfermati, setBlocchiConfermati] = useState<Record<string, boolean>>({})
 
   const [giuratiFilter, setGiuratiFilter] = useState('')
+  const [caricoAperto, setCaricoAperto]   = useState(false)
 
   function cambiaSezione(s: Sezione) { setSezione(s); window.location.hash = s }
 
@@ -1269,9 +1270,17 @@ export default function DashboardPage() {
             </div>
 
             <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <p className="text-sm font-medium text-gray-800 mb-1">Carico di lavoro</p>
-              <p className="text-xs text-gray-400 mb-4">Ordinato dal più libero al più occupato.</p>
-              {(() => {
+              {/* Pannello richiudibile: di default e' chiuso, cosi' l'elenco dei
+                  giurati resta subito visibile senza scorrere. */}
+              <button onClick={() => setCaricoAperto(v => !v)}
+                className="w-full flex items-start justify-between gap-3 text-left">
+                <span className="block">
+                  <span className="block text-sm font-medium text-gray-800 mb-1">Carico di lavoro</span>
+                  <span className="block text-xs text-gray-400">Ordinato dal più libero al più occupato.</span>
+                </span>
+                <span className="text-gray-400 text-xs px-1 shrink-0">{caricoAperto ? '▲' : '▼'}</span>
+              </button>
+              {caricoAperto && <div className="mt-4">{(() => {
                 const righe = (g: any, maxValore: number, inCorso: number) => (
                   <div key={g.id} className="flex items-center gap-3 py-1">
                     <span className="text-xs text-gray-600 truncate shrink-0 w-32" title={`${g.cognome} ${g.nome}`}>{g.cognome} {g.nome}</span>
@@ -1306,7 +1315,7 @@ export default function DashboardPage() {
                     {colonna('lettore', 'Lettori')}
                   </div>
                 )
-              })()}
+              })()}</div>}
             </div>
 
             <div className="space-y-3">
