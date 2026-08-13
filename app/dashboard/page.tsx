@@ -1023,6 +1023,12 @@ export default function DashboardPage() {
               : medieFiltered.map((m, i) => {
                 const valRacconto = valutazioni.filter(v =>
                   v.assegnazioni?.racconto_id === m.racconto_id && v.assegnazioni?.fase !== 'finale')
+                // La riga Punteggio mostra le SOMME dei criteri, non le medie della view
+                // medie_racconti: con le medie la riga non tornava con il proprio totale
+                // (4+4+4.5+4 accanto a un totale di 34).
+                const sommaCriterio = (k: string) =>
+                  valRacconto.reduce((tot: number, v: any) => tot + (v[`criterio_${k}`] ?? 0), 0)
+                const sommaBonus = valRacconto.filter((v: any) => v.bonus).length
                 const punteggio = punteggioDi(m.racconto_id)
                 const racconto = racconti.find(r => r.id === m.racconto_id)
                 const autore = racconto ? autoreLabel(racconto) : ''
@@ -1153,12 +1159,12 @@ export default function DashboardPage() {
                                     {CRITERI.map(c => (
                                       <div key={c.key} className="flex justify-between">
                                         <span className="text-gray-400">{c.label}</span>
-                                        <span className="font-semibold text-gray-700">{m[`media_${c.key}`]}</span>
+                                        <span className="font-semibold text-gray-700">{sommaCriterio(c.key)}</span>
                                       </div>
                                     ))}
                                   </div>
                                   <div className="flex justify-between mt-2 pt-2 border-t border-gray-200">
-                                    <span className="text-gray-300">Bonus: —</span>
+                                    <span className="text-gray-400">Bonus: {sommaBonus > 0 ? `+${sommaBonus}` : '—'}</span>
                                     <span className="font-bold text-gray-900">Totale: {punteggio}</span>
                                   </div>
                                 </div>
@@ -1190,16 +1196,17 @@ export default function DashboardPage() {
                                   </div>
                                 )
                               })}
-                              {/* Punteggio: solo quando entrambi i giudici hanno valutato, allineata
-                                  alle stesse colonne della tabella sopra. Il bonus viene escluso
-                                  di proposito (non ha senso farne una media). */}
+                              {/* Punteggio: solo quando entrambi i giudici hanno valutato,
+                                  allineata alle stesse colonne della tabella sopra. Ogni cella
+                                  e' la somma della colonna, bonus compreso, cosi' la riga torna
+                                  con il totale. */}
                               {risultatoCompleto && punteggio !== null && (
                                 <div className="grid grid-cols-8 gap-2 bg-gray-100 border border-gray-200 rounded-lg px-2 py-1.5 text-xs items-center">
                                   <span className="col-span-2 text-gray-500 font-medium uppercase text-[10px] tracking-wide">Punteggio</span>
                                   {CRITERI.map(c => (
-                                    <span key={c.key} className="text-center text-gray-700 font-semibold">{m[`media_${c.key}`]}</span>
+                                    <span key={c.key} className="text-center text-gray-700 font-semibold">{sommaCriterio(c.key)}</span>
                                   ))}
-                                  <span className="text-center text-gray-300">—</span>
+                                  <span className="text-center text-gray-700 font-semibold">{sommaBonus > 0 ? `+${sommaBonus}` : '—'}</span>
                                   <span className="text-center text-gray-900 font-bold">{punteggio}</span>
                                 </div>
                               )}
