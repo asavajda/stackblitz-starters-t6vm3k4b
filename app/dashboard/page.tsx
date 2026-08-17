@@ -497,22 +497,22 @@ export default function DashboardPage() {
   // (blocchi_giurato.completato), non che abbia salvato le valutazioni.
   function blocchiGiurato(giuratoId: string) {
     const visti: Record<string, boolean> = {}
-    const assegnati: string[] = []
+    const lista: { id: string; numero: number | null; confermato: boolean }[] = []
     assegnazioniEsistenti.forEach(a => {
       if (a.giurato_id !== giuratoId || !a.blocco_id || visti[a.blocco_id]) return
       visti[a.blocco_id] = true
-      assegnati.push(a.blocco_id)
+      lista.push({
+        id: a.blocco_id,
+        numero: blocchi.find(b => b.id === a.blocco_id)?.numero ?? null,
+        confermato: !!blocchiConfermati[`${a.blocco_id}|${giuratoId}`],
+      })
     })
-    const confermato = (id: string) => !!blocchiConfermati[`${id}|${giuratoId}`]
-    const mancanti = assegnati
-      .filter(id => !confermato(id))
-      .map(id => blocchi.find(b => b.id === id)?.numero)
-      .filter(n => n !== null && n !== undefined)
-      .sort((a: number, b: number) => a - b)
+    // Ordine per numero di blocco: e' l'etichetta che vede anche il giurato.
+    lista.sort((x, y) => (x.numero ?? 9999) - (y.numero ?? 9999))
     return {
-      assegnati: assegnati.length,
-      completati: assegnati.filter(confermato).length,
-      mancanti,
+      lista,
+      assegnati: lista.length,
+      completati: lista.filter(b => b.confermato).length,
     }
   }
 
@@ -1296,10 +1296,20 @@ export default function DashboardPage() {
 
             <div className="bg-white rounded-xl border border-gray-200 p-5">
               <p className="text-sm font-medium text-gray-800 mb-1">Blocchi per giurato</p>
-              <p className="text-xs text-gray-400 mb-4">
-                Blocchi confermati sul totale assegnato. Un blocco risulta confermato quando il
-                giurato lo ha sottomesso, non quando ha salvato le valutazioni.
+              <p className="text-xs text-gray-400 mb-2">
+                Una casella per blocco assegnato, col numero del blocco. Piena quando il giurato
+                lo ha sottomesso, vuota quando deve ancora farlo.
               </p>
+              <div className="flex items-center gap-4 mb-4">
+                <span className="flex items-center gap-1.5 text-[10px] text-gray-400">
+                  <span className="w-6 h-5 rounded border bg-green-100 border-green-200 shrink-0" />
+                  confermato
+                </span>
+                <span className="flex items-center gap-1.5 text-[10px] text-gray-400">
+                  <span className="w-6 h-5 rounded border bg-white border-gray-200 shrink-0" />
+                  da confermare
+                </span>
+              </div>
               {(() => {
                 const righe = giurati
                   .filter(g => g.attivo !== false)
@@ -1315,28 +1325,30 @@ export default function DashboardPage() {
                 return (
                   <div>
                     <div className="space-y-2">
-                      {righe.map(({ g, assegnati, completati, mancanti }) => {
+                      {righe.map(({ g, lista, assegnati, completati }) => {
                         const cfg = TIPO_CONFIG[g.tipo_giurato] || TIPO_CONFIG.lettore
-                        const chiuso = completati === assegnati
-                        const nota = mancanti.length === 0
-                          ? 'tutti confermati'
-                          : `da confermare: ${mancanti.join(', ')}`
                         return (
-                          <div key={g.id} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 py-1">
+                          <div key={g.id} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 py-1.5">
                             <div className="flex items-center gap-2 min-w-0 sm:w-52 sm:shrink-0">
                               <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 ${cfg.badge}`}>{cfg.label}</span>
                               <span className="text-xs text-gray-700 truncate">{g.cognome} {g.nome}</span>
                             </div>
-                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                              <div className="flex-1 h-2 bg-gray-100 rounded-sm overflow-hidden">
-                                <div className={`h-full rounded-sm ${chiuso ? 'bg-green-500' : 'bg-amber-400'}`}
-                                  style={{ width: `${(completati / assegnati) * 100}%` }} />
-                              </div>
-                              <span className="text-xs text-gray-600 tabular-nums w-12 text-right shrink-0">{completati}/{assegnati}</span>
-                              <span className={`text-[10px] shrink-0 sm:w-44 truncate ${chiuso ? 'text-gray-300' : 'text-amber-600'}`} title={nota}>
-                                {nota}
-                              </span>
+                            {/* Una casella per blocco, non una barra: serve capire QUALI
+                                blocchi mancano, non solo quanti. */}
+                            <div className="flex items-center gap-1 flex-wrap flex-1 min-w-0">
+                              {lista.map(b => (
+                                <span key={b.id}
+                                  title={`Blocco ${b.numero ?? '?'} · ${b.confermato ? 'confermato' : 'da confermare'}`}
+                                  className={`w-6 h-5 flex items-center justify-center rounded border text-[10px] font-medium tabular-nums shrink-0 ${
+                                    b.confermato
+                                      ? 'bg-green-100 border-green-200 text-green-700'
+                                      : 'bg-white border-gray-200 text-gray-400'
+                                  }`}>
+                                  {b.numero ?? '?'}
+                                </span>
+                              ))}
                             </div>
+                            <span className="text-xs text-gray-500 tabular-nums shrink-0 sm:w-12 sm:text-right">{completati}/{assegnati}</span>
                           </div>
                         )
                       })}
