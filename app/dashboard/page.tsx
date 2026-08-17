@@ -172,7 +172,6 @@ export default function DashboardPage() {
   const [blocchiConfermati, setBlocchiConfermati] = useState<Record<string, boolean>>({})
 
   const [giuratiFilter, setGiuratiFilter] = useState('')
-  const [caricoAperto, setCaricoAperto]   = useState(false)
 
   function cambiaSezione(s: Sezione) { setSezione(s); window.location.hash = s }
 
@@ -1359,55 +1358,6 @@ export default function DashboardPage() {
                   </div>
                 )
               })()}
-            </div>
-
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              {/* Pannello richiudibile: di default e' chiuso, cosi' l'elenco dei
-                  giurati resta subito visibile senza scorrere. */}
-              <button onClick={() => setCaricoAperto(v => !v)}
-                className="w-full flex items-start justify-between gap-3 text-left">
-                <span className="block">
-                  <span className="block text-sm font-medium text-gray-800 mb-1">Carico di lavoro</span>
-                  <span className="block text-xs text-gray-400">Ordinato dal più libero al più occupato.</span>
-                </span>
-                <span className="text-gray-400 text-xs px-1 shrink-0">{caricoAperto ? '▲' : '▼'}</span>
-              </button>
-              {caricoAperto && <div className="mt-4">{(() => {
-                const righe = (g: any, maxValore: number, inCorso: number) => (
-                  <div key={g.id} className="flex items-center gap-3 py-1">
-                    <span className="text-xs text-gray-600 truncate shrink-0 w-32" title={`${g.cognome} ${g.nome}`}>{g.cognome} {g.nome}</span>
-                    <div className="flex-1 h-2 bg-gray-50 rounded-sm overflow-hidden">
-                      <div className={`h-full rounded-sm ${inCorso > 0 ? 'bg-red-400' : ''}`}
-                        style={{ width: `${(inCorso / maxValore) * 100}%` }} />
-                    </div>
-                    <span className="text-xs text-gray-500 w-4 shrink-0">{inCorso}</span>
-                  </div>
-                )
-                const colonna = (tipo: string, label: string) => {
-                  const cfg = TIPO_CONFIG[tipo] || TIPO_CONFIG.lettore
-                  const lista = giurati.filter(g => g.attivo !== false && g.tipo_giurato === tipo)
-                    .map(g => ({ g, ...statsGiurato(g.id) }))
-                    .sort((a, b) => a.inCorso - b.inCorso || a.g.cognome.localeCompare(b.g.cognome))
-                  const maxValore = Math.max(1, ...lista.map(s => s.inCorso))
-                  return (
-                    <div>
-                      <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded ${cfg.badge}`}>{label}</span>
-                      <div className="mt-2">
-                        {lista.length === 0
-                          ? <p className="text-xs text-gray-300">Nessuno</p>
-                          : lista.map(({ g, inCorso }) => righe(g, maxValore, inCorso))
-                        }
-                      </div>
-                    </div>
-                  )
-                }
-                return (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
-                    {colonna('interno', 'Interni')}
-                    {colonna('lettore', 'Lettori')}
-                  </div>
-                )
-              })()}</div>}
             </div>
 
             <div className="space-y-3">
