@@ -172,6 +172,7 @@ export default function DashboardPage() {
   const [blocchiConfermati, setBlocchiConfermati] = useState<Record<string, boolean>>({})
 
   const [giuratiFilter, setGiuratiFilter] = useState('')
+  const [reportAperto, setReportAperto]   = useState(false)
 
   function cambiaSezione(s: Sezione) { setSezione(s); window.location.hash = s }
 
@@ -647,6 +648,78 @@ export default function DashboardPage() {
         {/* ASSEGNAZIONI */}
         {sezione === 'assegnazioni' && (
           <div className="space-y-6">
+
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              {/* Richiudibile e chiuso di default: la sezione e' densa, il report
+                  serve da riepilogo su richiesta e non deve spingere giu' i blocchi. */}
+              <button onClick={() => setReportAperto(v => !v)}
+                className="w-full flex items-start justify-between gap-3 text-left">
+                <span className="block">
+                  <span className="block text-sm font-medium text-gray-800 mb-1">Blocchi per giurato</span>
+                  <span className="block text-xs text-gray-400">
+                    Una casella per blocco assegnato, col numero del blocco. Piena quando il
+                    giurato lo ha sottomesso, vuota quando deve ancora farlo.
+                  </span>
+                </span>
+                <span className="text-gray-400 text-xs px-1 shrink-0">{reportAperto ? '▲' : '▼'}</span>
+              </button>
+              {reportAperto && <div className="mt-4">
+              <div className="flex items-center gap-4 mb-4">
+                <span className="flex items-center gap-1.5 text-[10px] text-gray-400">
+                  <span className="w-6 h-5 rounded border bg-green-100 border-green-200 shrink-0" />
+                  valutato
+                </span>
+                <span className="flex items-center gap-1.5 text-[10px] text-gray-400">
+                  <span className="w-6 h-5 rounded border bg-white border-gray-200 shrink-0" />
+                  non valutato
+                </span>
+              </div>
+              {(() => {
+                const righe = giurati
+                  .filter(g => g.attivo !== false)
+                  .map(g => ({ g, ...blocchiGiurato(g.id) }))
+                  .filter(r => r.assegnati > 0)
+                  .sort((a, b) =>
+                    a.g.cognome.localeCompare(b.g.cognome) || a.g.nome.localeCompare(b.g.nome))
+                if (righe.length === 0) {
+                  return <p className="text-xs text-gray-300">Nessun blocco ancora assegnato.</p>
+                }
+                return (
+                  <div>
+                    <div className="space-y-2">
+                      {righe.map(({ g, lista, assegnati, completati }) => {
+                        const cfg = TIPO_CONFIG[g.tipo_giurato] || TIPO_CONFIG.lettore
+                        return (
+                          <div key={g.id} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 py-1.5">
+                            <div className="flex items-center gap-2 min-w-0 sm:w-52 sm:shrink-0">
+                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 ${cfg.badge}`}>{cfg.label}</span>
+                              <span className="text-xs text-gray-700 truncate">{g.cognome} {g.nome}</span>
+                            </div>
+                            {/* Una casella per blocco, non una barra: serve capire QUALI
+                                blocchi mancano, non solo quanti. */}
+                            <div className="flex items-center gap-1 flex-wrap flex-1 min-w-0">
+                              {lista.map(b => (
+                                <span key={b.id}
+                                  title={`Blocco ${b.numero ?? '?'} · ${b.confermato ? 'valutato' : 'non valutato'}`}
+                                  className={`w-6 h-5 flex items-center justify-center rounded border text-[10px] font-medium tabular-nums shrink-0 ${
+                                    b.confermato
+                                      ? 'bg-green-100 border-green-200 text-green-700'
+                                      : 'bg-white border-gray-200 text-gray-400'
+                                  }`}>
+                                  {b.numero ?? '?'}
+                                </span>
+                              ))}
+                            </div>
+                            <span className="text-xs text-gray-500 tabular-nums shrink-0 sm:w-12 sm:text-right">{completati}/{assegnati}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })()}
+              </div>}
+            </div>
 
             {/* Pannello crea blocco */}
             <div className="bg-white rounded-xl border border-gray-200 p-5">
@@ -1291,73 +1364,6 @@ export default function DashboardPage() {
                 className="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-700 disabled:opacity-50">
                 {aggiungendo ? 'Creazione...' : 'Crea giurato'}
               </button>
-            </div>
-
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <p className="text-sm font-medium text-gray-800 mb-1">Blocchi per giurato</p>
-              <p className="text-xs text-gray-400 mb-2">
-                Una casella per blocco assegnato, col numero del blocco. Piena quando il giurato
-                lo ha sottomesso, vuota quando deve ancora farlo.
-              </p>
-              <div className="flex items-center gap-4 mb-4">
-                <span className="flex items-center gap-1.5 text-[10px] text-gray-400">
-                  <span className="w-6 h-5 rounded border bg-green-100 border-green-200 shrink-0" />
-                  confermato
-                </span>
-                <span className="flex items-center gap-1.5 text-[10px] text-gray-400">
-                  <span className="w-6 h-5 rounded border bg-white border-gray-200 shrink-0" />
-                  da confermare
-                </span>
-              </div>
-              {(() => {
-                const righe = giurati
-                  .filter(g => g.attivo !== false)
-                  .map(g => ({ g, ...blocchiGiurato(g.id) }))
-                  .filter(r => r.assegnati > 0)
-                  .sort((a, b) =>
-                    a.g.cognome.localeCompare(b.g.cognome) || a.g.nome.localeCompare(b.g.nome))
-                if (righe.length === 0) {
-                  return <p className="text-xs text-gray-300">Nessun blocco ancora assegnato.</p>
-                }
-                const totAssegnati = righe.reduce((t, r) => t + r.assegnati, 0)
-                const totCompletati = righe.reduce((t, r) => t + r.completati, 0)
-                return (
-                  <div>
-                    <div className="space-y-2">
-                      {righe.map(({ g, lista, assegnati, completati }) => {
-                        const cfg = TIPO_CONFIG[g.tipo_giurato] || TIPO_CONFIG.lettore
-                        return (
-                          <div key={g.id} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 py-1.5">
-                            <div className="flex items-center gap-2 min-w-0 sm:w-52 sm:shrink-0">
-                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 ${cfg.badge}`}>{cfg.label}</span>
-                              <span className="text-xs text-gray-700 truncate">{g.cognome} {g.nome}</span>
-                            </div>
-                            {/* Una casella per blocco, non una barra: serve capire QUALI
-                                blocchi mancano, non solo quanti. */}
-                            <div className="flex items-center gap-1 flex-wrap flex-1 min-w-0">
-                              {lista.map(b => (
-                                <span key={b.id}
-                                  title={`Blocco ${b.numero ?? '?'} · ${b.confermato ? 'confermato' : 'da confermare'}`}
-                                  className={`w-6 h-5 flex items-center justify-center rounded border text-[10px] font-medium tabular-nums shrink-0 ${
-                                    b.confermato
-                                      ? 'bg-green-100 border-green-200 text-green-700'
-                                      : 'bg-white border-gray-200 text-gray-400'
-                                  }`}>
-                                  {b.numero ?? '?'}
-                                </span>
-                              ))}
-                            </div>
-                            <span className="text-xs text-gray-500 tabular-nums shrink-0 sm:w-12 sm:text-right">{completati}/{assegnati}</span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                    <p className="text-xs text-gray-400 mt-4 pt-3 border-t border-gray-100">
-                      Totale: {totCompletati} blocchi confermati su {totAssegnati} assegnati.
-                    </p>
-                  </div>
-                )
-              })()}
             </div>
 
             <div className="space-y-3">
