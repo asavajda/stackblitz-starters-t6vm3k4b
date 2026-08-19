@@ -940,7 +940,7 @@ export default function DashboardPage() {
                   <select value={assStatoBlocco} onChange={e => setAssStatoBlocco(e.target.value)}
                     className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
                     <option value="">Tutti i blocchi</option>
-                    <option value="attesa">Da confermare</option>
+                    <option value="attesa">Da valutare</option>
                     <option value="completo">Completi</option>
                   </select>
                   <button onClick={carica} className="text-xs text-gray-400 hover:text-gray-600 shrink-0">Aggiorna</button>
@@ -1007,14 +1007,14 @@ export default function DashboardPage() {
                                   <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cfg.badge}`}>{cfg.label}</span>
                                   {x.giurato.nome} {x.giurato.cognome}
                                   {x.confermato
-                                    ? <span className="text-[10px] opacity-60">· confermato</span>
-                                    : <span className="text-[10px] text-red-400">· non confermato</span>}
+                                    ? <span className="text-[10px] opacity-60">· valutato</span>
+                                    : <span className="text-[10px] text-red-400">· non valutato</span>}
                                 </div>
                               )
                             })}
                           </div>
                           <span className={`text-xs px-2.5 py-1 rounded-full font-semibold shrink-0 ${completo ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                            {completo ? '✓ Completo' : `${confermati}/${totaleGiurati} confermati`}
+                            {completo ? '✓ Completo' : `${confermati}/${totaleGiurati} valutati`}
                           </span>
                         </div>
                         <div className="divide-y divide-gray-100">
