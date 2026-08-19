@@ -996,7 +996,9 @@ export default function DashboardPage() {
                   <div className="space-y-3">
                     {card.map(({ blocco, giuratiInfo, raccontiInfo, confermati, totaleGiurati, completo }) => (
                       <div key={blocco.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                        <div className="flex items-center justify-between gap-3 px-4 py-3 bg-gray-50 border-b border-gray-100 flex-wrap">
+                        <div className={`flex items-center justify-between gap-3 px-4 py-3 border-b flex-wrap ${
+                          completo ? 'bg-green-50 border-green-100' : confermati === 0 ? 'bg-gray-50 border-gray-100' : 'bg-amber-50 border-amber-100'
+                        }`}>
                           <div className="flex items-center gap-3 flex-wrap">
                             <span className="text-sm font-bold text-gray-900">Blocco {blocco.numero ?? '—'}</span>
                             <span className="text-xs text-gray-400">{raccontiInfo.length} {raccontiInfo.length === 1 ? 'racconto' : 'racconti'}</span>
