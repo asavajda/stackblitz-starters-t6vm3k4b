@@ -164,6 +164,7 @@ export default function DashboardPage() {
   const [risSort, setRisSort]     = useState<SortKey>('punteggio')
   const [risDir, setRisDir]       = useState<SortDir>('desc')
   const [risAperti, setRisAperti] = useState<Record<string, boolean>>({})
+  const [menuEsitoAperto, setMenuEsitoAperto] = useState<string | null>(null)
   // Coppie "blocco_id|giurato_id" per cui il giurato ha CONFERMATO il blocco.
   const [blocchiConfermati, setBlocchiConfermati] = useState<Record<string, boolean>>({})
 
@@ -1132,6 +1133,40 @@ export default function DashboardPage() {
                 const numAssegnati = nAssegnatiPreliminare(m.racconto_id)
                 const numValutazioni = nValutazioniPreliminare(m.racconto_id)
                 const risultatoCompleto = numAssegnati > 0 && numValutazioni >= numAssegnati
+                const menuAperto = menuEsitoAperto === m.racconto_id
+                // Un solo pulsante al posto dei due bottoni affiancati Finalista/Eliminato:
+                // mostra la fase successiva alla preliminare (Finalisti) come richiamo
+                // all'azione, oppure l'esito gia' scelto; il click apre un piccolo menu
+                // con le due opzioni. L'overlay invisibile chiude il menu al click fuori,
+                // stesso pattern gia' usato per gli altri overlay/modali della pagina.
+                const menuEsito = (
+                  <div className="relative">
+                    <button
+                      onClick={() => setMenuEsitoAperto(menuAperto ? null : m.racconto_id)}
+                      className={`flex items-center gap-1 text-xs px-3 py-1 rounded-full border transition-colors ${
+                        m.stato === 'finalista' ? activeClass.finalista
+                          : m.stato === 'eliminato' ? activeClass.eliminato
+                          : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                      }`}>
+                      {m.stato === 'finalista' || m.stato === 'eliminato' ? fmt(m.stato) : 'Finalisti'}
+                      <span className="text-[9px]">▾</span>
+                    </button>
+                    {menuAperto && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setMenuEsitoAperto(null)} />
+                        <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden min-w-[150px]">
+                          {(['finalista', 'eliminato'] as const).map(key => (
+                            <button key={key}
+                              onClick={() => { aggiornaStato(m.racconto_id, key); setMenuEsitoAperto(null) }}
+                              className={`w-full text-left text-xs px-3 py-2 hover:bg-gray-50 transition-colors ${m.stato === key ? 'font-semibold text-gray-800' : 'text-gray-600'}`}>
+                              {fmt(key)}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )
                 return (
                   <div key={m.racconto_id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                     {/* Card — solo mobile */}
@@ -1160,14 +1195,7 @@ export default function DashboardPage() {
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          {(['finalista', 'eliminato'] as const).map(key => (
-                            <button key={key} onClick={() => aggiornaStato(m.racconto_id, key)}
-                              className={`text-xs px-3 py-1 rounded-full border transition-colors ${
-                                m.stato === key ? activeClass[key] : 'border-gray-200 text-gray-400 hover:bg-gray-50'
-                              }`}>
-                              {fmt(key)}
-                            </button>
-                          ))}
+                          {menuEsito}
                         </div>
                         <button onClick={() => setRisAperti(prev => ({ ...prev, [m.racconto_id]: !prev[m.racconto_id] }))}
                           className="text-gray-400 text-xs px-1 hover:text-gray-600">
@@ -1202,14 +1230,7 @@ export default function DashboardPage() {
                         </span>
                         <span className={`w-28 text-center text-xs px-3 py-1 rounded-full font-medium ${STATO_BADGE[m.stato]}`}>{fmt(m.stato)}</span>
                         <div className="flex items-center gap-2">
-                          {(['finalista', 'eliminato'] as const).map(key => (
-                            <button key={key} onClick={() => aggiornaStato(m.racconto_id, key)}
-                              className={`text-xs px-3 py-1 rounded-full border transition-colors ${
-                                m.stato === key ? activeClass[key] : 'border-gray-200 text-gray-400 hover:bg-gray-50'
-                              }`}>
-                              {fmt(key)}
-                            </button>
-                          ))}
+                          {menuEsito}
                         </div>
                         <button onClick={() => setRisAperti(prev => ({ ...prev, [m.racconto_id]: !prev[m.racconto_id] }))}
                           className="text-gray-400 text-xs px-1 hover:text-gray-600">
