@@ -1013,8 +1013,14 @@ export default function DashboardPage() {
                               )
                             })}
                           </div>
-                          <span className={`text-xs px-2.5 py-1 rounded-full font-semibold shrink-0 ${completo ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                            {completo ? `✓ Completo (${confermati}/${totaleGiurati})` : `⏳ Parziale (${confermati}/${totaleGiurati})`}
+                          <span className={`text-xs px-2.5 py-1 rounded-full font-semibold shrink-0 ${
+                            completo ? 'bg-green-100 text-green-700' : confermati === 0 ? 'bg-gray-100 text-gray-500' : 'bg-amber-100 text-amber-700'
+                          }`}>
+                            {completo
+                              ? `✓ Completo (${confermati}/${totaleGiurati})`
+                              : confermati === 0
+                                ? 'Da iniziare'
+                                : `⏳ Parziale (${confermati}/${totaleGiurati})`}
                           </span>
                         </div>
                         <div className="divide-y divide-gray-100">
