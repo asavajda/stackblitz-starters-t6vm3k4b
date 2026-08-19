@@ -611,26 +611,29 @@ export default function GiuratoPage() {
                               <div key={a.assegnazione_id}
                                 className={`flex items-center justify-between px-5 py-3 transition-colors ${haBonus ? 'bg-amber-50 border-l-4 border-amber-400 pl-4' : ''}`}>
                                 <div className="flex-1 min-w-0 mr-3">
-                                  <div className="flex items-center gap-2">
-                                    <p className="text-sm font-medium text-gray-800 truncate">{a.titolo}</p>
-                                    {haBonus && (
-                                      <span className="shrink-0 text-[10px] bg-amber-500 text-white px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
-                                        ★ Bonus
-                                      </span>
-                                    )}
-                                  </div>
+                                  <p className="text-sm font-medium text-gray-800 truncate">{a.titolo}</p>
                                   <p className="text-xs text-gray-400 mt-0.5">Fase: {a.fase}</p>
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0">
-                                  {/* Toggle bonus — visibile solo se valutato e blocco non completato */}
-                                  {a.completata && !bloccoCompletato && (
-                                    <button
-                                      onClick={() => toggleBonus(blocco.blocco_id, a.assegnazione_id)}
-                                      disabled={salvandoBonus}
-                                      title={haBonus ? 'Rimuovi bonus' : 'Assegna bonus +1'}
-                                      className={`text-sm px-2 py-1 rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${haBonus ? 'bg-amber-500 text-white border-amber-500' : 'border-gray-200 text-gray-400 hover:border-amber-300 hover:text-amber-500'}`}>
-                                      ★
-                                    </button>
+                                  {/* Stellina bonus: cliccabile se valutato e blocco aperto, statica in
+                                      sola lettura se il blocco e' gia' chiuso. Unico indicatore visivo
+                                      del bonus in questa riga (niente piu' badge accanto al titolo). */}
+                                  {a.completata && (
+                                    bloccoCompletato ? (
+                                      <div
+                                        title={haBonus ? 'Bonus assegnato' : 'Nessun bonus'}
+                                        className={`text-sm px-2 py-1 rounded-lg border ${haBonus ? 'bg-amber-500 text-white border-amber-500' : 'border-gray-200 text-gray-300'}`}>
+                                        ★
+                                      </div>
+                                    ) : (
+                                      <button
+                                        onClick={() => toggleBonus(blocco.blocco_id, a.assegnazione_id)}
+                                        disabled={salvandoBonus}
+                                        title={haBonus ? 'Rimuovi bonus' : 'Assegna bonus +1'}
+                                        className={`text-sm px-2 py-1 rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${haBonus ? 'bg-amber-500 text-white border-amber-500' : 'border-gray-200 text-gray-400 hover:border-amber-300 hover:text-amber-500'}`}>
+                                        ★
+                                      </button>
+                                    )
                                   )}
                                   <button onClick={() => apriRacconto(a)} disabled={salvandoBonus}
                                     className={`text-sm px-4 py-1.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed ${a.completata ? 'border border-gray-200 text-gray-600 hover:bg-gray-50' : 'bg-gray-800 text-white hover:bg-gray-700'}`}>
