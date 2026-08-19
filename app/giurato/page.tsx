@@ -460,8 +460,10 @@ export default function GiuratoPage() {
                 dalla primissima apertura del racconto: se la valutazione esiste gia'
                 su DB (valutazioneId), il click persiste subito come nella lista
                 blocchi; se non esiste ancora, resta solo una selezione locale finche'
-                non si preme "Salva valutazione". Nascosto a blocco chiuso. */}
-            {!soloLettura && (() => {
+                non si preme "Salva valutazione". Sempre visibile anche a blocco
+                chiuso (sola lettura, stesso pattern dei pallini voto in quel caso),
+                cosi' si vede sempre se il bonus era stato assegnato o no. */}
+            {(() => {
               const haBonusReale = bonusSelezionato[valutazioneAperta.blocco_id] === valutazioneAperta.assegnazione_id
               const haBonusForm = valutazioneId ? haBonusReale : bonusPendenteAperta
               const onClickBonus = valutazioneId
@@ -471,13 +473,21 @@ export default function GiuratoPage() {
                 <div className={`flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pt-4 -mx-3 px-3 pb-2 rounded-lg transition-colors ${haBonusForm ? 'bg-amber-50' : 'border-t border-gray-100'}`}>
                   <span className={`text-sm sm:w-40 ${haBonusForm ? 'text-amber-700 font-medium' : 'text-amber-600'}`}>★ Bonus</span>
                   <div className="flex gap-2">
-                    <button
-                      onClick={onClickBonus}
-                      disabled={salvandoBonus}
-                      title={haBonusForm ? 'Rimuovi bonus' : 'Assegna bonus +1'}
-                      className={`w-8 h-8 rounded-full text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${haBonusForm ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-400 hover:bg-amber-100 hover:text-amber-500'}`}>
-                      ★
-                    </button>
+                    {soloLettura ? (
+                      <div
+                        title={haBonusForm ? 'Bonus assegnato' : 'Nessun bonus'}
+                        className={`w-8 h-8 rounded-full text-sm font-medium flex items-center justify-center ${haBonusForm ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-300'}`}>
+                        ★
+                      </div>
+                    ) : (
+                      <button
+                        onClick={onClickBonus}
+                        disabled={salvandoBonus}
+                        title={haBonusForm ? 'Rimuovi bonus' : 'Assegna bonus +1'}
+                        className={`w-8 h-8 rounded-full text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${haBonusForm ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-400 hover:bg-amber-100 hover:text-amber-500'}`}>
+                        ★
+                      </button>
+                    )}
                     {[1, 2, 3, 4].map(i => <div key={i} className="w-8 h-8" aria-hidden="true" />)}
                   </div>
                 </div>
