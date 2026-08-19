@@ -960,6 +960,10 @@ export default function DashboardPage() {
                         confermato: !!blocchiConfermati[`${b.id}|${gid}`],
                       }))
                       .filter((x): x is { giurato: any; confermato: boolean } => !!x.giurato)
+                      .sort((x, y) => {
+                        const ordine: Record<string, number> = { interno: 0, lettore: 1, qualita: 2 }
+                        return (ordine[x.giurato.tipo_giurato] ?? 9) - (ordine[y.giurato.tipo_giurato] ?? 9)
+                      })
                     const raccontiIds = assDelBlocco.map(a => a.racconto_id)
                       .filter((id, i, arr) => arr.indexOf(id) === i)
                     const raccontiInfo = raccontiIds
