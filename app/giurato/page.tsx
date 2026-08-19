@@ -192,23 +192,21 @@ export default function GiuratoPage() {
     }
 
     // La valutazione resta modificabile finche' il giurato non completa il blocco:
-    // se esiste gia', il form si apre precompilato con i voti salvati e li puo'
-    // riscrivere. Diventa sola lettura solo dopo il completamento del blocco.
-    if (assegnazione.completata) {
-      const { data: valEsistente } = await supabase
-        .from('valutazioni').select('*')
-        .eq('assegnazione_id', assegnazione.assegnazione_id).single()
-      setValutazioneId(valEsistente?.id ?? null)
-      setVoti({
-        a: valEsistente?.criterio_a ?? 3,
-        b: valEsistente?.criterio_b ?? 3,
-        c: valEsistente?.criterio_c ?? 3,
-        d: valEsistente?.criterio_d ?? 3,
-      })
-    } else {
-      setValutazioneId(null)
-      setVoti({ a: 3, b: 3, c: 3, d: 3 })
-    }
+    // se esiste gia' una riga in valutazioni, il form si apre precompilato coi voti
+    // salvati. Cerchiamo sempre la riga (non solo se assegnazione.completata), perche'
+    // il bonus puo' aver gia' creato una riga silenziosamente prima del primo salvataggio
+    // ufficiale (vedi garantisciValutazione). Diventa sola lettura solo dopo il blocco.
+    const { data: valEsistente } = await supabase
+      .from('valutazioni').select('*')
+      .eq('assegnazione_id', assegnazione.assegnazione_id).maybeSingle()
+
+    setValutazioneId(valEsistente?.id ?? null)
+    setVoti({
+      a: valEsistente?.criterio_a ?? 3,
+      b: valEsistente?.criterio_b ?? 3,
+      c: valEsistente?.criterio_c ?? 3,
+      d: valEsistente?.criterio_d ?? 3,
+    })
     setValutazioneAperta(assegnazione)
   }
 
@@ -300,6 +298,46 @@ export default function GiuratoPage() {
     }
 
     setSalvandoBonus(false)
+  }
+
+  // Nel form il bonus dev'essere assegnabile anche prima del primo salvataggio
+  // ufficiale. Se non esiste ancora una riga in "valutazioni" la creiamo qui con
+  // i voti correnti, ma SENZA marcare l'assegnazione come completata: quella
+  // rimane una decisione esplicita del giurato tramite "Salva valutazione", che
+  // in seguito trovera' gia' la riga e fara' un update invece di un insert.
+  async function garantisciValutazione(): Promise<string | null> {
+    if (valutazioneId) return valutazioneId
+    if (!valutazioneAperta) return null
+
+    const { data, error } = await supabase.from('valutazioni').insert({
+      assegnazione_id: valutazioneAperta.assegnazione_id,
+      criterio_a: voti.a,
+      criterio_b: voti.b,
+      criterio_c: voti.c,
+      criterio_d: voti.d,
+      bonus: false,
+    }).select()
+
+    if (error || (data?.length ?? 0) === 0) {
+      console.error('[Bonus] Errore creando la valutazione prima del bonus:', error)
+      return null
+    }
+
+    const nuovoId = data[0].id
+    setValutazioneId(nuovoId)
+    return nuovoId
+  }
+
+  async function toggleBonusForm() {
+    if (!valutazioneAperta) return
+    setSalvandoBonus(true)
+    const id = await garantisciValutazione()
+    if (!id) {
+      alert('Non è stato possibile assegnare il bonus. Riprova.')
+      setSalvandoBonus(false)
+      return
+    }
+    await toggleBonus(valutazioneAperta.blocco_id, valutazioneAperta.assegnazione_id)
   }
 
   async function completaBlocco(blocco_id: string) {
@@ -457,23 +495,21 @@ export default function GiuratoPage() {
                 </p>
               </div>
 
-              {/* Toggle bonus — stesso comportamento della lista blocchi: disponibile
-                  solo dopo che questo racconto e' gia' stato valutato almeno una volta
-                  (stessa condizione di a.completata && !bloccoCompletato usata li'). */}
-              {valutazioneAperta.completata && (
-                (() => {
-                  const bonusIdForm = bonusSelezionato[valutazioneAperta.blocco_id]
-                  const haBonusForm = bonusIdForm === valutazioneAperta.assegnazione_id
-                  return (
-                    <button
-                      onClick={() => toggleBonus(valutazioneAperta.blocco_id, valutazioneAperta.assegnazione_id)}
-                      disabled={salvandoBonus}
-                      className={`w-full flex items-center justify-center gap-2 rounded-lg border py-2 text-sm font-medium mb-4 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${haBonusForm ? 'bg-amber-500 text-white border-amber-500' : 'border-gray-200 text-gray-500 hover:border-amber-300 hover:text-amber-500'}`}>
-                      ★ {haBonusForm ? 'Bonus assegnato — rimuovi' : 'Assegna bonus +1'}
-                    </button>
-                  )
-                })()
-              )}
+              {/* Toggle bonus — nel form e' disponibile fin dalla primissima apertura del
+                  racconto, non solo dopo il salvataggio: toggleBonusForm crea la riga in
+                  valutazioni se manca, senza marcare l'assegnazione come completata. */}
+              {(() => {
+                const bonusIdForm = bonusSelezionato[valutazioneAperta.blocco_id]
+                const haBonusForm = bonusIdForm === valutazioneAperta.assegnazione_id
+                return (
+                  <button
+                    onClick={toggleBonusForm}
+                    disabled={salvandoBonus}
+                    className={`w-full flex items-center justify-center gap-2 rounded-lg border py-2 text-sm font-medium mb-4 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${haBonusForm ? 'bg-amber-500 text-white border-amber-500' : 'border-gray-200 text-gray-500 hover:border-amber-300 hover:text-amber-500'}`}>
+                    ★ {haBonusForm ? 'Bonus assegnato — rimuovi' : 'Assegna bonus +1'}
+                  </button>
+                )
+              })()}
 
               <button onClick={salvaValutazione} disabled={salvando}
                 className="w-full bg-gray-800 text-white rounded-lg py-2 text-sm font-medium hover:bg-gray-700 disabled:opacity-50">
