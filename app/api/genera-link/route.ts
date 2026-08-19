@@ -10,6 +10,34 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 // /link-giurato/[token], che e' innocua per i crawler di anteprima.
 export async function POST(req: NextRequest) {
   try {
+    // Solo un admin autenticato puo' generare link per altri profili.
+    // Il client manda il proprio access_token nell'header Authorization;
+    // qui lo verifichiamo e controlliamo il flag is_admin sul chiamante,
+    // non su chi lo ha inviato (evita che chiunque conosca l'endpoint
+    // possa generare link ponte per email arbitrarie).
+    const authHeader = req.headers.get('authorization') || ''
+    const accessToken = authHeader.replace('Bearer ', '')
+
+    if (!accessToken) {
+      return NextResponse.json({ error: 'Non autenticato' }, { status: 401 })
+    }
+
+    const { data: { user }, error: erroreUtente } = await supabaseAdmin.auth.getUser(accessToken)
+
+    if (erroreUtente || !user) {
+      return NextResponse.json({ error: 'Sessione non valida' }, { status: 401 })
+    }
+
+    const { data: chiamante, error: erroreChiamante } = await supabaseAdmin
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single()
+
+    if (erroreChiamante || !chiamante?.is_admin) {
+      return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 })
+    }
+
     const { email } = await req.json()
 
     if (!email) {
