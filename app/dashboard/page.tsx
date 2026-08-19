@@ -1025,12 +1025,9 @@ export default function DashboardPage() {
                         </div>
                         <div className="divide-y divide-gray-100">
                           {raccontiInfo.map(r => (
-                            <div key={r.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
-                              <div className="min-w-0">
-                                <p className="text-sm text-gray-800 truncate">{r.titolo}</p>
-                                <p className="text-xs text-gray-400 truncate">{autoreLabel(r)}</p>
-                              </div>
-                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded shrink-0 ${STATO_BADGE[r.stato]}`}>{fmt(r.stato)}</span>
+                            <div key={r.id} className="px-4 py-2.5">
+                              <p className="text-sm text-gray-800 truncate">{r.titolo}</p>
+                              <p className="text-xs text-gray-400 truncate">{autoreLabel(r)}</p>
                             </div>
                           ))}
                         </div>
