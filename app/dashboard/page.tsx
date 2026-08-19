@@ -158,11 +158,7 @@ export default function DashboardPage() {
   const [raccontoDettaglio, setRaccontoDettaglio] = useState<any>(null)
 
   const [assFilter, setAssFilter] = useState('')
-  const [assSort, setAssSort]     = useState<SortKey>('data')
-  const [assDir, setAssDir]       = useState<SortDir>('desc')
-  const [assOpen, setAssOpen]     = useState<Record<string, boolean>>({
-    'In valutazione': true, 'Valutati': false, 'Eliminati': false,
-  })
+  const [assStatoBlocco, setAssStatoBlocco] = useState('')
 
   const [risFilter, setRisFilter] = useState('')
   const [risSort, setRisSort]     = useState<SortKey>('punteggio')
@@ -379,16 +375,6 @@ export default function DashboardPage() {
     raccontiSort, raccontiDir
   )
 
-  const assFiltra = (list: any[]) => sortRacconti(
-    list.filter(r =>
-      r.titolo?.toLowerCase().includes(assFilter.toLowerCase()) ||
-      autoreLabel(r).toLowerCase().includes(assFilter.toLowerCase())
-    ),
-    assSort, assDir
-  )
-  const raccontiInValutazione = assFiltra(racconti.filter(r => r.stato === 'in_valutazione'))
-  const raccontiValutati      = assFiltra(racconti.filter(r => r.stato === 'valutato'))
-  const raccontiEliminati     = assFiltra(racconti.filter(r => r.stato === 'eliminato'))
   const raccontiFinalisti     = racconti.filter(r => r.stato === 'finalista')
 
   // Racconti disponibili per nuovo blocco (solo ricevuti e non già in un blocco)
@@ -520,12 +506,6 @@ export default function DashboardPage() {
       completati: lista.filter(b => b.confermato).length,
     }
   }
-
-  const sezioniAssegnazioni = [
-    { label: 'In valutazione', list: raccontiInValutazione },
-    { label: 'Valutati', list: raccontiValutati },
-    { label: 'Eliminati', list: raccontiEliminati },
-  ]
 
   const isStaging = process.env.NEXT_PUBLIC_ENV === 'staging'
 
@@ -943,110 +923,112 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            {/* Lista blocchi esistenti */}
+            {/* Blocchi esistenti — vista a card, un blocco = una card. E' il blocco
+                (non il racconto) l'unita' che i giurati confermano davvero, quindi
+                e' anche l'unita' giusta per capire a colpo d'occhio chi deve ancora
+                fare cosa: prima questa sezione elencava i racconti raggruppati per
+                lo stato binario 'in_valutazione'/'valutato', che scatta solo a
+                blocco confermato da TUTTI i giurati assegnati — un blocco fermo a
+                0 conferme e uno all'ultima conferma mancante finivano nello stesso
+                gruppo, indistinguibili senza aprire ogni riga. */}
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 sm:flex-wrap">
-                <input type="text" placeholder="Cerca per titolo o autore..."
+                <input type="text" placeholder="Cerca per blocco, racconto, autore o giurato..."
                   value={assFilter} onChange={e => setAssFilter(e.target.value)}
                   className="sm:flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
                 <div className="flex items-center gap-3 sm:contents">
-                  <SortBar sortKey={assSort} sortDir={assDir}
-                    onChange={(k, d) => { setAssSort(k); setAssDir(d) }} />
+                  <select value={assStatoBlocco} onChange={e => setAssStatoBlocco(e.target.value)}
+                    className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
+                    <option value="">Tutti i blocchi</option>
+                    <option value="attesa">Da confermare</option>
+                    <option value="completo">Completi</option>
+                  </select>
                   <button onClick={carica} className="text-xs text-gray-400 hover:text-gray-600 shrink-0">Aggiorna</button>
                 </div>
               </div>
 
-              {sezioniAssegnazioni.map(({ label, list }) => (
-                <div key={label} className="mb-6">
-                  <button
-                    onClick={() => setAssOpen(prev => ({ ...prev, [label]: !prev[label] }))}
-                    className="flex items-center gap-2 w-full text-left mb-3">
-                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label} ({list.length})</span>
-                    <span className="text-gray-400 text-xs">{assOpen[label] ? '▲' : '▼'}</span>
-                  </button>
-                  {assOpen[label] && (
-                    list.length === 0
-                      ? <p className="text-xs text-gray-300 mb-3">Nessun racconto</p>
-                      : (
-                        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-3">
-                          <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_90px_minmax(0,2fr)_110px] gap-4 px-4 py-2 bg-gray-50 border-b border-gray-100">
-                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Titolo</span>
-                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Blocco</span>
-                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Giurati</span>
-                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Stato</span>
-                          </div>
-                          <div className="divide-y divide-gray-100">
-                            {list.map(r => {
-                              const assegnazioniRacconto = assegnazioniEsistenti
-                                .filter(a => a.racconto_id === r.id)
-                                .slice()
-                                .sort((a, b) => {
-                                  const ga = giurati.find(x => x.id === a.giurato_id)
-                                  const gb = giurati.find(x => x.id === b.giurato_id)
-                                  const ordine: Record<string, number> = { interno: 0, lettore: 1, qualita: 2 }
-                                  return (ordine[ga?.tipo_giurato] ?? 9) - (ordine[gb?.tipo_giurato] ?? 9)
-                                })
-                              const bloccoId = assegnazioniRacconto[0]?.blocco_id
-                              // Numero progressivo dal DB, non la posizione nella lista:
-                              // cosi' l'etichetta coincide con quella vista dai giurati
-                              const numeroBlocco = blocchi.find(b => b.id === bloccoId)?.numero
-                              const bloccoLabel = bloccoId ? `Blocco ${numeroBlocco ?? '—'}` : '—'
-                              const badgesGiurati = assegnazioniRacconto.length === 0
-                                ? <span className="text-xs text-gray-300">Nessun giurato</span>
-                                : assegnazioniRacconto.map(a => {
-                                    const g = giurati.find(x => x.id === a.giurato_id)
-                                    if (!g) return null
-                                    const cfg = TIPO_CONFIG[g.tipo_giurato] || TIPO_CONFIG.lettore
-                                    // 'valutato' solo a blocco confermato: fino a quel momento
-                                    // criteri e bonus restano modificabili. Le assegnazioni
-                                    // storiche senza blocco mantengono il vecchio criterio.
-                                    const confermato = a.blocco_id
-                                      ? !!blocchiConfermati[`${a.blocco_id}|${a.giurato_id}`]
-                                      : !!a.completata
-                                    return (
-                                      <div key={a.id} className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border shrink-0 ${confermato ? cfg.attivo : 'border-gray-200 text-gray-400'}`}>
-                                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cfg.badge}`}>{cfg.label}</span>
-                                        {g.nome} {g.cognome}
-                                        {confermato
-                                          ? <span className="text-[10px] opacity-60">· valutato</span>
-                                          : <span className="text-[10px] text-red-400">· non valutato</span>
-                                        }
-                                      </div>
-                                    )
-                                  })
-                              const statoBadge = <span className={`text-xs px-3 py-1 rounded-full font-medium shrink-0 ${STATO_BADGE[r.stato]}`}>{fmt(r.stato)}</span>
+              {(() => {
+                const filtro = assFilter.toLowerCase()
+                const card = blocchi
+                  .map(b => {
+                    const assDelBlocco = assegnazioniEsistenti.filter(a => a.blocco_id === b.id)
+                    const giuratiIds = assDelBlocco.map(a => a.giurato_id)
+                      .filter((id, i, arr) => arr.indexOf(id) === i)
+                    const giuratiInfo = giuratiIds
+                      .map(gid => ({
+                        giurato: giurati.find(g => g.id === gid),
+                        confermato: !!blocchiConfermati[`${b.id}|${gid}`],
+                      }))
+                      .filter((x): x is { giurato: any; confermato: boolean } => !!x.giurato)
+                    const raccontiIds = assDelBlocco.map(a => a.racconto_id)
+                      .filter((id, i, arr) => arr.indexOf(id) === i)
+                    const raccontiInfo = raccontiIds
+                      .map(rid => racconti.find(r => r.id === rid))
+                      .filter((r): r is any => !!r)
+                    const confermati = giuratiInfo.filter(x => x.confermato).length
+                    const completo = giuratiInfo.length > 0 && confermati === giuratiInfo.length
+                    return { blocco: b, giuratiInfo, raccontiInfo, confermati, totaleGiurati: giuratiInfo.length, completo }
+                  })
+                  .filter(c => c.raccontiInfo.length > 0)
+                  .filter(c => {
+                    if (assStatoBlocco === 'completo') return c.completo
+                    if (assStatoBlocco === 'attesa') return !c.completo
+                    return true
+                  })
+                  .filter(c => {
+                    if (!filtro) return true
+                    if (String(c.blocco.numero ?? '').includes(filtro)) return true
+                    if (c.raccontiInfo.some(r => r.titolo?.toLowerCase().includes(filtro) || autoreLabel(r).toLowerCase().includes(filtro))) return true
+                    if (c.giuratiInfo.some(x => `${x.giurato.nome} ${x.giurato.cognome}`.toLowerCase().includes(filtro))) return true
+                    return false
+                  })
+                  .sort((a, b) => (a.blocco.numero ?? 9999) - (b.blocco.numero ?? 9999))
+
+                if (card.length === 0) {
+                  return <p className="text-xs text-gray-300">Nessun blocco trovato.</p>
+                }
+
+                return (
+                  <div className="space-y-3">
+                    {card.map(({ blocco, giuratiInfo, raccontiInfo, confermati, totaleGiurati, completo }) => (
+                      <div key={blocco.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                        <div className="flex items-center justify-between gap-3 px-4 py-3 bg-gray-50 border-b border-gray-100 flex-wrap">
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <span className="text-sm font-bold text-gray-900">Blocco {blocco.numero ?? '—'}</span>
+                            <span className="text-xs text-gray-400">{raccontiInfo.length} {raccontiInfo.length === 1 ? 'racconto' : 'racconti'}</span>
+                            {giuratiInfo.map(x => {
+                              const cfg = TIPO_CONFIG[x.giurato.tipo_giurato] || TIPO_CONFIG.lettore
                               return (
-                                <div key={r.id}>
-                                  {/* Card impilata — solo mobile */}
-                                  <div className="sm:hidden px-4 py-3 flex flex-col gap-2">
-                                    <div className="flex items-center justify-between gap-2">
-                                      <p className="text-sm font-medium text-gray-800 truncate">{r.titolo}</p>
-                                      {statoBadge}
-                                    </div>
-                                    <span className="text-xs text-gray-500">{bloccoLabel}</span>
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      {badgesGiurati}
-                                    </div>
-                                  </div>
-                                  {/* Tabella a colonne — solo desktop */}
-                                  <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_90px_minmax(0,2fr)_110px] gap-4 px-4 py-3 items-center">
-                                    <p className="text-sm font-medium text-gray-800 truncate">{r.titolo}</p>
-                                    <span className="text-xs text-gray-500">{bloccoLabel}</span>
-                                    <div className="flex items-center gap-2 flex-wrap min-w-0">
-                                      {badgesGiurati}
-                                    </div>
-                                    <span className="justify-self-start">{statoBadge}</span>
-                                  </div>
+                                <div key={x.giurato.id} className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border ${x.confermato ? cfg.attivo : 'border-gray-200 text-gray-400'}`}>
+                                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${cfg.badge}`}>{cfg.label}</span>
+                                  {x.giurato.nome} {x.giurato.cognome}
+                                  {x.confermato
+                                    ? <span className="text-[10px] opacity-60">· confermato</span>
+                                    : <span className="text-[10px] text-red-400">· non confermato</span>}
                                 </div>
                               )
                             })}
                           </div>
+                          <span className={`text-xs px-2.5 py-1 rounded-full font-semibold shrink-0 ${completo ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                            {completo ? '✓ Completo' : `${confermati}/${totaleGiurati} confermati`}
+                          </span>
                         </div>
-                      )
-                  )}
-                  <div className="border-t border-gray-100" />
-                </div>
-              ))}
+                        <div className="divide-y divide-gray-100">
+                          {raccontiInfo.map(r => (
+                            <div key={r.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                              <div className="min-w-0">
+                                <p className="text-sm text-gray-800 truncate">{r.titolo}</p>
+                                <p className="text-xs text-gray-400 truncate">{autoreLabel(r)}</p>
+                              </div>
+                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded shrink-0 ${STATO_BADGE[r.stato]}`}>{fmt(r.stato)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
             </div>
           </div>
         )}
