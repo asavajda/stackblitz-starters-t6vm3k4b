@@ -155,7 +155,7 @@ export default function DashboardPage() {
   const [raccontiStato, setRaccontiStato]   = useState('')
   const [raccontiSort, setRaccontiSort]     = useState<SortKey>('stato')
   const [raccontiDir, setRaccontiDir]       = useState<SortDir>('asc')
-  const [raccontoDettaglio, setRaccontoDettaglio] = useState<any>(null)
+
 
   const [assFilter, setAssFilter] = useState('')
   const [assStatoBlocco, setAssStatoBlocco] = useState('')
@@ -594,12 +594,6 @@ export default function DashboardPage() {
                           <span className={`text-xs px-3 py-1 rounded-full font-medium ${badgeClass}`}>
                             {badgeLabel}
                           </span>
-                          {nAssegnati > 0 && (
-                            <button onClick={() => setRaccontoDettaglio(r)}
-                              className="text-xs px-3 py-1 rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">
-                              Vedi valutazioni
-                            </button>
-                          )}
                         </div>
                       </div>
                       {/* Riga — solo desktop */}
@@ -615,12 +609,6 @@ export default function DashboardPage() {
                           <span className={`text-xs px-3 py-1 rounded-full font-medium ${badgeClass}`}>
                             {badgeLabel}
                           </span>
-                          {nAssegnati > 0 && (
-                            <button onClick={() => setRaccontoDettaglio(r)}
-                              className="text-xs px-3 py-1 rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">
-                              Vedi valutazioni
-                            </button>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -1439,119 +1427,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Modale dettaglio valutazioni */}
-        {raccontoDettaglio && (() => {
-          const r = racconti.find(rr => rr.id === raccontoDettaglio.id) ?? raccontoDettaglio
-          const valRacconto = valutazioni.filter(v => v.assegnazioni?.racconto_id === r.id)
-          return (
-            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-              <div className="bg-white rounded-xl border border-gray-200 p-6 max-w-2xl w-full shadow-lg max-h-[85vh] overflow-y-auto">
-                <div className="flex items-center justify-between mb-1">
-                  <h3 className="text-base font-semibold text-gray-800">{r.titolo}</h3>
-                  <button onClick={() => setRaccontoDettaglio(null)}
-                    className="text-gray-400 hover:text-gray-600 text-sm">✕</button>
-                </div>
-                <p className="text-xs text-gray-400 mb-5">{autoreLabel(r)}</p>
-
-                {valRacconto.length === 0 ? (
-                  <p className="text-sm text-gray-400 mb-5">Nessuna valutazione disponibile ancora.</p>
-                ) : (
-                  <div className="space-y-3 mb-5">
-                    {valRacconto.map(v => {
-                      const totale = (v.criterio_a ?? 0) + (v.criterio_b ?? 0) + (v.criterio_c ?? 0) + (v.criterio_d ?? 0) + (v.bonus ? 1 : 0)
-                      return (
-                        <div key={v.id} className="bg-gray-50 rounded-lg p-3">
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-0 mb-2">
-                            <span className="text-sm font-medium text-gray-700">
-                              {v.assegnazioni?.profiles?.nome} {v.assegnazioni?.profiles?.cognome}
-                            </span>
-                            <span className="text-sm font-semibold text-gray-800">Totale: {totale}</span>
-                          </div>
-                          {/* Elenco etichetta:valore — solo mobile */}
-                          <div className="sm:hidden space-y-1 text-xs mb-2">
-                            {CRITERI.map(c => (
-                              <div key={c.key} className="flex justify-between">
-                                <span className="text-gray-400">{c.label}</span>
-                                <span className="font-medium text-gray-700">{v[`criterio_${c.key}`]}</span>
-                              </div>
-                            ))}
-                            <div className="flex justify-between">
-                              <span className="text-gray-400">Bonus</span>
-                              <span className="font-medium text-gray-700">{v.bonus ? '+1 ★' : '—'}</span>
-                            </div>
-                          </div>
-                          {/* Griglia a colonne — solo desktop */}
-                          <div className="hidden sm:grid sm:grid-cols-5 gap-2 text-xs mb-2">
-                            {CRITERI.map(c => (
-                              <div key={c.key} className="text-center">
-                                <p className="text-[10px] text-gray-400 uppercase">{c.label}</p>
-                                <p className="font-medium text-gray-700">{v[`criterio_${c.key}`]}</p>
-                              </div>
-                            ))}
-                            <div className="text-center">
-                              <p className="text-[10px] text-gray-400 uppercase">Bonus</p>
-                              <p className="font-medium text-gray-700">{v.bonus ? '+1 ★' : '—'}</p>
-                            </div>
-                          </div>
-                          {v.note && (
-                            <p className="text-xs text-gray-500 border-t border-gray-200 pt-2 mt-1">
-                              <span className="text-gray-400">Note: </span>{v.note}
-                            </p>
-                          )}
-                        </div>
-                      )
-                    })}
-                    {r.stato === 'valutato' && valRacconto.length > 0 && (() => {
-                      // Somma e non media: per ogni criterio si sommano i voti
-                      // dei giurati, e il totale e' la somma dei loro totali.
-                      const somma = (vals: number[]) => vals.reduce((s, x) => s + x, 0)
-                      const sommaA = somma(valRacconto.map(v => v.criterio_a ?? 0))
-                      const sommaB = somma(valRacconto.map(v => v.criterio_b ?? 0))
-                      const sommaC = somma(valRacconto.map(v => v.criterio_c ?? 0))
-                      const sommaD = somma(valRacconto.map(v => v.criterio_d ?? 0))
-                      const sommaBonus = somma(valRacconto.map(v => v.bonus ? 1 : 0))
-                      const sommaTotale = somma(valRacconto.map(totaleGiurato))
-                      return (
-                        <div className="bg-green-50 border border-green-100 rounded-lg p-3">
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-0 mb-2">
-                            <span className="text-sm font-semibold text-green-700">Punteggio</span>
-                            <span className="text-sm font-semibold text-green-800">Totale: {sommaTotale}</span>
-                          </div>
-                          {/* Elenco etichetta:valore — solo mobile */}
-                          <div className="sm:hidden space-y-1 text-xs">
-                            {[sommaA, sommaB, sommaC, sommaD].map((m, idx) => (
-                              <div key={idx} className="flex justify-between">
-                                <span className="text-green-500">{CRITERI[idx].label}</span>
-                                <span className="font-medium text-green-700">{m}</span>
-                              </div>
-                            ))}
-                            <div className="flex justify-between">
-                              <span className="text-green-500">Bonus</span>
-                              <span className="font-medium text-green-700">{sommaBonus}</span>
-                            </div>
-                          </div>
-                          {/* Griglia a colonne — solo desktop */}
-                          <div className="hidden sm:grid sm:grid-cols-5 gap-2 text-xs">
-                            {[sommaA, sommaB, sommaC, sommaD].map((m, idx) => (
-                              <div key={idx} className="text-center">
-                                <p className="text-[10px] text-green-400 uppercase">{CRITERI[idx].label}</p>
-                                <p className="font-medium text-green-700">{m}</p>
-                              </div>
-                            ))}
-                            <div className="text-center">
-                              <p className="text-[10px] text-green-400 uppercase">Bonus</p>
-                              <p className="font-medium text-green-700">{sommaBonus}</p>
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })()}
-                  </div>
-                )}
-              </div>
-            </div>
-          )
-        })()}
 
       </div>
     </div>
