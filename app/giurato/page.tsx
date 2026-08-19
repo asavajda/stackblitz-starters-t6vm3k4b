@@ -451,13 +451,16 @@ export default function GiuratoPage() {
             ))}
 
             {/* Bonus trattato come una riga in piu' della stessa lista, coerente con
-                Incipit/Svolta narrativa/Climax/Scioglimento. Disponibile fin dalla
-                primissima apertura del racconto. Se la valutazione esiste gia' su DB
-                (valutazioneId), il click persiste subito come nella lista blocchi. Se
-                non esiste ancora, il click resta solo una selezione locale: niente
-                viene scritto finche' non si preme "Salva valutazione", per non
-                salvare voti non ancora reali insieme al bonus. Nascosto a blocco
-                chiuso, come nella lista. */}
+                Incipit/Svolta narrativa/Climax/Scioglimento. Il primo "slot" (stessa
+                larghezza w-8 dei pallini voto) contiene la stella vera; gli altri 4
+                sono segnaposto invisibili della stessa dimensione, cosi' la stella
+                risulta sempre incolonnata esattamente sotto il voto "1", qualunque
+                sia la larghezza disponibile. La riga si accende di giallo quando il
+                bonus e' selezionato, come la barra piena precedente. Disponibile fin
+                dalla primissima apertura del racconto: se la valutazione esiste gia'
+                su DB (valutazioneId), il click persiste subito come nella lista
+                blocchi; se non esiste ancora, resta solo una selezione locale finche'
+                non si preme "Salva valutazione". Nascosto a blocco chiuso. */}
             {!soloLettura && (() => {
               const haBonusReale = bonusSelezionato[valutazioneAperta.blocco_id] === valutazioneAperta.assegnazione_id
               const haBonusForm = valutazioneId ? haBonusReale : bonusPendenteAperta
@@ -465,15 +468,18 @@ export default function GiuratoPage() {
                 ? () => toggleBonus(valutazioneAperta.blocco_id, valutazioneAperta.assegnazione_id)
                 : () => setBonusPendenteAperta(prev => !prev)
               return (
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pt-4 border-t border-gray-100">
-                  <span className="text-sm text-amber-600 sm:w-40">★ Bonus</span>
-                  <button
-                    onClick={onClickBonus}
-                    disabled={salvandoBonus}
-                    title={haBonusForm ? 'Rimuovi bonus' : 'Assegna bonus +1'}
-                    className={`w-8 h-8 rounded-full text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${haBonusForm ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-400 hover:bg-amber-100 hover:text-amber-500'}`}>
-                    ★
-                  </button>
+                <div className={`flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pt-4 -mx-3 px-3 pb-2 rounded-lg transition-colors ${haBonusForm ? 'bg-amber-50' : 'border-t border-gray-100'}`}>
+                  <span className={`text-sm sm:w-40 ${haBonusForm ? 'text-amber-700 font-medium' : 'text-amber-600'}`}>★ Bonus</span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={onClickBonus}
+                      disabled={salvandoBonus}
+                      title={haBonusForm ? 'Rimuovi bonus' : 'Assegna bonus +1'}
+                      className={`w-8 h-8 rounded-full text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${haBonusForm ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-400 hover:bg-amber-100 hover:text-amber-500'}`}>
+                      ★
+                    </button>
+                    {[1, 2, 3, 4].map(i => <div key={i} className="w-8 h-8" aria-hidden="true" />)}
+                  </div>
                 </div>
               )
             })()}
