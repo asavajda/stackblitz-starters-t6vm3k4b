@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
@@ -689,34 +689,49 @@ export default function DashboardPage() {
                 if (righe.length === 0) {
                   return <p className="text-xs text-gray-300">Nessun blocco ancora assegnato.</p>
                 }
+                // Colonne fisse per numero di blocco (non per posizione nella lista del
+                // singolo giurato): cosi' il blocco 3 di un giurato e' sempre allineato
+                // in verticale col blocco 3 di tutti gli altri, anche se ne hanno un
+                // numero diverso di assegnati o non partono dallo stesso numero.
+                const numeriBlocco = Array.from(
+                  new Set(blocchi.map(b => b.numero).filter((n): n is number => n != null))
+                ).sort((a, b) => a - b)
                 return (
-                  <div>
-                    <div className="space-y-2">
+                  <div className="overflow-x-auto">
+                    <div
+                      className="inline-grid gap-x-1.5 gap-y-2 items-center"
+                      style={{ gridTemplateColumns: `13rem repeat(${numeriBlocco.length}, 1.5rem) 3rem` }}>
+                      <div />
+                      {numeriBlocco.map(n => (
+                        <span key={n} className="text-[10px] text-gray-300 text-center tabular-nums">{n}</span>
+                      ))}
+                      <div />
                       {righe.map(({ g, lista, assegnati, completati }) => {
                         const cfg = TIPO_CONFIG[g.tipo_giurato] || TIPO_CONFIG.lettore
                         return (
-                          <div key={g.id} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 py-1.5">
-                            <div className="flex items-center gap-2 min-w-0 sm:w-52 sm:shrink-0">
+                          <Fragment key={g.id}>
+                            <div className="flex items-center gap-2 min-w-0">
                               <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 ${cfg.badge}`}>{cfg.label}</span>
                               <span className="text-xs text-gray-700 truncate">{g.cognome} {g.nome}</span>
                             </div>
-                            {/* Una casella per blocco, non una barra: serve capire QUALI
-                                blocchi mancano, non solo quanti. */}
-                            <div className="flex items-center gap-1 flex-wrap flex-1 min-w-0">
-                              {lista.map(b => (
-                                <span key={b.id}
-                                  title={`Blocco ${b.numero ?? '?'} · ${b.confermato ? 'valutato' : 'non valutato'}`}
-                                  className={`w-6 h-5 flex items-center justify-center rounded border text-[10px] font-medium tabular-nums shrink-0 ${
+                            {numeriBlocco.map(n => {
+                              const b = lista.find(x => x.numero === n)
+                              return b ? (
+                                <span key={n}
+                                  title={`Blocco ${n} · ${b.confermato ? 'valutato' : 'non valutato'}`}
+                                  className={`w-6 h-5 flex items-center justify-center rounded border text-[10px] font-medium tabular-nums ${
                                     b.confermato
                                       ? 'bg-green-100 border-green-200 text-green-700'
                                       : 'bg-white border-gray-200 text-gray-400'
                                   }`}>
-                                  {b.numero ?? '?'}
+                                  {n}
                                 </span>
-                              ))}
-                            </div>
-                            <span className="text-xs text-gray-500 tabular-nums shrink-0 sm:w-12 sm:text-right">{completati}/{assegnati}</span>
-                          </div>
+                              ) : (
+                                <span key={n} className="w-6 h-5" aria-hidden="true" />
+                              )
+                            })}
+                            <span className="text-xs text-gray-500 tabular-nums text-right">{completati}/{assegnati}</span>
+                          </Fragment>
                         )
                       })}
                     </div>
