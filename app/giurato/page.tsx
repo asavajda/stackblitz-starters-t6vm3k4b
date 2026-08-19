@@ -456,6 +456,24 @@ export default function GiuratoPage() {
                   Potrai modificare questa valutazione e il bonus ★ fino a quando non completi il blocco.
                 </p>
               </div>
+
+              {/* Toggle bonus — stesso comportamento della lista blocchi: disponibile
+                  solo dopo che questo racconto e' gia' stato valutato almeno una volta. */}
+              {valutazioneAperta.completata && (
+                (() => {
+                  const bonusIdForm = bonusSelezionato[valutazioneAperta.blocco_id]
+                  const haBonusForm = bonusIdForm === valutazioneAperta.assegnazione_id
+                  return (
+                    <button
+                      onClick={() => toggleBonus(valutazioneAperta.blocco_id, valutazioneAperta.assegnazione_id)}
+                      disabled={salvandoBonus}
+                      className={`w-full flex items-center justify-center gap-2 rounded-lg border py-2 text-sm font-medium mb-4 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${haBonusForm ? 'bg-amber-500 text-white border-amber-500' : 'border-gray-200 text-gray-500 hover:border-amber-300 hover:text-amber-500'}`}>
+                      ★ {haBonusForm ? 'Bonus assegnato — rimuovi' : 'Assegna bonus +1'}
+                    </button>
+                  )
+                })()
+              )}
+
               <button onClick={salvaValutazione} disabled={salvando}
                 className="w-full bg-gray-800 text-white rounded-lg py-2 text-sm font-medium hover:bg-gray-700 disabled:opacity-50">
                 {salvando
