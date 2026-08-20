@@ -50,23 +50,15 @@ export default function LoginPage() {
           <svg viewBox="0 0 240 240" width="224" height="224" className="w-56 h-56 shrink-0">
             <defs>
               <clipPath id="logoClip">
-                <circle cx="120" cy="130" r="40" />
+                <circle cx="120" cy="120" r="40" />
               </clipPath>
-              <path id="titleArc" d="M 20,130 A 100,100 0 0 1 220,130" fill="none" />
             </defs>
 
-            <circle cx="120" cy="130" r="76" fill="none" stroke="black" strokeWidth="3" />
-            <circle cx="120" cy="130" r="62" fill="none" stroke="black" strokeWidth="2.5" />
+            <circle cx="120" cy="120" r="76" fill="none" stroke="black" strokeWidth="3" />
+            <circle cx="120" cy="120" r="62" fill="none" stroke="black" strokeWidth="2.5" />
 
-            <image href="/logo_gatto_luna.png" x="80" y="90" width="80" height="80"
+            <image href="/logo_gatto_luna.png" x="80" y="80" width="80" height="80"
               clipPath="url(#logoClip)" preserveAspectRatio="xMidYMid slice" />
-
-            <text fontSize="12" fontWeight="600" letterSpacing="1.2" fill="black"
-              style={{ fontFamily: 'ui-sans-serif, system-ui, -apple-system, Arial, sans-serif' }}>
-              <textPath href="#titleArc" startOffset="50%" textAnchor="middle">
-                I RACCONTI DEL GATTO NERO
-              </textPath>
-            </text>
           </svg>
         </div>
 
