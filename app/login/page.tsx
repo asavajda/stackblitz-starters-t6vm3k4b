@@ -43,53 +43,64 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-white px-4 pt-8 sm:pt-12 pb-12">
-      <div className="w-full max-w-sm flex flex-col items-center">
-
+    <div className="min-h-screen bg-white flex flex-col">
+      <div className="relative w-full overflow-hidden shrink-0" style={{ height: '170px' }}>
         <div
-          className="relative mb-10 flex items-center justify-center"
-          style={{ width: 'min(380px, 82vw)', height: 'min(380px, 82vw)' }}
+          className="absolute left-1/2 top-0"
+          style={{
+            width: 'clamp(480px, 140vw, 760px)',
+            height: 'clamp(480px, 140vw, 760px)',
+            transform: 'translate(-50%, -50%)',
+          }}
         >
-          <svg viewBox="0 0 200 200" className="absolute inset-0 w-full h-full">
-            <circle cx="100" cy="100" r="20" fill="none" stroke="black" strokeWidth="2.5" />
-            <circle cx="100" cy="100" r="40" fill="none" stroke="black" strokeWidth="2.5" />
-            <circle cx="100" cy="100" r="58" fill="none" stroke="black" strokeWidth="2" />
-            <circle cx="100" cy="100" r="74" fill="none" stroke="black" strokeWidth="2" />
-            <circle cx="100" cy="100" r="88" fill="none" stroke="black" strokeWidth="1.5" />
-            <circle cx="100" cy="100" r="100" fill="none" stroke="black" strokeWidth="1.5" />
+          <svg viewBox="0 0 200 200" className="w-full h-full">
+            <circle cx="100" cy="100" r="8" fill="none" stroke="black" strokeWidth="1.8" />
+            <circle cx="100" cy="100" r="19" fill="none" stroke="black" strokeWidth="1.8" />
+            <circle cx="100" cy="100" r="30" fill="none" stroke="black" strokeWidth="1.8" />
+            <circle cx="100" cy="100" r="41" fill="none" stroke="black" strokeWidth="1.8" />
+            <circle cx="100" cy="100" r="52" fill="none" stroke="black" strokeWidth="1.8" />
+            <circle cx="100" cy="100" r="63" fill="none" stroke="black" strokeWidth="1.8" />
+            <circle cx="100" cy="100" r="74" fill="none" stroke="black" strokeWidth="1.8" />
+            <circle cx="100" cy="100" r="85" fill="none" stroke="black" strokeWidth="1.8" />
+            <circle cx="100" cy="100" r="96" fill="none" stroke="black" strokeWidth="1.8" />
           </svg>
+        </div>
+      </div>
+
+      <div className="flex-1 flex flex-col items-center px-4 pb-12">
+        <div className="w-full max-w-sm flex flex-col items-center">
           <img
             src="/logo_gatto_luna.png"
             alt="I Racconti del Gatto Nero"
-            className="relative w-[24%] h-auto rounded-full"
+            className="w-16 h-16 rounded-full mb-6"
           />
-        </div>
 
-        <h1 className="text-2xl font-semibold tracking-[0.5em] text-black mb-4 pl-[0.5em]">ACCEDI</h1>
-        <div className="w-full h-px bg-black mb-10" />
+          <h1 className="text-2xl font-semibold tracking-[0.5em] text-black mb-4 pl-[0.5em]">ACCEDI</h1>
+          <div className="w-full h-px bg-black mb-10" />
 
-        <div className="w-full space-y-6 mb-2">
-          <div>
-            <label className="block text-sm text-gray-700 mb-1">Email</label>
-            <input type="email" value={email}
-              onChange={e => setEmail(e.target.value)}
-              className="w-full bg-transparent border-0 border-b border-black/70 px-0 py-1.5 text-sm text-black focus:outline-none focus:border-black" />
+          <div className="w-full space-y-6 mb-2">
+            <div>
+              <label className="block text-sm text-gray-700 mb-1">Email</label>
+              <input type="email" value={email}
+                onChange={e => setEmail(e.target.value)}
+                className="w-full bg-transparent border-0 border-b border-black/70 px-0 py-1.5 text-sm text-black focus:outline-none focus:border-black" />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-700 mb-1">Password</label>
+              <input type="password" value={password}
+                onChange={e => setPassword(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleLogin()}
+                className="w-full bg-transparent border-0 border-b border-black/70 px-0 py-1.5 text-sm text-black focus:outline-none focus:border-black" />
+            </div>
           </div>
-          <div>
-            <label className="block text-sm text-gray-700 mb-1">Password</label>
-            <input type="password" value={password}
-              onChange={e => setPassword(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleLogin()}
-              className="w-full bg-transparent border-0 border-b border-black/70 px-0 py-1.5 text-sm text-black focus:outline-none focus:border-black" />
-          </div>
+
+          {errore && <p className="text-sm text-red-600 self-start mt-4">{errore}</p>}
+
+          <button onClick={handleLogin} disabled={caricamento}
+            className="w-full bg-black text-white rounded-md py-3 text-sm font-medium tracking-wide mt-8 hover:bg-gray-800 transition-colors disabled:opacity-50">
+            {caricamento ? 'Accesso in corso...' : 'Accedi'}
+          </button>
         </div>
-
-        {errore && <p className="text-sm text-red-600 self-start mt-4">{errore}</p>}
-
-        <button onClick={handleLogin} disabled={caricamento}
-          className="w-full bg-black text-white rounded-md py-3 text-sm font-medium tracking-wide mt-8 hover:bg-gray-800 transition-colors disabled:opacity-50">
-          {caricamento ? 'Accesso in corso...' : 'Accedi'}
-        </button>
       </div>
     </div>
   )
