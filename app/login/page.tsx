@@ -43,21 +43,25 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white px-4">
+    <div className="min-h-screen flex flex-col items-center bg-white px-4 pt-8 sm:pt-12 pb-12">
       <div className="w-full max-w-sm flex flex-col items-center">
 
-        <div className="relative w-36 h-36 mb-10 flex items-center justify-center">
+        <div
+          className="relative mb-10 flex items-center justify-center"
+          style={{ width: 'min(380px, 82vw)', height: 'min(380px, 82vw)' }}
+        >
           <svg viewBox="0 0 200 200" className="absolute inset-0 w-full h-full">
-            <circle cx="100" cy="100" r="30" fill="none" stroke="black" strokeWidth="2" />
-            <circle cx="100" cy="100" r="50" fill="none" stroke="black" strokeWidth="2" />
-            <circle cx="100" cy="100" r="68" fill="none" stroke="black" strokeWidth="1.5" />
-            <circle cx="100" cy="100" r="84" fill="none" stroke="black" strokeWidth="1.5" />
-            <circle cx="100" cy="100" r="98" fill="none" stroke="black" strokeWidth="1" />
+            <circle cx="100" cy="100" r="20" fill="none" stroke="black" strokeWidth="2.5" />
+            <circle cx="100" cy="100" r="40" fill="none" stroke="black" strokeWidth="2.5" />
+            <circle cx="100" cy="100" r="58" fill="none" stroke="black" strokeWidth="2" />
+            <circle cx="100" cy="100" r="74" fill="none" stroke="black" strokeWidth="2" />
+            <circle cx="100" cy="100" r="88" fill="none" stroke="black" strokeWidth="1.5" />
+            <circle cx="100" cy="100" r="100" fill="none" stroke="black" strokeWidth="1.5" />
           </svg>
           <img
             src="/logo_gatto_luna.png"
             alt="I Racconti del Gatto Nero"
-            className="relative w-9 h-auto"
+            className="relative w-[24%] h-auto rounded-full"
           />
         </div>
 
