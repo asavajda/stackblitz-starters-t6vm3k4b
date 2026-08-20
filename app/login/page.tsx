@@ -44,12 +44,12 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <div className="relative w-full overflow-hidden shrink-0" style={{ height: '170px' }}>
+      <div className="relative w-full overflow-hidden shrink-0" style={{ height: '200px' }}>
         <div
           className="absolute left-1/2 top-0"
           style={{
-            width: 'clamp(480px, 140vw, 760px)',
-            height: 'clamp(480px, 140vw, 760px)',
+            width: 'max(500px, 135vw)',
+            height: 'max(500px, 135vw)',
             transform: 'translate(-50%, -50%)',
           }}
         >
@@ -65,16 +65,18 @@ export default function LoginPage() {
             <circle cx="100" cy="100" r="96" fill="none" stroke="black" strokeWidth="1.8" />
           </svg>
         </div>
-      </div>
 
-      <div className="flex-1 flex flex-col items-center px-4 pb-12">
-        <div className="w-full max-w-sm flex flex-col items-center">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full bg-white flex items-center justify-center">
           <img
             src="/logo_gatto_luna.png"
             alt="I Racconti del Gatto Nero"
-            className="w-16 h-16 rounded-full mb-6"
+            className="w-16 h-16 rounded-full"
           />
+        </div>
+      </div>
 
+      <div className="flex-1 flex flex-col items-center px-4 pb-12 pt-6">
+        <div className="w-full max-w-sm flex flex-col items-center">
           <h1 className="text-2xl font-semibold tracking-[0.5em] text-black mb-4 pl-[0.5em]">ACCEDI</h1>
           <div className="w-full h-px bg-black mb-10" />
 
