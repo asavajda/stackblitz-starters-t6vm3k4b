@@ -47,7 +47,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm flex flex-col items-center">
 
         <div className="mb-6 flex items-center justify-center">
-          <svg viewBox="0 0 240 240" className="w-56 h-56">
+          <svg viewBox="0 0 240 240" width="224" height="224" className="w-56 h-56 shrink-0">
             <defs>
               <clipPath id="logoClip">
                 <circle cx="120" cy="130" r="40" />
@@ -61,7 +61,8 @@ export default function LoginPage() {
             <image href="/logo_gatto_luna.png" x="80" y="90" width="80" height="80"
               clipPath="url(#logoClip)" preserveAspectRatio="xMidYMid slice" />
 
-            <text fontSize="12" fontWeight="600" letterSpacing="1.2" fill="black" style={{ fontFamily: 'inherit' }}>
+            <text fontSize="12" fontWeight="600" letterSpacing="1.2" fill="black"
+              style={{ fontFamily: 'ui-sans-serif, system-ui, -apple-system, Arial, sans-serif' }}>
               <textPath href="#titleArc" startOffset="50%" textAnchor="middle">
                 I RACCONTI DEL GATTO NERO
               </textPath>
