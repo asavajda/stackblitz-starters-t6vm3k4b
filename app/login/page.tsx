@@ -46,14 +46,17 @@ export default function LoginPage() {
     <div className="min-h-screen bg-white flex flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm flex flex-col items-center">
 
-        <div className="relative w-28 h-28 mb-10 flex items-center justify-center">
+        <div className="relative w-32 h-32 mb-6 flex items-center justify-center">
           <div className="absolute inset-0 rounded-full border border-black/15" />
+          <div className="absolute inset-3 rounded-full border border-black/30" />
           <img
             src="/logo_gatto_luna.png"
             alt="I Racconti del Gatto Nero"
             className="relative w-20 h-20 rounded-full"
           />
         </div>
+
+        <p className="text-xs tracking-[0.3em] text-black/60 uppercase mb-8">I Racconti del Gatto Nero</p>
 
         <h1 className="text-2xl font-semibold tracking-[0.5em] text-black mb-4 pl-[0.5em]">ACCEDI</h1>
         <div className="w-full h-px bg-black mb-10" />
