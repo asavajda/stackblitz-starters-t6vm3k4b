@@ -43,29 +43,49 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 w-full max-w-md">
-        <h1 className="text-2xl font-semibold text-gray-800 mb-6">Accedi</h1>
-        <div className="space-y-4">
+    <div className="min-h-screen flex items-center justify-center bg-white px-4">
+      <div className="w-full max-w-sm flex flex-col items-center">
+
+        <div className="relative w-36 h-36 mb-10 flex items-center justify-center">
+          <svg viewBox="0 0 200 200" className="absolute inset-0 w-full h-full">
+            <circle cx="100" cy="100" r="30" fill="none" stroke="black" strokeWidth="2" />
+            <circle cx="100" cy="100" r="50" fill="none" stroke="black" strokeWidth="2" />
+            <circle cx="100" cy="100" r="68" fill="none" stroke="black" strokeWidth="1.5" />
+            <circle cx="100" cy="100" r="84" fill="none" stroke="black" strokeWidth="1.5" />
+            <circle cx="100" cy="100" r="98" fill="none" stroke="black" strokeWidth="1" />
+          </svg>
+          <img
+            src="/logo_gatto_luna.png"
+            alt="I Racconti del Gatto Nero"
+            className="relative w-9 h-auto"
+          />
+        </div>
+
+        <h1 className="text-2xl font-semibold tracking-[0.5em] text-black mb-4 pl-[0.5em]">ACCEDI</h1>
+        <div className="w-full h-px bg-black mb-10" />
+
+        <div className="w-full space-y-6 mb-2">
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Email</label>
+            <label className="block text-sm text-gray-700 mb-1">Email</label>
             <input type="email" value={email}
               onChange={e => setEmail(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
+              className="w-full bg-transparent border-0 border-b border-black/70 px-0 py-1.5 text-sm text-black focus:outline-none focus:border-black" />
           </div>
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Password</label>
+            <label className="block text-sm text-gray-700 mb-1">Password</label>
             <input type="password" value={password}
               onChange={e => setPassword(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleLogin()}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300" />
+              className="w-full bg-transparent border-0 border-b border-black/70 px-0 py-1.5 text-sm text-black focus:outline-none focus:border-black" />
           </div>
-          {errore && <p className="text-sm text-red-500">{errore}</p>}
-          <button onClick={handleLogin} disabled={caricamento}
-            className="w-full bg-gray-800 text-white rounded-lg py-2 text-sm font-medium hover:bg-gray-700 disabled:opacity-50">
-            {caricamento ? 'Accesso in corso...' : 'Accedi'}
-          </button>
         </div>
+
+        {errore && <p className="text-sm text-red-600 self-start mt-4">{errore}</p>}
+
+        <button onClick={handleLogin} disabled={caricamento}
+          className="w-full bg-black text-white rounded-md py-3 text-sm font-medium tracking-wide mt-8 hover:bg-gray-800 transition-colors disabled:opacity-50">
+          {caricamento ? 'Accesso in corso...' : 'Accedi'}
+        </button>
       </div>
     </div>
   )
